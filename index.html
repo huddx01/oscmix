@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>oscmix</title>
+		<title>oscmix Generic</title>
 		<link rel="stylesheet" href="style.css"/>
-		<script src="oscmix.js" type="text/javascript" charset="utf-8"></script>
+		<script type="module" src="oscmix.js"></script>
 	</head>
 	<body>
 		<template id="channel-template">
@@ -13,7 +13,7 @@
 					<form id="channel-name-form" class="channel-name-form">
 						<input id="channel-name" class="channel-name" readonly>
 					</form>
-					<input class="channel-pan" id="pan" type="number" min="-100" max="100" step="1" value="0">
+					<input class="channel-pan" id="pan" type="range" min="-100" max="100" step="1" value="0">
 					<div class="channel-mute">
 						<label class="toggle-button">M<input id="mute" type="checkbox"></label>
 						<label class="toggle-button">S<input id="solo" type="checkbox"></label>
@@ -153,15 +153,19 @@
 				<form id="connection">
 					<fieldset>
 						<label>Type<select id="connection-type">
+
 							<option id="connection-type-websocket">WebSocket</option>
-							<option id="connection-type-midi">MIDI</option>
+							<option id="connection-type-midi" selected>MIDI</option>
+
 						</select></label>
-						<label class="connection-websocket">Server<input id="connection-websocket-address" size="1" value="ws://localhost:8222"></label>
-						<label class="connection-midi">MIDI Input<select id="connection-midi-input" disabled></select></label>
-						<label class="connection-midi">MIDI Output<select id="connection-midi-output" disabled></select></label>
+						<label class="connection-midi">MIDI Input<select id="connection-midi-input" ></select></label>
+						<label class="connection-midi">MIDI Output<select id="connection-midi-output" ></select></label>
+						<label class="connection-websocket">Server<input id="connection-websocket-address" size="1" value="ws://localhost:8222" ></label>
+
 					</fieldset>
 					<button id="connection-connect">Connect</button>
 					<button id="connection-disconnect">Disconnect</button>
+					<button id="connection-refresh">Refresh</button>
 				</form>
 			</details>
 			<hr>
@@ -236,10 +240,10 @@
 					<label>Volume<input id="echo-volume" type="number" min="-65" max="6" step="0.5"></label>
 				</fieldset>
 			</details>
-			<hr>
+ 			<hr>
 			<details open>
 				<summary>DURec</summary>
-			</details>
+			</details> 
 			<hr>
 			<details open>
 				<summary>Control Room</summary>
@@ -248,13 +252,18 @@
 						<option>Analog 1/2</option>
 						<option>Analog 3/4</option>
 						<option>Analog 5/6</option>
-						<option>Phones</option>
-						<option>SPDIF</option>
-						<option>AES</option>
+					 	<option>Analog 7/8</option>
+						<option>Phones 9/10</option>
+						<option>Phones 11/12</option>
+						<option>AES L/R</option>
 						<option>ADAT 1/2</option>
 						<option>ADAT 3/4</option>
 						<option>ADAT 5/6</option>
 						<option>ADAT 7/8</option>
+						<option>ADAT 9/10</option>
+						<option>ADAT 11/12</option>
+						<option>ADAT 13/14</option>
+						<option>ADAT 15/16</option>
 					</select></label>
 					<label>Main Mono<span><input id="controlroom-mainmono" type="checkbox"></span></label>
 					<label>Mute Enable<span><input id="controlroom-muteenable" type="checkbox"></span></label>
@@ -278,13 +287,17 @@
 					<label>Wck. Out<span><input id="clock-wckout" type="checkbox"></span></label>
 					<label>Wck. Single<span><input id="clock-wcksingle" type="checkbox"></span></label>
 					<label>Wck. Term.<span><input id="clock-wckterm" type="checkbox"></span></label>
-					<label>Optical Out<select id="hardware-opticalout">
+					<label>Optical 1 Out<select id="hardware-opticalout">
 						<option>ADAT</option>
 						<option>S/PDIF</option>
 					</select></label>
-					<label>S/PDIF Out<select id="hardware-spdifout">
-						<option>Consumer</option>
-						<option>Professional</option>
+					<label>Optical 2 Out<select id="hardware-spdifout">
+						<option>ADAT</option>
+						<option>S/PDIF</option>
+					</select></label>
+					<label>Optical 1 In<span><select id="hardware-remapkeys">
+						<option>ADAT</option>
+						<option>S/PDIF</option>
 					</select></label>
 					<label>CC Mix<select id="hardware-ccmix">
 						<option>TotalMix</option>
@@ -303,7 +316,7 @@
 						<option>Keys</option>
 						<option>All</option>
 					</select></label>
-					<label>Remap Keys<span><input id="hardware-remapkeys" type="checkbox"></span></label>
+
 				</fieldset>
 			</details>
 		</div>

@@ -1,5 +1,14 @@
 'use strict';
 
+import { device_ff802 } from './device_ff802.js';
+import { device_ffucxii } from './device_ffucxii.js';
+import { device_ffufxiii } from './device_ffufxiii.js';
+
+const devices = [device_ff802, device_ffucxii, device_ffufxiii];
+// Fallback
+//let currentDevice = device_ff802;
+let currentDevice = device_ffufxiii;
+
 /* OSC */
 class OSCDecoder {
 	constructor(buffer, offset = 0, length = buffer.byteLength) {
@@ -415,20 +424,20 @@ class Channel {
 	static OUTPUT = 'output';
 	static PLAYBACK = 'playback';
 
-	static #inputNames = [
-		'Mic/Line 1', 'Mic/Line 2', 'Inst/Line 3', 'Inst/Line 4',
-		'Analog 5', 'Analog 6', 'Analog 7', 'Analog 8',
-		'SPDIF L', 'SPDIF R', 'AES L', 'AES R',
-		'ADAT 1', 'ADAT 2', 'ADAT 3', 'ADAT 4',
-		'ADAT 5', 'ADAT 6', 'ADAT 7', 'ADAT 8',
-	];
-	static #outputNames = [
-		'Analog 1', 'Analog 2', 'Analog 3', 'Analog 4',
-		'Analog 5', 'Analog 6', 'Phones 7', 'Phones 8',
-		'SPDIF L', 'SPDIF R', 'AES L', 'AES R',
-		'ADAT 1', 'ADAT 2', 'ADAT 3', 'ADAT 4',
-		'ADAT 5', 'ADAT 6', 'ADAT 7', 'ADAT 8',
-	];
+//	static #inputNames = [
+//		'Mic/Line 1', 'Mic/Line 2', 'Inst/Line 3', 'Inst/Line 4',
+//		'Analog 5', 'Analog 6', 'Analog 7', 'Analog 8',
+//		'SPDIF L', 'SPDIF R', 'AES L', 'AES R',
+//		'ADAT 1', 'ADAT 2', 'ADAT 3', 'ADAT 4',
+//		'ADAT 5', 'ADAT 6', 'ADAT 7', 'ADAT 8',
+//	];
+//	static #outputNames = [
+//		'Analog 1', 'Analog 2', 'Analog 3', 'Analog 4',
+//		'Analog 5', 'Analog 6', 'Phones 7', 'Phones 8',
+//		'SPDIF L', 'SPDIF R', 'AES L', 'AES R',
+//		'ADAT 1', 'ADAT 2', 'ADAT 3', 'ADAT 4',
+//		'ADAT 5', 'ADAT 6', 'ADAT 7', 'ADAT 8',
+//	];
 
 	static #elements = new Set([
 		'mute',
@@ -494,32 +503,17 @@ class Channel {
 
 		let defName;
 		const prefix = `/${type}/${index + 1}`;
-		const flags = [];
+		const flags = currentDevice.getFlags(type, index);
 		switch (type) {
 		case Channel.INPUT:
-			flags.push('input');
-			if (index == 0 || index == 1)
-				flags.push('48v');
-			if (index == 2 || index == 3)
-				flags.push('hi-z');
-			if (index <= 3)
-				flags.push('autoset');
-			if (index <= 7) {
-				if (index >= 2)
-					flags.push('reflevel');
-				flags.push('gain');
-			}
-			defName = Channel.#inputNames[index];
+			defName = currentDevice.inputNames[index];
 			break;
 		case Channel.PLAYBACK:
 			flags.push('playback');
-			defName = Channel.#outputNames[index];
+			defName = currentDevice.outputNames[index];
 			break;
 		case Channel.OUTPUT:
-			flags.push('output');
-			if (index <= 7)
-				flags.push('reflevel');
-			defName = Channel.#outputNames[index];
+			defName = currentDevice.outputNames[index];
 
 			const selects = document.querySelectorAll('select.channel-volume-output');
 			for (const select of selects) {
@@ -581,7 +575,7 @@ class Channel {
 			};
 			this.volume = [];
 			this.pan = [];
-			for (let i = 0; i < 20; ++i) {
+			for (let i = 0; i < currentDevice.outputNames.length; ++i) {
 				this.volume[i] = -65;
 				this.pan[i] = 0;
 				iface.methods.set(`/mix/${i+1}${prefix}`, (args) => {
@@ -782,7 +776,7 @@ function setupInterface() {
 	let midiAccess;
 	connectionType.dataset.value = connectionType.value;
 	connectionType.addEventListener('change', (event) => {
-		event.target.dataset.value = event.target.value
+		event.target.dataset.value = event.target.value;
 		if (midiAccess) {
 			midiPorts.input.replaceChildren();
 			midiPorts.output.replaceChildren();
@@ -790,34 +784,47 @@ function setupInterface() {
 			midiPorts.output.disabled = true;
 			midiAccess.removeEventListener('statechange', midiStateChanged);
 			midiAccess = null;
+			currentDevice = null; // Gerät zurücksetzen
 		}
+
 		if (event.target.value == 'MIDI') {
 			navigator.requestMIDIAccess({sysex: true}).then((access) => {
-				if (event.target.value != 'MIDI')
-					return;
+				if (event.target.value != 'MIDI') return;
+
+				// Geräteerkennung bei Portänderung
+				const detectDevice = (portName) =>
+				devices.find(device => portName?.includes(device.deviceName));
+
+				const updateCurrentDevice = () => {
+					const inputPort = access.inputs.get(midiPorts.input.value);
+					const outputPort = access.outputs.get(midiPorts.output.value);
+					currentDevice = detectDevice(inputPort?.name) || detectDevice(outputPort?.name);
+					if (currentDevice) console.log('Aktives Gerät:', currentDevice.deviceName);
+					// TODO: UI neu initialisieren
+				};
+
 				for (const [select, ports] of [[midiPorts.input, access.inputs], [midiPorts.output, access.outputs]]) {
-					let prev, defaultOption;
+					let prev;
 					for (const port of ports.values()) {
 						const option = new Option(port.name, port.id);
 						select.add(option);
-						if (port.id == select.dataset.id)
+
+						// Automatische Auswahl bei Geräteübereinstimmung
+						if (!select.dataset.id && detectDevice(port.name)) {
 							option.selected = true;
-						if (port.name.match(/^Fireface UCX II \(/) && port.name == prev)
-							defaultOption = option;
-						else
-							prev = port.name;
+							select.dataset.id = port.id;
+						}
 					}
-					if (select.value != select.dataset.id && defaultOption)
-						defaultOption.selected = true;
-					select.dataset.id = select.value;
 					select.disabled = false;
+					select.addEventListener('change', updateCurrentDevice);
 				}
+
 				midiAccess = access;
 				midiAccess.addEventListener('statechange', midiStateChanged);
+				updateCurrentDevice(); // Initiale Erkennung
 			});
 		}
 	});
-
 	const icon = document.getElementById('connection-icon');
 
 	let connection;
@@ -865,7 +872,7 @@ function setupInterface() {
 	for (const [type, id] of [[Channel.INPUT, 'inputs'], [Channel.PLAYBACK, 'playbacks'], [Channel.OUTPUT, 'outputs']]) {
 		const div = document.getElementById(id);
 		let left;
-		for (let i = 0; i < 20; ++i) {
+		for (let i = 0; i < currentDevice.outputNames.length; ++i) {
 			const channel = new Channel(type, i, iface, left);
 			div.appendChild(channel.element);
 			left = i % 2 == 0 ? channel : null;
