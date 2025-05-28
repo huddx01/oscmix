@@ -243,7 +243,26 @@
  			<hr>
 			<details open>
 				<summary>DURec</summary>
-			</details> 
+				<fieldset>
+					<label>File:
+						<select id="durec-file">
+							<option value="-1">New Recording...</option>
+						</select>
+					</label>
+					<label>Samplerate: <output id="durec-samplerate">---</output></label>
+					<label>Channels: <output id="durec-channels">--</output></label>
+					<label>Time:
+						<input type="range" id="durec-time" min="0" max="0" step="1">
+							<output id="durec-time-display">00:00:00</output>
+					</label>
+					<div class="durec-controls">
+						<button id="durec-record">Record</button>
+						<button id="durec-play">Play</button>
+						<button id="durec-stop">Stop</button>
+						<button id="durec-delete">Delete</button>
+					</div>
+				</fieldset>
+			</details>
 			<hr>
 			<details open>
 				<summary>Control Room</summary>
@@ -287,13 +306,22 @@
 					<label>Wck. Out<span><input id="clock-wckout" type="checkbox"></span></label>
 					<label>Wck. Single<span><input id="clock-wcksingle" type="checkbox"></span></label>
 					<label>Wck. Term.<span><input id="clock-wckterm" type="checkbox"></span></label>
+					<label>AES Input<select id="hardware-aesinput">
+						<option>XLR</option>
+						<option>Opt. 2</option>
+					</select></label>
 					<label>Optical 1 Out<select id="hardware-opticalout">
 						<option>ADAT</option>
 						<option>S/PDIF</option>
 					</select></label>
-					<label>Optical 2 Out<select id="hardware-spdifout">
+					<label>Optical 2 Out<select id="hardware-opticalout2">
 						<option>ADAT</option>
 						<option>S/PDIF</option>
+						<option>AES</option>
+					</select></label>
+					<label>AES State Pro<select id="hardware-spdifout">
+						<option>On</option>
+						<option>Off</option>
 					</select></label>
 					<label>Optical 1 In<span><select id="hardware-remapkeys">
 						<option>ADAT</option>

@@ -205,6 +205,99 @@ class ConnectionMIDI extends AbortController {
 class Interface {
 	constructor() {
 		this.methods = new Map();
+		this.durecFiles = [];
+		this.currentFile = -1;
+	}
+
+	initDurec() {
+		const formatTime = (seconds) => {
+			const hrs = Math.floor(seconds / 3600);
+			const min = Math.floor((seconds % 3600) / 60);
+			const sec = seconds % 60;
+			return `${hrs.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+		};
+
+		// Dateiliste binden
+		iface.methods.set('/durec/numfiles', (args) => {
+			this.durecFiles.length = args[0];
+			this.updateDurecFileList();
+		});
+
+		iface.methods.set('/durec/name', (args) => {
+			this.durecFiles[args[0]] = {
+				...this.durecFiles[args[0]],
+				name: args[1]
+			};
+			this.updateDurecFileList();
+		});
+
+		iface.methods.set('/durec/samplerate', (args) => {
+			this.durecFiles[args[0]] = {
+				...this.durecFiles[args[0]],
+				samplerate: args[1]
+			};
+		});
+
+		iface.methods.set('/durec/channels', (args) => {
+			this.durecFiles[args[0]] = {
+				...this.durecFiles[args[0]],
+				channels: args[1]
+			};
+		});
+
+		iface.methods.set('/durec/length', (args) => {
+			this.durecFiles[args[0]] = {
+				...this.durecFiles[args[0]],
+				length: args[1]
+			};
+			document.getElementById('durec-time').max = args[1];
+		});
+
+		// Steuerelemente
+		document.getElementById('durec-record').addEventListener('click', () => {
+			iface.send('/durec/record', ',i', [this.currentFile]); // Komma hinzufügen
+		});
+
+		document.getElementById('durec-play').addEventListener('click', () => {
+			iface.send('/durec/play', ',i', [this.currentFile]); // Komma hinzufügen
+		});
+
+		document.getElementById('durec-stop').addEventListener('click', () => {
+			iface.send('/durec/stop', ',', []); // Typ-String muss ',' sein
+		});
+
+		document.getElementById('durec-delete').addEventListener('click', () => {
+			iface.send('/durec/delete', ',i', [this.currentFile]); // Komma hinzufügen
+		});
+		document.getElementById('durec-file').addEventListener('change', (e) => {
+			this.currentFile = parseInt(e.target.value);
+			const file = this.durecFiles[this.currentFile];
+			if (file) {
+				document.getElementById('durec-samplerate').textContent = file.samplerate || '---';
+				document.getElementById('durec-channels').textContent = file.channels || '--';
+			}
+		});
+
+		document.getElementById('durec-time').addEventListener('input', (e) => {
+			document.getElementById('durec-time-display').textContent = formatTime(e.target.value);
+		});
+
+		iface.bind('/durec/time', ',i', // Komma hinzufügen
+				   document.getElementById('durec-time'), 'value',
+				   'input'
+				   );
+	}
+
+	updateDurecFileList() {
+		const select = document.getElementById('durec-file');
+		select.innerHTML = '<option value="-1">New Recording...</option>';
+
+		this.durecFiles.forEach((file, index) => {
+			const option = document.createElement('option');
+			option.value = index;
+			option.textContent = file.name || `Recording ${index + 1}`;
+			select.appendChild(option);
+		});
 	}
 
 	#connection;
@@ -925,13 +1018,16 @@ function setupInterface() {
 	iface.bind('/clock/wckout', ',i', document.getElementById('clock-wckout'), 'checked', 'change');
 	iface.bind('/clock/wcksingle', ',i', document.getElementById('clock-wcksingle'), 'checked', 'change');
 	iface.bind('/clock/wckterm', ',i', document.getElementById('clock-wckterm'), 'checked', 'change');
+	iface.bind('/hardware/aesinput', ',i', document.getElementById('hardware-aesinput'), 'selectedIndex', 'change');
 	iface.bind('/hardware/opticalout', ',i', document.getElementById('hardware-opticalout'), 'selectedIndex', 'change');
+	iface.bind('/hardware/opticalout2', ',i', document.getElementById('hardware-opticalout2'), 'selectedIndex', 'change');
 	iface.bind('/hardware/spdifout', ',i', document.getElementById('hardware-spdifout'), 'selectedIndex', 'change');
 	iface.bind('/hardware/ccmix', ',i', document.getElementById('hardware-ccmix'), 'selectedIndex', 'change');
 	iface.bind('/hardware/standalonemidi', ',i', document.getElementById('hardware-standalonemidi'), 'checked', 'change');
 	iface.bind('/hardware/standalonearc', ',i', document.getElementById('hardware-standalonearc'), 'selectedIndex', 'change');
 	iface.bind('/hardware/lockkeys', ',i', document.getElementById('hardware-lockkeys'), 'selectedIndex', 'change');
 	iface.bind('/hardware/remapkeys', ',i', document.getElementById('hardware-remapkeys'), 'checked', 'change');
+	iface.bind('/durec/file', 'i', document.getElementById('durec-file'), 'value', 'change');
 
 	/* allow scrolling on number and range inputs */
 	const wheel = (event) => {
@@ -951,6 +1047,7 @@ function setupInterface() {
 		node.addEventListener('focus', focus);
 		node.addEventListener('blur', blur);
 	}
+	iface.initDurec();
 }
 function reinitializeUI() {
 	// Clear existing UI elements
@@ -991,4 +1088,7 @@ function reinitializeUI() {
 }
 
 
-document.addEventListener('DOMContentLoaded', setupInterface);
+document.addEventListener('DOMContentLoaded', () => {
+	setupInterface();
+	iface.initDurec();
+});

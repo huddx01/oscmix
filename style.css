@@ -404,3 +404,15 @@ input[type=range]:focus {
 .channel-panel-eq .eq-controls :not(:nth-child(4n+1)) {
 	text-align: center;
 }
+
+.durec-controls {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 0.5rem;
+	margin-top: 1rem;
+}
+
+#durec-time {
+	width: 100%;
+	margin: 0.5rem 0;
+}
