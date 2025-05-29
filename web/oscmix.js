@@ -166,15 +166,23 @@ class ConnectionMIDI extends AbortController {
 			if (instance.exports.init(jsdata) != 0)
 				throw Error('oscmix init failed');
 			input.addEventListener('midimessage', (event) => {
-				if (event.data[0] != 0xf0 || event.data[event.data.length - 1] != 0xf7)
-					return;
-				if (event.data.length > jsdataLen) {
-					console.warn('dropping long sysex');
-					return;
+				try {
+					if (event.data[0] != 0xf0 || event.data[event.data.length - 1] != 0xf7)
+						return;
+					if (event.data.length > jsdataLen) {
+						console.warn('dropping long sysex');
+						return;
+					}
+					const sysex = new Uint8Array(instance.exports.memory.buffer, jsdata, event.data.length);
+					sysex.set(event.data);
+					instance.exports.handlesysex(sysex.byteOffset, sysex.byteLength, jsdata);
+				} catch (e) {
+					console.error('Error processing sysex:', e);
+					// Optional: Ignorieren oder spezifische Behandlung für 2305-Fehler
+					if (e.message.includes('2305')) {
+						console.warn('Skipping unsupported sysex message');
+					}
 				}
-				const sysex = new Uint8Array(instance.exports.memory.buffer, jsdata, event.data.length);
-				sysex.set(event.data);
-				instance.exports.handlesysex(sysex.byteOffset, sysex.byteLength, jsdata);
 			}, {signal: this.signal});
 			const stateHandler = (event) => {
 				if (event.target.state == 'disconnected')
@@ -254,21 +262,25 @@ class Interface {
 		});
 
 		// Steuerelemente
-		document.getElementById('durec-record').addEventListener('click', () => {
-			iface.send('/durec/record', ',i', [this.currentFile]); // Komma hinzufügen
-		});
-
 		document.getElementById('durec-play').addEventListener('click', () => {
-			iface.send('/durec/play', ',i', [this.currentFile]); // Komma hinzufügen
+			if (this.currentFile >= 0) {
+				iface.send('/durec/file', ',i', [this.currentFile]);
+			}
+			iface.send('/durec/play', ',', []);
+		});
+		document.getElementById('durec-record').addEventListener('click', () => {
+			iface.send('/durec/record', ',', []);
 		});
 
 		document.getElementById('durec-stop').addEventListener('click', () => {
-			iface.send('/durec/stop', ',', []); // Typ-String muss ',' sein
+			iface.send('/durec/stop', ',', []);
 		});
 
 		document.getElementById('durec-delete').addEventListener('click', () => {
-			iface.send('/durec/delete', ',i', [this.currentFile]); // Komma hinzufügen
+			// Delete benötigt einen Parameter!
+			iface.send('/durec/delete', ',i', [this.currentFile]);
 		});
+
 		document.getElementById('durec-file').addEventListener('change', (e) => {
 			this.currentFile = parseInt(e.target.value);
 			const file = this.durecFiles[this.currentFile];
@@ -911,11 +923,36 @@ function setupInterface() {
 			});
 		}
 	});
+//	if (connectionType.value === 'MIDI') {
+//		midiPorts.input.disabled = false; // Enable MIDI Input
+//		midiPorts.output.disabled = false; // Enable MIDI Output
+//		navigator.requestMIDIAccess({sysex: true}).then((access) => {
+//			for (const [select, ports] of [[midiPorts.input, access.inputs], [midiPorts.output, access.outputs]]) {
+//				let prev, defaultOption;
+//				for (const port of ports.values()) {
+//					const option = new Option(port.name, port.id);
+//					select.add(option);
+//					if (port.id === select.dataset.id) option.selected = true;
+//					if (port.name.match(/^Fireface /) && port.name === prev) defaultOption = option;
+//					else prev = port.name;
+//				}
+//				if (select.value !== select.dataset.id && defaultOption) defaultOption.selected = true;
+//				select.dataset.id = select.value;
+//				select.disabled = false;
+//			}
+//			midiAccess = access;
+//			midiAccess.addEventListener('statechange', midiStateChanged);
+//		});
+//	}
 	const icon = document.getElementById('connection-icon');
 
 	let connection;
 	const connectionForm = document.getElementById('connection');
 	connectionForm.addEventListener('submit', (event) => {
+		if (event.submitter.id == 'connection-reinitialise') {
+			connection.abort();
+			reinitializeUI();
+		}
 		event.preventDefault();
 		if (connection)
 			connection.abort();
@@ -1018,7 +1055,8 @@ function setupInterface() {
 	iface.bind('/clock/wckout', ',i', document.getElementById('clock-wckout'), 'checked', 'change');
 	iface.bind('/clock/wcksingle', ',i', document.getElementById('clock-wcksingle'), 'checked', 'change');
 	iface.bind('/clock/wckterm', ',i', document.getElementById('clock-wckterm'), 'checked', 'change');
-	iface.bind('/hardware/aesinput', ',i', document.getElementById('hardware-aesinput'), 'selectedIndex', 'change');
+	iface.bind('/hardware/aesin', ',i', document.getElementById('hardware-aesin'), 'selectedIndex', 'change');
+	iface.bind('/hardware/opticalin', ',i', document.getElementById('hardware-opticalin'), 'selectedIndex', 'change');
 	iface.bind('/hardware/opticalout', ',i', document.getElementById('hardware-opticalout'), 'selectedIndex', 'change');
 	iface.bind('/hardware/opticalout2', ',i', document.getElementById('hardware-opticalout2'), 'selectedIndex', 'change');
 	iface.bind('/hardware/spdifout', ',i', document.getElementById('hardware-spdifout'), 'selectedIndex', 'change');
@@ -1084,11 +1122,39 @@ function reinitializeUI() {
 			left = i % 2 === 0 ? channel : null;
 		}
 	}
+	// Reinitialize the device-specific options
+	populateDeviceSpecificOptions();
+
 	console.log('UI reinitialized for device:', currentDevice.deviceName);
 }
 
+function populateDeviceSpecificOptions() {
+	const standaloneMidiSelect = document.getElementById('hardware-standalonemidi');
+
+	if (standaloneMidiSelect && currentDevice.hardware_standalonemidi) {
+		standaloneMidiSelect.innerHTML = '';
+		const options = currentDevice.hardware_standalonemidi.names;
+
+		options.forEach((option, index) => {
+			const opt = document.createElement('option');
+			opt.textContent = option;
+			opt.value = index;
+			standaloneMidiSelect.appendChild(opt);
+		});
+
+		// Set correct OSC handling based on type
+		if (currentDevice.hardware_standalonemidi.type === 'bool') {
+			iface.bind('/hardware/standalonemidi', ',i', standaloneMidiSelect, 'selectedIndex', 'change');
+		} else {
+			iface.bind('/hardware/standalonemidi', ',i', standaloneMidiSelect, 'selectedIndex', 'change');
+		}
+	}
+}
 
 document.addEventListener('DOMContentLoaded', () => {
 	setupInterface();
 	iface.initDurec();
+
+	// Initialize the device-specific options after the interface is set up
+	setTimeout(populateDeviceSpecificOptions, 100);
 });

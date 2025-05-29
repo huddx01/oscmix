@@ -249,9 +249,11 @@ regtoctl(int reg, struct param *p)
             case 0x3065: return CLOCK_SAMPLERATE;
             case 0x3066: return CLOCK_WCKSINGLE;
             case 0x3067: return CLOCK_WCKTERM;
-			case 0x3078: return HARDWARE_AESINPUT; // 0=Off, 1=On
+			case 0x3078: return HARDWARE_AESIN;
 			case 0x3079: return HARDWARE_OPTICALOUT;
 			case 0x307A: return HARDWARE_OPTICALOUT2;
+			case 0x307B: return HARDWARE_SPDIFOUT;
+			case 0x307C: return HARDWARE_CCMODE;
             case 0x3200: return HARDWARE_DSPVERLOAD;
             case 0x3201: return HARDWARE_DSPAVAIL;
             case 0x3202: return HARDWARE_DSPSTATUS;
@@ -506,7 +508,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case CLOCK_WCKTERM:           return 0x3067;
 
 		// Hardware
-		case HARDWARE_AESINPUT:       return 0x3078; // AES Input: 0=XLR, 1=Optical 2
+		case HARDWARE_AESIN:       return 0x3078; // AES Input: 0=XLR, 1=Optical 2
 		case HARDWARE_OPTICALOUT:     return 0x3079; // Optical Out 1: 0=ADAT, 1=S/PDIF
 		case HARDWARE_OPTICALOUT2:    return 0x307A; // Optical Out 2: 0=ADAT 1=SPDIF 2=AES
 		case HARDWARE_SPDIFOUT:       return 0x307B; // AES Channel Status: 0=Consumer, 1=Pro

@@ -39,5 +39,9 @@ export const device_ffucxii = {
 			flags.push('reflevel');
 		}
 		return flags;
+	},
+	hardware_standalonemidi: {
+		names: ["Off", "On"],
+		type: 'bool' // backwards compatibility
 	}
 };

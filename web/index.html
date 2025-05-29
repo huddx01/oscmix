@@ -166,6 +166,7 @@
 					<button id="connection-connect">Connect</button>
 					<button id="connection-disconnect">Disconnect</button>
 					<button id="connection-refresh">Refresh</button>
+					<button id="connection-reinitialise">Reinitialise</button>
 				</form>
 			</details>
 			<hr>
@@ -306,26 +307,30 @@
 					<label>Wck. Out<span><input id="clock-wckout" type="checkbox"></span></label>
 					<label>Wck. Single<span><input id="clock-wcksingle" type="checkbox"></span></label>
 					<label>Wck. Term.<span><input id="clock-wckterm" type="checkbox"></span></label>
-					<label>AES Input<select id="hardware-aesinput">
+					<label>AES In<select id="hardware-aesin">
 						<option>XLR</option>
 						<option>Opt. 2</option>
 					</select></label>
-					<label>Optical 1 Out<select id="hardware-opticalout">
+					<label>Opt. 1 Int<select id="hardware-opticalin">
 						<option>ADAT</option>
 						<option>S/PDIF</option>
 					</select></label>
-					<label>Optical 2 Out<select id="hardware-opticalout2">
+					<label>Opt. 1 Out<select id="hardware-opticalout">
+						<option>ADAT</option>
+						<option>S/PDIF</option>
+					</select></label>
+					<label>Opt. 2 Out<select id="hardware-opticalout2">
 						<option>ADAT</option>
 						<option>S/PDIF</option>
 						<option>AES</option>
 					</select></label>
 					<label>AES State Pro<select id="hardware-spdifout">
-						<option>On</option>
-						<option>Off</option>
+						<option>Consumer</option>
+						<option>Professional</option>
 					</select></label>
-					<label>Optical 1 In<span><select id="hardware-remapkeys">
-						<option>ADAT</option>
-						<option>S/PDIF</option>
+					<label>Remap Keys<span><select id="hardware-remapkeys">
+						<option>Off</option>
+						<option>On</option>
 					</select></label>
 					<label>CC Mix<select id="hardware-ccmix">
 						<option>TotalMix</option>
@@ -333,7 +338,7 @@
 						<option>8 ch.</option>
 						<option>20 ch.</option>
 					</select></label>
-					<label>Standalone MIDI<span><input id="hardware-standalonemidi" type="checkbox"></span></label>
+					<label>Standalone MIDI<select id="hardware-standalonemidi"></select></label>
 					<label>Standalone ARC<select id="hardware-standalonearc">
 						<option>Volume</option>
 						<option>1s Op</option>

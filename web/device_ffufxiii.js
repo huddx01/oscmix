@@ -56,5 +56,9 @@ export const device_ffufxiii = {
 			if (index <= 11) flags.push('reflevel');
 		}
 		return flags;
+	},
+	hardware_standalonemidi: {
+		names: ["Off", "MIDI 1", "MIDI 2", "MADI O", "MADI C"],
+		type: 'enum'
 	}
 };

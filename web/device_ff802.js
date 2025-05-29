@@ -1,7 +1,7 @@
 //device_ff802.js
 export const device_ff802 = {
 	deviceName: 'Fireface 802',
-	midiPortNames: ['Port 2'],
+	midiPortNames: ['Port 2'], // Possible MIDI port names
 	inputNames: [
 		'Analog 1', 'Analog 2', 'Analog 3', 'Analog 4',
 		'Analog 5', 'Analog 6', 'Analog 7', 'Analog 8',
@@ -38,6 +38,10 @@ export const device_ff802 = {
 			if (index <= 7) flags.push('reflevel');
 		}
 		return flags;
+	},
+	hardware_standalonemidi: {
+		names: ["Off", "On"],
+		type: 'bool' // backwards compatibility
 	}
 };
 

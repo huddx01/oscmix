@@ -1298,8 +1298,11 @@ static const struct node roottree[] = {
 		{0},
 	}},
 	{"hardware", .tree=(const struct node[]){
-		{"aesinput", HARDWARE_AESINPUT , .set=setenum, .new=newenum, .names=(const char *const[]){
+		{"aesin", HARDWARE_AESIN , .set=setenum, .new=newenum, .names=(const char *const[]){
 			"XLR", "Optical 2",
+		}, .nameslen=2},
+		{"opticalin", HARDWARE_OPTICALIN, .set=setenum, .new=newenum, .names=(const char *const[]){
+			"ADAT", "SPDIF",
 		}, .nameslen=2},
 		{"opticalout", HARDWARE_OPTICALOUT, .set=setenum, .new=newenum, .names=(const char *const[]){
 			"ADAT", "SPDIF",
@@ -1314,7 +1317,9 @@ static const struct node roottree[] = {
 		{"ccmix", HARDWARE_CCMIX, .set=setenum, .new=newenum, .names=(const char *const[]){
 			"TotalMix App", "6ch + phones", "8ch", "20ch",
 		}, .nameslen=4},
-		{"standalonemidi", HARDWARE_STANDALONEMIDI, .set=setbool, .new=newbool},
+		{"standalonemidi", HARDWARE_STANDALONEMIDI, .set=setenum, .new=newenum, .names=(const char *const[]){
+			"Off", "MIDI 1", "MIDI 2", "MADI O", "MADI C",
+		}, .nameslen=5},
 		{"standalonearc", HARDWARE_STANDALONEARC, .set=setenum, .new=newenum, .names=(const char *const[]){
 			"Volume", "1s Op", "Normal",
 		}, .nameslen=3},

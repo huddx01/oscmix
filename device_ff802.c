@@ -73,9 +73,17 @@ static enum control regtoctl(int reg, struct param *p) {
 
 	if (reg < 0) return -1;
 
-	// Input-Registers: 0x0000–0x1D00 (30 channels, 0x100 per channel)
+	// TODO: Needds more investigation, what causes this...
+	// This reg comes up since expanded the controls in device.h
+	// Workaround for the "unknown" register 0x0901
+	if (reg == 0x0901) {
+		return UNKNOWN;
+	}
+
+
+	// Input-Register: 0x0000–0x1D00 (30 Kanäle, 0x100 pro Kanal)
 	if (reg < 0x1E00) {
-		idx = reg >> 8; // size of each channel block is 0x100 
+		idx = reg >> 8; // Jeder Kanalblock ist 0x100 groß (z.B. AN1: 0x0000-0x00FF)
 		subreg = reg & 0xFF;
 		if (idx >= LEN(inputs)) return -1;
 		p->in = idx;
@@ -86,7 +94,6 @@ static enum control regtoctl(int reg, struct param *p) {
 			case 0x01: return INPUT_FXSEND;
 			case 0x02: return INPUT_STEREO;
 			case 0x03: return INPUT_RECORD;
-				//case 0x04: return UNKNOWN;
 			case 0x04: return INPUT_PLAYCHAN;
 			case 0x05: return INPUT_MSPROC;
 			case 0x06: return INPUT_PHASE;
@@ -125,7 +132,7 @@ static enum control regtoctl(int reg, struct param *p) {
 			default:   return -1;
 		}
 	}
-	// Output-Registers: 0x1E00–0x3B00 (30 channels)
+	// Output-Register: 0x1E00–0x3B00 (30 Kanäle)
 	else if (reg >= 0x1E00 && reg < 0x3C00) {
 		idx = (reg - 0x1E00) >> 8;
 		subreg = reg & 0xFF;
@@ -172,14 +179,16 @@ static enum control regtoctl(int reg, struct param *p) {
 			case 0x81: return AUTOLEVEL_MAXGAIN;   // Auto Level Max Gain (1/10 fixed point, 0.0dB–18.0dB)
 			case 0x82: return AUTOLEVEL_HEADROOM;  // Auto Level Headroom (1/10 fixed point, 3.0dB–12.0dB)
 			case 0x83: return AUTOLEVEL_RISETIME;  // Auto Level Rise Time (1/10 fixed point, 0.1s–9.9s)
-			default:   return -1;                  
+			default:   return -1;                  // Unbekanntes Subregister
+		}
 	}
-	// Mixer-Registers: 0x4000–0x47FF (MIX1–MIX30)
+	// Mixer-Register: 0x4000–0x47FF (MIX1–MIX30)
 	else if (reg >= 0x4000 && reg < 0x4800) {
-		p->out = (reg - 0x4000) >> 6;  // 64 Registers per Mix (32 Inputs + 32 Playbacks)
+		p->out = (reg - 0x4000) >> 6;  // 64 Register pro Mix (32 Inputs + 32 Playbacks)
 		p->in = reg & 0x3F;
 		return MIX;
 	}
+	// Effekte, Hardware, etc.
 	switch (reg) {
 			// Reverb
 		case 0x3C00: return REVERB;              // Reverb Enable (0=off, 1=on)
@@ -223,14 +232,18 @@ static enum control regtoctl(int reg, struct param *p) {
 		case 0x3D23: return CLOCK_WCKTERM;       // Word Clock Termination (0=off, 1=on)
 
 			// Hardware
-		case 0x3D40: return HARDWARE_OPTICALOUT; // Optical Out (0=ADAT, 1=SPDIF)
-		case 0x3D41: return HARDWARE_SPDIFOUT;   // SPDIF Format (0=Consumer, 1=Professional)
-		case 0x3D44: return HARDWARE_CCMODE;     // CC Mode (0=off, 1=on)
-	//	case 0x3D43: return HARDWARE_CCMIX;      // CC Mix (0=TotalMix, 1=6ch+Phones, 2=8ch, 3=20ch)
+
+		case 0x3D40: return HARDWARE_OPTICALIN;  // Optical In (0=ADAT 2, 1=SPDIF)
+		case 0x3D41: return HARDWARE_OPTICALOUT2; // Optical Out 2 (0=ADAT 1, 1=SPDIF)
+		case 0x3D42: return HARDWARE_SPDIFOUT;   // AES Out Format (0=Consumer, 1=Professional)
 		case 0x3D43: return HARDWARE_STANDALONEMIDI; // Standalone MIDI (0=off, 1=on)
+		case 0x3D44: return HARDWARE_CCMODE;     // CC Mode (0=off, 1=on)
 		case 0x3D45: return HARDWARE_STANDALONEARC;  // Standalone ARC (0=Volume, 1=1s Op, 2=Normal)
-		//case 0x3D46: return HARDWARE_LOCKKEYS;   // Lock Keys (0=off, 1=Keys, 2=All)
-		case 0x3D46: return HARDWARE_REMAPKEYS;  // Remap Keys (0=off, 1=on)
+		case 0x3D46: return HARDWARE_OPTICALOUT; // Optical Out 1 (0=ADAT 2, 1=SPDIF)
+
+	//	case 0x3D43: return HARDWARE_CCMIX;      // CC Mix (0=TotalMix, 1=6ch+Phones, 2=8ch, 3=20ch)
+
+
 			//State
 		case 0x3F00: return HARDWARE_DSPVERLOAD; // DSP Version/Load
 		case 0x3F01: return HARDWARE_DSPSTATUS;  // DSP Function Overload
@@ -241,6 +254,9 @@ static enum control regtoctl(int reg, struct param *p) {
 		//case 0x3F99: return REFRESH;                // Refresh
 		case 0x3F05: return REFRESH; 	// Indicator if Refresh is done
 
+
+
+			// Unbekannte Register
 		default: return -1;
 	}
 }
@@ -321,9 +337,10 @@ ctltoreg(enum control ctl, const struct param *p)
 		channel:                      if (idx == -1) break;
 		//ff802 needs 8 bit shift due to 0x100 channel blocks (offset)
 			  						  return idx << 8 | reg; 
-
+                            		  //return idx << 6 | reg;
+		/* Mixer (0x4000–0x47FF) */
 		case MIX:
-    								if ((unsigned)p->out >= 30) break;   // 30 Mix-Busses
+    								if ((unsigned)p->out >= 30) break;   // 30 Mix-Busse
     								if ((unsigned)p->in >= 64) break;    // 32 Inputs + 32 Playbacks
     								return 0x4000 | (p->out << 6) | p->in;
 
@@ -362,17 +379,15 @@ ctltoreg(enum control ctl, const struct param *p)
 		case CLOCK_SAMPLERATE:        return 0x3D21;
 		case CLOCK_WCKSINGLE:         return 0x3D22;
 		case CLOCK_WCKTERM:           return 0x3D23;
-		
-		// TODO: Recheck these...
-		case HARDWARE_OPTICALOUT:     return 0x3D40; // Optical in 1
-		case HARDWARE_SPDIFOUT:       return 0x3D41; // Optical Out 2
-		//case HARDWARE_SPDIFOUT:       return 0x3D42; // AES channel status todo!!!
-		//case HARDWARE_CCMIX:          return 0x3D43;
-		case HARDWARE_STANDALONEMIDI: return 0x3D43;
-		case HARDWARE_CCMODE:         return 0x3D44;
-		case HARDWARE_STANDALONEARC:  return 0x3D45;
-		//case HARDWARE_LOCKKEYS:       return 0x3D46;
-		case HARDWARE_REMAPKEYS:      return 0x3D46; // Used temporary as Optical Out 1
+
+		case HARDWARE_OPTICALIN:      return 0x3D40; // Optical in 1
+		case HARDWARE_OPTICALOUT2:    return 0x3D41; // Optical Out 2
+		case HARDWARE_SPDIFOUT:       return 0x3D42; // AES channel status
+		case HARDWARE_STANDALONEMIDI: return 0x3D43; // Standalone MIDI (0=off, 1=on)
+		case HARDWARE_CCMODE:         return 0x3D44; // CC Mode (0=off, 1=on)
+		case HARDWARE_STANDALONEARC:  return 0x3D45; // Standalone ARC (0=Volume, 1=1s Op, 2=Normal)
+		case HARDWARE_OPTICALOUT:     return 0x3D46; // Optical Out 1
+
 		case HARDWARE_DSPVERLOAD:     return 0x3F00;
 		case HARDWARE_DSPSTATUS:      return 0x3F01;
 		case HARDWARE_DSPAVAIL:       return 0x3F02;
