@@ -179,9 +179,12 @@ class ConnectionMIDI extends AbortController {
 				} catch (e) {
 					console.error('Error processing sysex:', e);
 					// Optional: Ignorieren oder spezifische Behandlung für 2305-Fehler
-					if (e.message.includes('2305')) {
-						console.warn('Skipping unsupported sysex message');
-					}
+					const unsupportedCodes = ['2304', '2305'];
+					if (
+						currentDevice.deviceName === 'Fireface 802' && unsupportedCodes.some(code => e.message.includes(code))
+						) {
+							console.warn('Skipping unsupported sysex message');
+						}
 				}
 			}, {signal: this.signal});
 			const stateHandler = (event) => {
@@ -269,11 +272,11 @@ class Interface {
 			iface.send('/durec/play', ',', []);
 		});
 		document.getElementById('durec-record').addEventListener('click', () => {
-			iface.send('/durec/record', ',', []);
+			iface.send('/durec/record', ',i', [1]);
 		});
 
 		document.getElementById('durec-stop').addEventListener('click', () => {
-			iface.send('/durec/stop', ',', []);
+			iface.send('/durec/stop', ',i', [1]);
 		});
 
 		document.getElementById('durec-delete').addEventListener('click', () => {
@@ -535,6 +538,7 @@ class Channel {
 		'stereo',
 		'record',
 		'playchan',
+		'crossfeed',
 		'msproc',
 		'phase',
 		'gain',
@@ -683,6 +687,31 @@ class Channel {
 				});
 			}
 		}
+		// Doubleclick Event Listeners for panNumber, volumeRange and volumeNumber
+		panNumber.addEventListener('dblclick', (event) => {
+			event.target.value = 0;
+			event.target.dispatchEvent(new Event('change'));
+		});
+		volumeRange.addEventListener('dblclick', (event) => {
+			const target = event.target;
+			if (target.valueAsNumber === 0) {
+				target.value = target.min;
+			} else {
+				target.value = 0;
+			}
+			volumeNumber.value = target.value;
+			target.dispatchEvent(new Event('input'));
+		});
+		volumeNumber.addEventListener('dblclick', (event) => {
+			const target = event.target;
+			if (target.valueAsNumber === 0) {
+				target.value = target.min;
+			} else {
+				target.value = 0;
+			}
+			volumeRange.value = target.value;
+			target.dispatchEvent(new Event('change'));
+		});
 
 		for (const node of fragment.querySelectorAll(`[data-type]:not([data-type~="${type}"])`))
 			node.remove();
@@ -1061,6 +1090,9 @@ function setupInterface() {
 	iface.bind('/hardware/opticalout2', ',i', document.getElementById('hardware-opticalout2'), 'selectedIndex', 'change');
 	iface.bind('/hardware/spdifout', ',i', document.getElementById('hardware-spdifout'), 'selectedIndex', 'change');
 	iface.bind('/hardware/ccmix', ',i', document.getElementById('hardware-ccmix'), 'selectedIndex', 'change');
+	iface.bind('/hardware/ccmode', ',i', document.getElementById('hardware-ccmode'), 'selectedIndex', 'change');
+	iface.bind('/hardware/interfacemode', ',i', document.getElementById('hardware-interfacemode'), 'selectedIndex', 'change');
+	iface.bind('/hardware/ccrouting', ',i', document.getElementById('hardware-ccrouting'), 'selectedIndex', 'change');
 	iface.bind('/hardware/standalonemidi', ',i', document.getElementById('hardware-standalonemidi'), 'checked', 'change');
 	iface.bind('/hardware/standalonearc', ',i', document.getElementById('hardware-standalonearc'), 'selectedIndex', 'change');
 	iface.bind('/hardware/lockkeys', ',i', document.getElementById('hardware-lockkeys'), 'selectedIndex', 'change');
