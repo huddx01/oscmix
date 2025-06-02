@@ -644,8 +644,8 @@ Note: The Mixable 94/54/34 channel format (24 Bit Signed Integer) modes can be s
 | -------- | -------------------------- | ------------------------------------------ |-----------------|
 | 3E00     | cue                        | FFFF=no cue, [0:7]=cue to [8:15]=cue from  |x                |
 | 3E02     | ARC USB LEDs               |                                            |x                |
-| **3E03** | **dump registers**         | **234A**                                   |x|
-| **3E04** | **dump registers**         | **67CD** (seems to trigger channel regs?)          |x|
+| 3E03   | dump registers?              | 234A  (seems to be wrong, don't remember why I took it from UFX+)        |x|
+| **3E04** | **dump registers**         | **67CD**           |x|
 | 3E06     | store state                | 0910=slot 1 0911=slot 2 0912=slot 3 0913=slot 4 0914=slot 5 0915=slot 6 |x                |
 | 3E07     | ?                          | set to 3 by totalmix on startup            |x                |
 | 3E08     | time                       | [0:7]=minute [8:15]=hour                   |x                |
@@ -689,11 +689,13 @@ Note: The Mixable 94/54/34 channel format (24 Bit Signed Integer) modes can be s
 
 ---
 
-### Mixer
+### Mixer 
 
-| Register | Description                | Details                                    |
+#### Mixer Inputs
+
+| Register | Description                | Details see [Mixer value format](#mixer-value-format) |
 | -------- | -------------------------- | ------------------------------------------ |
-| 4000     | IN AN 1 → AN 1/2           | see [Mixer value format](#mixer-value-format) |
+| 4000     | IN AN 1 → AN 1/2           |                                            |
 | 4001     | IN AN 1 → AN 3/4           |                                            |
 | 4002     | IN AN 1 → AN 5/6           |                                            |
 | 4003     | IN AN 1 → AN 7/8           |                                            |
@@ -741,18 +743,31 @@ Note: The Mixable 94/54/34 channel format (24 Bit Signed Integer) modes can be s
 | 402D     | IN AN 1 → MA 61/62         |                                            |
 | 402E     | IN AN 1 → MA 63/64         |                                            |
 | 4040     | IN AN 2 → AN 1/2           |                                            |
+| ...      | ...                        | ...                                        |
 | 4080     | IN AN 3 → AN 1/2           |                                            |
+| ...      | ...                        | ...                                        |
 | 40C0     | IN AN 4 → AN 1/2           |                                            |
+| ...      | ...                        | ...                                        |
 | 4100     | IN AN 5 → AN 1/2           |                                            |
+| ...      | ...                        | ...                                        |
 | 4140     | IN AN 6 → AN 1/2           |                                            |
+| ...      | ...                        | ...                                        |
 | 4180     | IN AN 7 → AN 1/2           |                                            |
+| ...      | ...                        | ...                                        |
 | 41C0     | IN AN 8 → AN 1/2           |                                            |
+| ...      | ...                        | ...                                        |
 | 4200     | IN Mic 9 → AN 1/2          |                                            |
+| ...      | ...                        | ...                                        |
 | 4240     | IN Mic 10 → AN 1/2         |                                            |
+| ...      | ...                        | ...                                        |
 | 4280     | IN Mic 11 → AN 1/2         |                                            |
+| ...      | ...                        | ...                                        |
 | 42C0     | IN Mic 12 → AN 1/2         |                                            |
+| ...      | ...                        | ...                                        |
 | 4300     | IN AES L → AN 1/2          |                                            |
+| ...      | ...                        | ...                                        |
 | 4340     | IN AES R → AN 1/2          |                                            |
+| ...      | ...                        | ...                                        |
 | 4380     | IN ADAT 1 → AN 1/2         |                                            |
 | 43C0     | IN ADAT 2 → AN 1/2         |                                            |
 | 4400     | IN ADAT 3 → AN 1/2         |                                            |
@@ -833,6 +848,12 @@ Note: The Mixable 94/54/34 channel format (24 Bit Signed Integer) modes can be s
 | 56C0     | IN MA 62 → AN 1/2          |                                            |
 | 5700     | IN MA 63 → AN 1/2          |                                            |
 | 5740     | IN MA 64 → AN 1/2          |                                            |
+| ----     | ------                     | -----------------------------------------  |
+
+#### Mixer Playbacks
+
+| Register | Description                | Details see [Mixer value format](#mixer-value-format) |
+| -------- | -------------------------- | ------------------------------------------ |
 | 5780     | PB AN 1 → AN 1/2           |                                            |
 | 57C0     | PB AN 2 → AN 1/2           |                                            |
 | 5800     | PB AN 3 → AN 1/2           |                                            |
@@ -857,9 +878,215 @@ Note: The Mixable 94/54/34 channel format (24 Bit Signed Integer) modes can be s
 | 5CC0     | PB ADAT 8 → AN 1/2         |                                            |
 | 5D00     | PB ADAT 9 → AN 1/2         |                                            |
 | 5D40     | PB ADAT 10 → AN 1/2        |                                            |
+| 5D80     | PB ADAT 11 → AN 1/2        |                                            |
+| 5DC0     | PB ADAT 12 → AN 1/2        |                                            |
+| 5E00     | PB ADAT 13 → AN 1/2        |                                            |
+| 5E40     | PB ADAT 14 → AN 1/2        |                                            |
+| 5E80     | PB ADAT 15 → AN 1/2        |                                            |
+| 5EC0     | PB ADAT 16 → AN 1/2        |                                            |
+| 5F00     | PB MA 1 → AN 1/2           |                                            |
+| 5F40     | PB MA 2 → AN 1/2           |                                            |
+| 5F80     | PB MA 3 → AN 1/2           |                                            |
+| 5FC0     | PB MA 4 → AN 1/2           |                                            |
+| 6000     | PB MA 5 → AN 1/2           |                                            |
+| 6040     | PB MA 6 → AN 1/2           |                                            |
+| 6080     | PB MA 7 → AN 1/2           |                                            |
+| 60C0     | PB MA 8 → AN 1/2           |                                            |
+| 6100     | PB MA 9 → AN 1/2           |                                            |
+| 6140     | PB MA 10 → AN 1/2          |                                            |
+| 6180     | PB MA 11 → AN 1/2          |                                            |
+| 61C0     | PB MA 12 → AN 1/2          |                                            |
+| 6200     | PB MA 13 → AN 1/2          |                                            |
+| 6240     | PB MA 14 → AN 1/2          |                                            |
+| 6280     | PB MA 15 → AN 1/2          |                                            |
+| 62C0     | PB MA 16 → AN 1/2          |                                            |
+| 6300     | PB MA 17 → AN 1/2          |                                            |
+| 6340     | PB MA 18 → AN 1/2          |                                            |
+| 6380     | PB MA 19 → AN 1/2          |                                            |
+| 63C0     | PB MA 20 → AN 1/2          |                                            |
+| 6400     | PB MA 21 → AN 1/2          |                                            |
+| 6440     | PB MA 22 → AN 1/2          |                                            |
+| 6480     | PB MA 23 → AN 1/2          |                                            |
+| 64C0     | PB MA 24 → AN 1/2          |                                            |
+| 6500     | PB MA 25 → AN 1/2          |                                            |
+| 6540     | PB MA 26 → AN 1/2          |                                            |
+| 6580     | PB MA 27 → AN 1/2          |                                            |
+| 65C0     | PB MA 28 → AN 1/2          |                                            |
+| 6600     | PB MA 29 → AN 1/2          |                                            |
+| 6640     | PB MA 30 → AN 1/2          |                                            |
+| 6680     | PB MA 31 → AN 1/2          |                                            |
+| 66C0     | PB MA 32 → AN 1/2          |                                            |
+| 6700     | PB MA 33 → AN 1/2          |                                            |
+| 6740     | PB MA 34 → AN 1/2          |                                            |
+| 6780     | PB MA 35 → AN 1/2          |                                            |
+| 67C0     | PB MA 36 → AN 1/2          |                                            |
+| 6800     | PB MA 37 → AN 1/2          |                                            |
+| 6840     | PB MA 38 → AN 1/2          |                                            |
+| 6880     | PB MA 39 → AN 1/2          |                                            |
+| 68C0     | PB MA 40 → AN 1/2          |                                            |
+| 6900     | PB MA 41 → AN 1/2          |                                            |
+| 6940     | PB MA 42 → AN 1/2          |                                            |
+| 6980     | PB MA 43 → AN 1/2          |                                            |
+| 69C0     | PB MA 44 → AN 1/2          |                                            |
+| 6A00     | PB MA 45 → AN 1/2          |                                            |
+| 6A40     | PB MA 46 → AN 1/2          |                                            |
+| 6A80     | PB MA 47 → AN 1/2          |                                            |
+| 6AC0     | PB MA 48 → AN 1/2          |                                            |
+| 6B00     | PB MA 49 → AN 1/2          |                                            |
+| 6B40     | PB MA 50 → AN 1/2          |                                            |
+| 6B80     | PB MA 51 → AN 1/2          |                                            |
+| 6BC0     | PB MA 52 → AN 1/2          |                                            |
+| 6C00     | PB MA 53 → AN 1/2          |                                            |
+| 6C40     | PB MA 54 → AN 1/2          |                                            |
+| 6C80     | PB MA 55 → AN 1/2          |                                            |
+| 6CC0     | PB MA 56 → AN 1/2          |                                            |
+| 6D00     | PB MA 57 → AN 1/2          |                                            |
+| 6D40     | PB MA 58 → AN 1/2          |                                            |
+| 6D80     | PB MA 59 → AN 1/2          |                                            |
+| 6DC0     | PB MA 60 → AN 1/2          |                                            |
+| 6E00     | PB MA 61 → AN 1/2          |                                            |
+| 6E40     | PB MA 62 → AN 1/2          |                                            |
+| 6E80     | PB MA 63 → AN 1/2          |                                            |
+| 6EC0     | PB MA 64 → AN 1/2          |                                            |
+
 
 #### Mixer value format
 
 	[0-13]	vol: 1/10 fixed point, -300.0 for -inf; pan: -100-100
 	[14]	0=vol 1=pan
 	[15]	channel 2
+
+#### Mixer Value Examples
+
+| Register | Description                                     | Value  |
+|----------|-------------------------------------------------|--------|
+|          | INPUTS                                          |        |
+|----------|-------------------------------------------------|--------|
+| 4000     | IN AN 1 → OUT AN 1 - Volume min (-300 dB)       | 0x3448 |
+| 4000     | IN AN 1 → OUT AN 1 - Volume max (0 dB)          | 0x0000 |
+| 4000     | IN AN 1 → OUT AN 1 - Pan Left (-100)            | 0x4090 |
+| 4000     | IN AN 1 → OUT AN 1 - Pan Center (0 dB)          | 0x4000 |
+| 4000     | IN AN 1 → OUT AN 1 - Pan Right (+100)           | 0x4064 |
+|----------|-------------------------------------------------|--------|
+| 4000     | IN AN 1 → OUT AN 2 - Volume min (-300 dB)       | 0xB448 |
+| 4000     | IN AN 1 → OUT AN 2 - Volume max (0 dB)          | 0x8000 |
+| 4000     | IN AN 1 → OUT AN 2 - Pan Left (-100)            | 0xC090 |
+| 4000     | IN AN 1 → OUT AN 2 - Pan Center (0 dB)          | 0xC000 |
+| 4000     | IN AN 1 → OUT AN 2 - Pan Right (+100)           | 0xC064 |
+|----------|-------------------------------------------------|--------|
+|----------|-------------------------------------------------|--------|
+| 4001     | IN AN 1 → OUT AN 3 - Volume min (-300 dB)       | 0x3448 |
+| 4001     | IN AN 1 → OUT AN 3 - Volume max (0 dB)          | 0x0000 |
+| 4001     | IN AN 1 → OUT AN 3 - Pan Left (-100)            | 0x4090 |
+| 4001     | IN AN 1 → OUT AN 3 - Pan Center (0 dB)          | 0x4000 |
+| 4001     | IN AN 1 → OUT AN 3 - Pan Right (+100)           | 0x4064 |
+|----------|-------------------------------------------------|--------|
+| 4001     | IN AN 1 → OUT AN 4 - Volume min (-300 dB)       | 0xB448 |
+| 4001     | IN AN 1 → OUT AN 4 - Volume max (0 dB)          | 0x8000 |
+| 4001     | IN AN 1 → OUT AN 4 - Pan Left (-100)            | 0xC090 |
+| 4001     | IN AN 1 → OUT AN 4 - Pan Center (0 dB)          | 0xC000 |
+| 4001     | IN AN 1 → OUT AN 4 - Pan Right (+100)           | 0xC064 |
+|----------|-------------------------------------------------|--------|
+|----------|-------------------------------------------------|--------|
+| ...      | ...                                             | ...    |
+|----------|-------------------------------------------------|--------|
+| 402E     | IN AN 1 → OUT MA 63 - Volume min (-300 dB)      | 0x3448 |
+| 402E     | IN AN 1 → OUT MA 63 - Volume max (0 dB)         | 0x0000 |
+| ...      | ...                                             | ...    |
+|----------|-------------------------------------------------|--------|
+| 402E     | IN AN 1 → OUT MA 64 - Volume min (-300 dB)      | 0xB448 |
+| 402E     | IN AN 1 → OUT MA 64 - Volume max (0 dB)         | 0x8000 |
+| ...      | ...                                             | ...    |
+|----------|-------------------------------------------------|--------|
+| ...      | ...                                             | ...    |
+|----------|-------------------------------------------------|--------|
+| 5740     | IN MA 64 → OUT AN 1                             |        |
+| ...      | ...                                             | ...    |
+|----------|-------------------------------------------------|--------|
+| 576E     | IN MA 64 → OUT MA 63  - Volume min (-300 dB)    | 0x3448 |
+| 576E     | IN MA 64 → OUT MA 63  - Volume max (0 dB)       | 0x0000 |
+| 576E     | IN MA 64 → OUT MA 63  - Pan Left (-100)         | 0x4090 |
+| 576E     | IN MA 64 → OUT MA 63  - Pan Center (0 dB)       | 0x4000 |
+| 576E     | IN MA 64 → OUT MA 63  - Pan Right (+100)        | 0x4064 |
+|----------|-------------------------------------------------|--------|
+| 576E     | IN MA 64 → OUT MA 64  - Volume min (-300 dB)    | 0xB448 |
+| 576E     | IN MA 64 → OUT MA 64  - Volume max (0 dB)       | 0x8000 |
+| 576E     | IN MA 64 → OUT MA 64  - Pan Left (-100)         | 0xC090 |
+| 576E     | IN MA 64 → OUT MA 64  - Pan Center (0 dB)       | 0xC000 |
+| 576E     | IN MA 64 → OUT MA 64  - Pan Right (+100)        | 0xC064 |
+|----------|-------------------------------------------------|--------|
+|----------|-------------------------------------------------|--------|
+|          | PLAYBACKS                                       |        |
+|----------|-------------------------------------------------|--------|
+| 5780     | PB AN 1 → OUT AN 1 - Volume min (-300 dB)       | 0x3448 |
+| 5780     | PB AN 1 → OUT AN 1 - Volume max (0 dB)          | 0x0000 |
+| 5780     | PB AN 1 → OUT AN 1 - Pan Left (-100)            | 0x4090 |
+| 5780     | PB AN 1 → OUT AN 1 - Pan Center (0 dB)          | 0x4000 |
+| 5780     | PB AN 1 → OUT AN 1 - Pan Right (+100)           | 0x4064 |
+|----------|-------------------------------------------------|--------|
+| 5780     | PB AN 1 → OUT AN 2 - Volume min (-300 dB)       | 0xB448 |
+| 5780     | PB AN 1 → OUT AN 2 - Volume max (0 dB)          | 0x8000 |
+| 5780     | PB AN 1 → OUT AN 2 - Pan Left (-100)            | 0xC090 |
+| 5780     | PB AN 1 → OUT AN 2 - Pan Center (0 dB)          | 0xC000 |
+| 5780     | PB AN 1 → OUT AN 2 - Pan Right (+100)           | 0xC064 |
+|----------|-------------------------------------------------|--------|
+|----------|-------------------------------------------------|--------|
+| 5781     | PB AN 1 → OUT AN 3 - Volume min (-300 dB)       | 0x3448 |
+| 5781     | PB AN 1 → OUT AN 3 - Volume max (0 dB)          | 0x0000 |
+| 5781     | PB AN 1 → OUT AN 3 - Pan Left (-100)            | 0x4090 |
+| 5781     | PB AN 1 → OUT AN 3 - Pan Center (0 dB)          | 0x4000 |
+| 5781     | PB AN 1 → OUT AN 3 - Pan Right (+100)           | 0x4064 |
+|----------|-------------------------------------------------|--------|
+| 5781     | PB AN 1 → OUT AN 4 - Volume min (-300 dB)       | 0xB448 |
+| 5781     | PB AN 1 → OUT AN 4 - Volume max (0 dB)          | 0x8000 |
+| 5781     | PB AN 1 → OUT AN 4 - Pan Left (-100)            | 0xC090 |
+| 5781     | PB AN 1 → OUT AN 4 - Pan Center (0 dB)          | 0xC000 |
+| 5781     | PB AN 1 → OUT AN 4 - Pan Right (+100)           | 0xC064 |
+|----------|-------------------------------------------------|--------|
+| ...      | ...                                             | ...    |
+|----------|-------------------------------------------------|--------|
+|----------|-------------------------------------------------|--------|
+| 57C0     | PB AN 2 → OUT AN 1 - Volume min (-300 dB)       | 0x3448 |
+| 57C0     | PB AN 2 → OUT AN 1 - Volume max (0 dB)          | 0x0000 |
+| 57C0     | PB AN 2 → OUT AN 1 - Pan Left (-100)            | 0x4090 |
+| 57C0     | PB AN 2 → OUT AN 1 - Pan Center (0 dB)          | 0x4000 |
+| 57C0     | PB AN 2 → OUT AN 1 - Pan Right (+100)           | 0x4064 |
+|----------|-------------------------------------------------|--------|
+| 57C0     | PB AN 2 → OUT AN 2 - Volume min (-300 dB)       | 0xB448 |
+| 57C0     | PB AN 2 → OUT AN 2 - Volume max (0 dB)          | 0x8000 |
+| 57C0     | PB AN 2 → OUT AN 2 - Pan Left (-100)            | 0xC090 |
+| 57C0     | PB AN 2 → OUT AN 2 - Pan Center (0 dB)          | 0xC000 |
+| 57C0     | PB AN 2 → OUT AN 2 - Pan Right (+100)           | 0xC064 |
+|----------|-------------------------------------------------|--------|
+|----------|-------------------------------------------------|--------|
+| ...      | ...                                             | ...    |
+| ...      | ...                                             | ...    |
+| ...      | ...                                             | ...    |
+|----------|-------------------------------------------------|--------|
+|----------|-------------------------------------------------|--------|
+| 6EC0     | PB MA 64 → OUT AN 1 - Volume min (-300 dB)      | 0x3448 |
+| 6EC0     | PB MA 64 → OUT AN 1 - Volume max (0 dB)         | 0x0000 |
+| 6EC0     | PB MA 64 → OUT AN 1 - Pan Left (-100)           | 0x4090 |
+| 6EC0     | PB MA 64 → OUT AN 1 - Pan Center (0 dB)         | 0x4000 |
+| 6EC0     | PB MA 64 → OUT AN 1 - Pan Right (+100)          | 0x4064 |
+|----------|-------------------------------------------------|--------|
+| 6EC0     | PB MA 64 → OUT AN 2 - Volume min (-300 dB)      | 0xB448 |
+| 6EC0     | PB MA 64 → OUT AN 2 - Volume max (0 dB)         | 0x8000 |
+| 6EC0     | PB MA 64 → OUT AN 2 - Pan Left (-100)           | 0xC090 |
+| 6EC0     | PB MA 64 → OUT AN 2 - Pan Center (0 dB)         | 0xC000 |
+| 6EC0     | PB MA 64 → OUT AN 2 - Pan Right (+100)          | 0xC064 |
+|----------|-------------------------------------------------|--------|
+| ...      | ...                                             | ...    |
+|----------|-------------------------------------------------|--------|
+| 6EEE     | PB MA 64 → OUT MA 63 - Volume min (-300 dB)     | 0x3448 |
+| 6EEE     | PB MA 64 → OUT MA 63 - Volume max (0 dB)        | 0x0000 |
+| 6EEE     | PB MA 64 → OUT MA 63 - Pan Left (-100)          | 0x4090 |
+| 6EEE     | PB MA 64 → OUT MA 63 - Pan Center (0 dB)        | 0x4000 |
+| 6EEE     | PB MA 64 → OUT MA 63 - Pan Right (+100)         | 0x4064 |
+|----------|-------------------------------------------------|--------|
+| 6EEE     | PB MA 64 → OUT MA 64 - Volume min (-300 dB)     | 0xB448 |
+| 6EEE     | PB MA 64 → OUT MA 64 - Volume max (0 dB)        | 0x8000 |
+| 6EEE     | PB MA 64 → OUT MA 64 - Pan Left (-100)          | 0xC090 |
+| 6EEE     | PB MA 64 → OUT MA 64 - Pan Center (0 dB)        | 0xC000 |
+| 6EEE     | PB MA 64 → OUT MA 64 - Pan Right (+100)         | 0xC064 |
+|----------|-------------------------------------------------|--------|
