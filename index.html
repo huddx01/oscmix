@@ -42,6 +42,7 @@
 							<option data-type="output">+4 dBu</option>
 							<option>+13 dBu</option>
 							<option>+19 dBu</option>
+							<option>+24 dBu</option>
 						</select></label>
 						<label data-flags="gain">Gain<input type="number" id="gain" min="0" max="24" step="0.5"></label>
 						<label data-flags="autoset">Autoset<span><input type="checkbox" id="autoset"></span></label>
@@ -161,12 +162,26 @@
 						<label class="connection-midi">MIDI Input<select id="connection-midi-input" ></select></label>
 						<label class="connection-midi">MIDI Output<select id="connection-midi-output" ></select></label>
 						<label class="connection-websocket">Server<input id="connection-websocket-address" size="1" value="ws://localhost:8222" ></label>
-
 					</fieldset>
 					<button id="connection-connect">Connect</button>
 					<button id="connection-disconnect">Disconnect</button>
-					<button id="connection-refresh">Refresh</button>
-					<button id="connection-reinitialise">Reinitialise</button>
+				</form>
+			</details>
+			<hr>
+			<details>
+				<summary>Debug<span id="debug"></span></summary>
+				<form id="connection">
+					<fieldset>
+						<button id="connection-refresh" type="button">Refresh</button>
+						<button id="connection-reinitialise" type="button">Reinitialise</button>
+						<label>Register:
+							<input id="debug-register" type="number" min="0">
+						</label>
+						<label>Value:
+							<input id="debug-value" type="number">
+						</label>
+						<button id="debug-set-register" type="button">Set Register</button>
+					</fieldset>
 				</form>
 			</details>
 			<hr>
@@ -242,7 +257,7 @@
 				</fieldset>
 			</details>
  			<hr>
-			<details open>
+			<details>
 				<summary>DURec</summary>
 				<fieldset>
 					<label>File:

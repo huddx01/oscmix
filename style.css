@@ -287,6 +287,7 @@ input[type=range]:focus {
 	min-height: 0;
 }
 .channel-volume meter {
+	min-width: 22%;
 	height: auto;
 }
 .channel-volume meter::-webkit-meter-optimum-value {

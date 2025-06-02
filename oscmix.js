@@ -527,6 +527,7 @@ class EQPlot {
 	}
 }
 
+// MARK: Channel class
 class Channel {
 	static INPUT = 'input';
 	static OUTPUT = 'output';
@@ -539,6 +540,7 @@ class Channel {
 		'record',
 		'playchan',
 		'crossfeed',
+		'loopback',
 		'msproc',
 		'phase',
 		'gain',
@@ -598,6 +600,7 @@ class Channel {
 		let defName;
 		const prefix = `/${type}/${index + 1}`;
 		const flags = currentDevice.getFlags(type, index);
+		// Channel Type
 		switch (type) {
 		case Channel.INPUT:
 			defName = currentDevice.inputNames[index];
@@ -606,7 +609,9 @@ class Channel {
 			flags.push('playback');
 			defName = currentDevice.outputNames[index];
 			break;
+		// MARK: OUTPUT Channel 1
 		case Channel.OUTPUT:
+			flags.push('output')
 			defName = currentDevice.outputNames[index];
 
 			const selects = document.querySelectorAll('select.channel-volume-output');
@@ -645,7 +650,9 @@ class Channel {
 			});
 			iface.bind(prefix + '/pan', ',i', panNumber, 'valueAsNumber', 'change');
 			break;
-		}
+		} // End of Channel Type
+
+
 		fragment.children[0].dataset.flags = flags.join(' ');
 		if (type != Channel.OUTPUT) {
 			const output = fragment.getElementById('volume-output');
@@ -687,6 +694,7 @@ class Channel {
 				});
 			}
 		}
+		// MARK: Doubleclick Event Listeners
 		// Doubleclick Event Listeners for panNumber, volumeRange and volumeNumber
 		panNumber.addEventListener('dblclick', (event) => {
 			event.target.value = 0;
@@ -741,7 +749,7 @@ class Channel {
 			iface.send(prefix + '/name', ',s', [name.value]);
 			return false;
 		});
-
+		// MARK: Level Meter
 		this.meter = fragment.getElementById('volume-meter');
 		this.meterValue = fragment.getElementById('volume-meter-value');
 		iface.methods.set(prefix + '/level', (args) => {
@@ -754,7 +762,7 @@ class Channel {
 				this.meterValue.textContent = value == -Infinity ? 'UFL' : value.toFixed(1);
 			}
 		});
-
+		// MARK: Level Meter Stereo
 		if (left) {
 			stereo.addEventListener('change', (event) => {
 				if (event.target.checked) {
@@ -849,11 +857,17 @@ class Channel {
 	}
 }
 
+
+// MARK: setupInterface
+
 const iface = new Interface();
 
 function setupInterface() {
+
+
 	const connectionType = document.getElementById('connection-type');
 
+	// MARK: MIDI Connection Setup
 	const midiPorts = {
 		input: document.getElementById('connection-midi-input'),
 		output: document.getElementById('connection-midi-output'),
@@ -892,6 +906,7 @@ function setupInterface() {
 		}
 	}
 
+	// MARK: MIDI Connection Listener
 	let midiAccess;
 	connectionType.dataset.value = connectionType.value;
 	connectionType.addEventListener('change', (event) => {
@@ -909,7 +924,6 @@ function setupInterface() {
 		if (event.target.value == 'MIDI') {
 			navigator.requestMIDIAccess({sysex: true}).then((access) => {
 				if (event.target.value != 'MIDI') return;
-
 
 				const detectDevice = (portName) => {
 					return devices.find(device => {
@@ -973,8 +987,9 @@ function setupInterface() {
 //			midiAccess.addEventListener('statechange', midiStateChanged);
 //		});
 //	}
-	const icon = document.getElementById('connection-icon');
 
+	// MARK: Connection Type Listener
+	const icon = document.getElementById('connection-icon');
 	let connection;
 	const connectionForm = document.getElementById('connection');
 	connectionForm.addEventListener('submit', (event) => {
@@ -1020,6 +1035,7 @@ function setupInterface() {
 		}).catch(console.error);
 	});
 
+	// MARK: Make Channels
 	/* make channels */
 	for (const [type, id] of [[Channel.INPUT, 'inputs'], [Channel.PLAYBACK, 'playbacks'], [Channel.OUTPUT, 'outputs']]) {
 		const div = document.getElementById(id);
@@ -1036,6 +1052,8 @@ function setupInterface() {
 	document.forms.view.elements.submix.value = 0;
 	Channel.submixChanged();
 
+	// MARK: Interface Bindings in setupInterface
+	// Reverb
 	iface.bind('/reverb', ',i', document.getElementById('reverb-enabled'), 'checked', 'change');
 	const reverbType = document.getElementById('reverb-type');
 	const reverbRoomScale = document.getElementById('reverb-roomscale');
@@ -1066,6 +1084,7 @@ function setupInterface() {
 	iface.bind('/reverb/smooth', ',i', document.getElementById('reverb-smooth'), 'valueAsNumber', 'change');
 	iface.bind('/reverb/volume', ',f', document.getElementById('reverb-volume'), 'valueAsNumber', 'change');
 	iface.bind('/reverb/width', ',f', document.getElementById('reverb-width'), 'valueAsNumber', 'change');
+	// Echo
 	iface.bind('/echo', ',i', document.getElementById('echo-enabled'), 'checked', 'change');
 	iface.bind('/echo/type', ',i', document.getElementById('echo-type'), 'selectedIndex', 'change');
 	iface.bind('/echo/delay', ',f', document.getElementById('echo-delay'), 'valueAsNumber', 'change');
@@ -1073,17 +1092,20 @@ function setupInterface() {
 	iface.bind('/echo/hicut', ',i', document.getElementById('echo-highcut'), 'selectedIndex', 'change');
 	iface.bind('/echo/volume', ',f', document.getElementById('echo-volume'), 'valueAsNumber', 'change');
 	iface.bind('/echo/width', ',f', document.getElementById('echo-width'), 'valueAsNumber', 'change');
+	// Control Room
 	iface.bind('/controlroom/mainout', ',i', document.getElementById('controlroom-mainout'), 'selectedIndex', 'change');
 	iface.bind('/controlroom/mainmono', ',i', document.getElementById('controlroom-mainmono'), 'checked', 'change');
 	iface.bind('/controlroom/muteenable', ',i', document.getElementById('controlroom-muteenable'), 'checked', 'change');
 	iface.bind('/controlroom/dimreduction', ',f', document.getElementById('controlroom-dimreduction'), 'valueAsNumber', 'change');
 	iface.bind('/controlroom/dim', ',i', document.getElementById('controlroom-dim'), 'checked', 'change');
 	iface.bind('/controlroom/recallvolume', ',f', document.getElementById('controlroom-recallvolume'), 'valueAsNumber', 'change');
+	// Clock
 	iface.bind('/clock/source', ',i', document.getElementById('clock-source'), 'selectedIndex', 'change');
 	iface.bind('/clock/samplerate', ',i', document.getElementById('clock-samplerate'), 'textContent');
 	iface.bind('/clock/wckout', ',i', document.getElementById('clock-wckout'), 'checked', 'change');
 	iface.bind('/clock/wcksingle', ',i', document.getElementById('clock-wcksingle'), 'checked', 'change');
 	iface.bind('/clock/wckterm', ',i', document.getElementById('clock-wckterm'), 'checked', 'change');
+	// Hardware
 	iface.bind('/hardware/aesin', ',i', document.getElementById('hardware-aesin'), 'selectedIndex', 'change');
 	iface.bind('/hardware/opticalin', ',i', document.getElementById('hardware-opticalin'), 'selectedIndex', 'change');
 	iface.bind('/hardware/opticalout', ',i', document.getElementById('hardware-opticalout'), 'selectedIndex', 'change');
@@ -1118,7 +1140,37 @@ function setupInterface() {
 		node.addEventListener('blur', blur);
 	}
 	iface.initDurec();
+
+	document.getElementById('debug-set-register').addEventListener('click', () => {
+
+		if (!iface || !iface.connection) {
+			alert("Not connected to device!");
+			return;
+		}
+
+		const regInput = document.getElementById('debug-register');
+		const valInput = document.getElementById('debug-value');
+
+		const register = parseInt(regInput.value);
+		const value = parseInt(valInput.value);
+
+		if (isNaN(register) || isNaN(value)) {
+			alert("Please enter valid numbers!");
+			return;
+		}
+
+		try {
+			// Sende OSC-Nachricht mit korrekten Parametern
+			iface.bind('/register', ',ii', [register, value]);
+			console.log(`Register command sent: ${register} = ${value}`);
+		} catch (e) {
+			console.error("Error sending register command:", e);
+			alert("Send failed: " + e.message);
+		}
+	});
 }
+
+// MARK: Reinitialize the UI when the current device changes
 function reinitializeUI() {
 	// Clear existing UI elements
 	const inputsContainer = document.getElementById('inputs');
@@ -1160,6 +1212,7 @@ function reinitializeUI() {
 	console.log('UI reinitialized for device:', currentDevice.deviceName);
 }
 
+// MARK: Populate device-specific options
 function populateDeviceSpecificOptions() {
 	const standaloneMidiSelect = document.getElementById('hardware-standalonemidi');
 
