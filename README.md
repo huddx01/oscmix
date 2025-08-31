@@ -104,7 +104,7 @@ make oscmix
 Additionally you need to build coremidiio via: 
 
 ```sh
-make oscmix
+make coremidiio
 ```
 
 If this is done, check your port number and remember the exact name of your unit:
