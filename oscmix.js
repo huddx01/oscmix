@@ -8,6 +8,7 @@ import { device_ffucx } from './device_ffucx.js';
 
 const devices = [device_ff802, device_ffucxii, device_ffufxiii, device_ffucx];
 let currentDevice = device_ff802;
+
 updatePageTitle();
 
 // ARC Conn state
