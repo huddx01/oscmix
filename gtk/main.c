@@ -4,51 +4,22 @@
 #include "mixer.h"
 #include "scaleentry.h"
 #include "../osc.h"
+#include "../device.h" 
 
-static const char *const input_names[] = {
-	"Mic/Line 1",
-	"Mic/Line 2",
-	"Inst/Line 3",
-	"Inst/Line 4",
-	"Analog 5",
-	"Analog 6",
-	"Analog 7",
-	"Analog 8",
-	"SPDIF L",
-	"SPDIF R",
-	"AES L",
-	"AES R",
-	"ADAT 1",
-	"ADAT 2",
-	"ADAT 3",
-	"ADAT 4",
-	"ADAT 5",
-	"ADAT 6",
-	"ADAT 7",
-	"ADAT 8",
-};
-static const char *const output_names[] = {
-	"Analog 1",
-	"Analog 2",
-	"Analog 3",
-	"Analog 4",
-	"Analog 5",
-	"Analog 6",
-	"Phones 7",
-	"Phones 8",
-	"SPDIF L",
-	"SPDIF R",
-	"AES L",
-	"AES R",
-	"ADAT 1",
-	"ADAT 2",
-	"ADAT 3",
-	"ADAT 4",
-	"ADAT 5",
-	"ADAT 6",
-	"ADAT 7",
-	"ADAT 8",
-};
+
+extern const struct device ffucxii;
+extern const struct device ff802;
+extern const struct device ffufxiii;
+extern const struct device ffucx;
+static const struct device *devices[] = {
+	&ffucxii, &ff802, &ffufxiii, &ffucx,
+	};
+
+// TODO: Rework this, to set current_device based on user selection in settings or even better via auto-detect
+//const struct device *current_device = &ff802;
+const struct device *current_device = &ffufxiii;
+
+
 
 struct _OSCMixWindow {
 	GtkApplicationWindow base;
@@ -487,55 +458,75 @@ oscmix_window_class_init(OSCMixWindowClass *class)
 static void
 setup_channels(OSCMixWindow *self, ChannelType type, GtkBox *box)
 {
-	Channel *chan, *left;
-	GtkWidget *sep;
-	GtkTreeIter iter;
-	int id;
-	unsigned flags;
+    Channel *chan, *left;
+    GtkWidget *sep;
+    GtkTreeIter iter;
+    int num_channels, i;
+    const struct channelinfo *channels;
 
-	left = NULL;
-	for (id = 1; id <= 20; ++id) {
-		flags = 0;
-		if (type != CHANNEL_TYPE_PLAYBACK && id <= 8)
-			flags |= CHANNEL_FLAG_ANALOG;
-		if (id == 1 || id == 2)
-			flags |= CHANNEL_FLAG_MIC;
-		if (id == 3 || id == 4)
-			flags |= CHANNEL_FLAG_INSTRUMENT;
-		chan = g_object_new(channel_get_type(),
-			"mixer", self->osc,
-			"type", type,
-			"flags", flags,
-			"id", id,
-			"name", type == CHANNEL_TYPE_INPUT ? input_names[id - 1] : output_names[id - 1],
-			"outputs-model", type == CHANNEL_TYPE_OUTPUT ? NULL : self->outputs_model,
-			(char *)0);
-		if (left) {
-			g_object_set(left, "right", chan, NULL);
-			left = NULL;
-		} else {
-			left = chan;
-		}
-		gtk_widget_show(GTK_WIDGET(chan));
-		gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(chan), false, false, 0);
-		switch (type) {
-		case CHANNEL_TYPE_INPUT:
-		case CHANNEL_TYPE_PLAYBACK:
-			g_ptr_array_add(self->inputs_array, chan);
-			break;
-		case CHANNEL_TYPE_OUTPUT:
-			gtk_list_store_append(self->outputs_store, &iter);
-			gtk_list_store_set(self->outputs_store, &iter, 0, chan, -1);
-			g_signal_connect(chan, "notify::visible", G_CALLBACK(on_output_visible_changed), self);
-			break;
-		}
-		g_object_bind_property(self->durec_recordview, "active", chan, "record-view", G_BINDING_DEFAULT);
-		sep = gtk_separator_new(GTK_ORIENTATION_VERTICAL);
-		gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(sep), false, false, 0);
-		g_object_bind_property(G_OBJECT(chan), "visible", G_OBJECT(sep), "visible", G_BINDING_DEFAULT);
-		gtk_widget_show(sep);
-		g_signal_connect(chan, "output-changed", G_CALLBACK(on_channel_output_changed), self);
-	}
+    // Hole die Kanalinfos aus dem aktuellen Gerät
+    if (type == CHANNEL_TYPE_INPUT) {
+        num_channels = current_device->inputslen;
+        channels = current_device->inputs;
+    } else if (type == CHANNEL_TYPE_OUTPUT) {
+        num_channels = current_device->outputslen;
+        channels = current_device->outputs;
+    } else {
+        // PLAYBACK: Fallback auf input_names wie bisher, falls keine Info vorhanden
+        //num_channels = 0;
+        //channels = NULL;
+		num_channels = current_device->outputslen;
+        channels = current_device->outputs;
+    }
+
+    left = NULL;
+    for (i = 0; i < num_channels; ++i) {
+    const char *name = channels[i].name;
+    unsigned devflags = channels[i].flags;
+    unsigned chflags = 0;
+
+    if (devflags & INPUT_HAS_48V)
+        chflags |= CHANNEL_FLAG_MIC;
+    if (devflags & INPUT_HAS_HIZ)
+        chflags |= CHANNEL_FLAG_INSTRUMENT;
+    if (devflags & INPUT_HAS_GAIN)
+        chflags |= CHANNEL_FLAG_ANALOG;
+
+    chan = g_object_new(channel_get_type(),
+        "mixer", self->osc,
+        "type", type,
+        "flags", chflags,
+        "id", i + 1,
+        "name", name,
+        "outputs-model", type == CHANNEL_TYPE_OUTPUT ? NULL : self->outputs_model,
+        (char *)0);
+
+        if (left) {
+            g_object_set(left, "right", chan, NULL);
+            left = NULL;
+        } else {
+            left = chan;
+        }
+        gtk_widget_show(GTK_WIDGET(chan));
+        gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(chan), false, false, 0);
+        switch (type) {
+        case CHANNEL_TYPE_INPUT:
+        case CHANNEL_TYPE_PLAYBACK:
+            g_ptr_array_add(self->inputs_array, chan);
+            break;
+        case CHANNEL_TYPE_OUTPUT:
+            gtk_list_store_append(self->outputs_store, &iter);
+            gtk_list_store_set(self->outputs_store, &iter, 0, chan, -1);
+            g_signal_connect(chan, "notify::visible", G_CALLBACK(on_output_visible_changed), self);
+            break;
+        }
+        g_object_bind_property(self->durec_recordview, "active", chan, "record-view", G_BINDING_DEFAULT);
+        sep = gtk_separator_new(GTK_ORIENTATION_VERTICAL);
+        gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(sep), false, false, 0);
+        g_object_bind_property(G_OBJECT(chan), "visible", G_OBJECT(sep), "visible", G_BINDING_DEFAULT);
+        gtk_widget_show(sep);
+        g_signal_connect(chan, "output-changed", G_CALLBACK(on_channel_output_changed), self);
+    }
 }
 
 static gboolean

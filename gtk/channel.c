@@ -4,7 +4,11 @@
 #include "eqplot.h"
 #include "mixer.h"
 
-struct _Channel {
+
+#define CHANNEL_ID_MAX 128
+
+struct _Channel
+{
 	GtkBox box;
 	ChannelType type;
 	ChannelFlags flags;
@@ -17,7 +21,8 @@ struct _Channel {
 	GtkWidget *last_toggled;
 	GQuark quark;
 
-	struct {
+	struct
+	{
 		GtkWidget *name;
 		GtkAdjustment *gain;
 		GtkWidget *gain_button;
@@ -71,8 +76,7 @@ G_DEFINE_TYPE(Channel, channel, GTK_TYPE_BOX)
 
 void bind_osc(char *addr, GType type, gpointer ptr, const char *prop);
 
-GType
-channel_type_get_type(void)
+GType channel_type_get_type(void)
 {
 	static gsize once;
 	static const GEnumValue values[] = {
@@ -83,15 +87,15 @@ channel_type_get_type(void)
 	};
 	GType type;
 
-	if (g_once_init_enter(&once)) {
+	if (g_once_init_enter(&once))
+	{
 		type = g_enum_register_static("ChannelType", values);
 		g_once_init_leave(&once, type);
 	}
 	return once;
 }
 
-GType
-channel_flags_get_type(void)
+GType channel_flags_get_type(void)
 {
 	static gsize once;
 	static const GFlagsValue values[] = {
@@ -102,7 +106,8 @@ channel_flags_get_type(void)
 	};
 	GType type;
 
-	if (g_once_init_enter(&once)) {
+	if (g_once_init_enter(&once))
+	{
 		type = g_flags_register_static("ChannelFlags", values);
 		g_once_init_leave(&once, type);
 	}
@@ -141,21 +146,37 @@ channel_constructed(GObject *obj)
 	mixer_bind(osc, g_strdup_printf("%s/mute", prefix), G_TYPE_BOOLEAN, self->ui.mute, "active");
 	mixer_bind(osc, g_strdup_printf("%s/stereo", prefix), G_TYPE_BOOLEAN, self->ui.stereo, "active");
 	mixer_bind(osc, g_strdup_printf("/%s/%d/record", type->value_nick, self->id), G_TYPE_BOOLEAN, self->ui.record, "active");
-	//bind_osc(g_strdup_printf("/%s/%d/playchan", type->value_nick, self->id), G_TYPE_INT, self->ui.stereo, "active");
+	// bind_osc(g_strdup_printf("/%s/%d/playchan", type->value_nick, self->id), G_TYPE_INT, self->ui.stereo, "active");
 	mixer_bind(osc, g_strdup_printf("/%s/%d/msproc", type->value_nick, self->id), G_TYPE_BOOLEAN, self->ui.msproc, "active");
 	mixer_bind(osc, g_strdup_printf("/%s/%d/phase", type->value_nick, self->id), G_TYPE_BOOLEAN, self->ui.phase, "active");
 	mixer_bind(osc, g_strdup_printf("/%s/%d/fx", type->value_nick, self->id), G_TYPE_FLOAT, self->ui.fx, "value");
-	switch (self->type) {
+	switch (self->type)
+	{
 	case CHANNEL_TYPE_INPUT:
-		if (self->flags & CHANNEL_FLAG_ANALOG) {
+		if (self->flags & CHANNEL_FLAG_ANALOG)
+		{
 			gtk_widget_show(self->ui.gain_button);
 			mixer_bind(osc, g_strdup_printf("/%s/%d/gain", type->value_nick, self->id), G_TYPE_FLOAT, self->ui.gain, "value");
 			gtk_widget_show(self->ui.autoset);
 			mixer_bind(osc, g_strdup_printf("/%s/%d/autoset", type->value_nick, self->id), G_TYPE_BOOLEAN, self->ui.autoset, "active");
 		}
-		if (self->flags & CHANNEL_FLAG_INSTRUMENT) {
+		// 48V immer zeigen, wenn MIC-Flag gesetzt
+		if (self->flags & CHANNEL_FLAG_MIC)
+		{
+			gtk_widget_show(self->ui.mic48v);
+			mixer_bind(osc, g_strdup_printf("/%s/%d/48v", type->value_nick, self->id), G_TYPE_BOOLEAN, self->ui.mic48v, "active");
+		}
+		// Inst immer zeigen, wenn INSTRUMENT-Flag gesetzt
+		if (self->flags & CHANNEL_FLAG_INSTRUMENT)
+		{
 			gtk_widget_show(self->ui.instr);
 			mixer_bind(osc, g_strdup_printf("/%s/%d/hi-z", type->value_nick, self->id), G_TYPE_BOOLEAN, self->ui.instr, "active");
+		}
+		// Reflevel nur zeigen, wenn ANALOG, aber NICHT MIC
+		if ((self->flags & CHANNEL_FLAG_ANALOG) && !(self->flags & CHANNEL_FLAG_MIC))
+		{
+			gtk_widget_show(self->ui.reflevel);
+			mixer_bind(osc, g_strdup_printf("/%s/%d/reflevel", type->value_nick, self->id), G_TYPE_INT, self->ui.reflevel, "active");
 		}
 		break;
 	case CHANNEL_TYPE_PLAYBACK:
@@ -170,16 +191,21 @@ channel_constructed(GObject *obj)
 		self->ui.output = NULL;
 		break;
 	}
-	if (self->flags & CHANNEL_FLAG_ANALOG) {
-		if (self->flags & CHANNEL_FLAG_MIC) {
+	if (self->flags & CHANNEL_FLAG_ANALOG)
+	{
+		if (self->flags & CHANNEL_FLAG_MIC)
+		{
 			gtk_widget_show(self->ui.mic48v);
 			mixer_bind(osc, g_strdup_printf("/%s/%d/48v", type->value_nick, self->id), G_TYPE_BOOLEAN, self->ui.mic48v, "active");
-		} else {
+		}
+		else
+		{
 			gtk_widget_show(self->ui.reflevel);
 			mixer_bind(osc, g_strdup_printf("/%s/%d/reflevel", type->value_nick, self->id), G_TYPE_INT, self->ui.reflevel, "active");
 		}
 	}
-	if (self->type != CHANNEL_TYPE_PLAYBACK) {
+	if (self->type != CHANNEL_TYPE_PLAYBACK)
+	{
 		mixer_bind(osc, g_strdup_printf("/%s/%d/eq", type->value_nick, self->id), G_TYPE_BOOLEAN, self->ui.eq, "active");
 		mixer_bind(osc, g_strdup_printf("%s/eq/band1type", prefix), G_TYPE_INT, self->eq_band1type, "active");
 		mixer_bind(osc, g_strdup_printf("%s/eq/band1gain", prefix), G_TYPE_FLOAT, self->eq_band1gain, "value");
@@ -201,7 +227,8 @@ channel_constructed(GObject *obj)
 	mixer_connect(osc, g_strdup_printf("/%s/%d/level", type->value_nick, self->id), osc_levels, self);
 }
 
-enum {
+enum
+{
 	PROP_TYPE = 1,
 	PROP_FLAGS,
 	PROP_ID,
@@ -220,7 +247,8 @@ channel_set_property(GObject *obj, guint id, const GValue *val, GParamSpec *spec
 	GtkTreeIter iter;
 
 	self = OSCMIX_CHANNEL(obj);
-	switch (id) {
+	switch (id)
+	{
 	case PROP_TYPE:
 		self->type = g_value_get_enum(val);
 		break;
@@ -238,7 +266,8 @@ channel_set_property(GObject *obj, guint id, const GValue *val, GParamSpec *spec
 		break;
 	case PROP_RIGHT:
 		self->right = OSCMIX_CHANNEL(g_value_get_object(val));
-		if (self->right) {
+		if (self->right)
+		{
 			g_object_bind_property(self->ui.stereo, "active", self->right->ui.stereo, "active", G_BINDING_BIDIRECTIONAL);
 			g_object_bind_property(self->right->ui.level, "value", self->ui.level_right, "value", G_BINDING_DEFAULT);
 			g_object_bind_property(self->right->ui.phase, "active", self->ui.phase_right, "active", G_BINDING_BIDIRECTIONAL);
@@ -252,20 +281,23 @@ channel_set_property(GObject *obj, guint id, const GValue *val, GParamSpec *spec
 			break;
 		model = g_value_get_object(val);
 		gtk_combo_box_set_model(GTK_COMBO_BOX(self->ui.output), model);
-		if (model && gtk_tree_model_get_iter_first(model, &iter)) {
+		if (model && gtk_tree_model_get_iter_first(model, &iter))
+		{
 			Channel *out;
 			GtkAdjustment *adj;
 			GEnumValue *type;
 			bool first;
 
 			first = true;
-			do {
+			do
+			{
 				gtk_tree_model_get(model, &iter, 0, &out, -1);
 				adj = g_object_ref_sink(gtk_adjustment_new(-65, -65, 6, 0.5, 0, 0));
 				g_object_set_qdata(G_OBJECT(self), out->quark, adj);
 				type = g_enum_get_value(g_type_class_peek_static(channel_type_get_type()), self->type);
 				mixer_bind(self->osc, g_strdup_printf("/mix/%d/%s/%d", out->id, type->value_nick, self->id), G_TYPE_FLOAT, adj, "value");
-				if (first) {
+				if (first)
+				{
 					gtk_combo_box_set_active_iter(GTK_COMBO_BOX(self->ui.output), &iter);
 					first = false;
 				}
@@ -284,7 +316,8 @@ channel_get_property(GObject *obj, guint id, GValue *val, GParamSpec *pspec)
 	Channel *self;
 
 	self = OSCMIX_CHANNEL(obj);
-	switch (id) {
+	switch (id)
+	{
 	case PROP_TYPE:
 		g_value_set_enum(val, self->type);
 		break;
@@ -337,7 +370,8 @@ on_stereo_toggled(GtkToggleButton *button, gpointer ptr)
 	active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(self->ui.stereo));
 	gtk_widget_set_visible(GTK_WIDGET(self->right), !active);
 	name = NULL;
-	if (active) {
+	if (active)
+	{
 		const char *l, *r;
 
 		for (l = self->name, r = self->right->name; *l && *l == *r; ++l, ++r)
@@ -357,7 +391,8 @@ on_volume_output(GtkSpinButton *button, gpointer ptr)
 
 	adj = gtk_spin_button_get_adjustment(button);
 	val = gtk_adjustment_get_value(adj);
-	if (val == -65) {
+	if (val == -65)
+	{
 		gtk_entry_set_text(GTK_ENTRY(button), "-inf");
 		return true;
 	}
@@ -371,7 +406,8 @@ on_eq_bandtype_changed(GtkComboBox *combo, gpointer ptr, int band)
 	GtkTreeIter iter;
 	EQFilterType type;
 
-	if (gtk_combo_box_get_active_iter(combo, &iter)) {
+	if (gtk_combo_box_get_active_iter(combo, &iter))
+	{
 		model = gtk_combo_box_get_model(combo);
 		gtk_tree_model_get(model, &iter, 0, &type, -1);
 		eq_plot_set_band_type(OSCMIX_CHANNEL(ptr)->eq_plot, band, type);
@@ -418,9 +454,12 @@ on_lowcut_changed(GObject *obj, GParamSpec *pspec, gpointer ptr)
 	int order;
 
 	self = OSCMIX_CHANNEL(ptr);
-	if (gtk_switch_get_active(GTK_SWITCH(self->lowcut))) {
+	if (gtk_switch_get_active(GTK_SWITCH(self->lowcut)))
+	{
 		order = gtk_combo_box_get_active(GTK_COMBO_BOX(self->lowcut_slope)) + 1;
-	} else {
+	}
+	else
+	{
 		order = 0;
 	}
 	eq_plot_set_lowcut_order(self->eq_plot, order);
@@ -434,7 +473,8 @@ on_output_changed(GtkComboBox *combo, gpointer ptr)
 	GtkTreeIter iter;
 
 	self = OSCMIX_CHANNEL(ptr);
-	if (gtk_combo_box_get_active_iter(combo, &iter)) {
+	if (gtk_combo_box_get_active_iter(combo, &iter))
+	{
 		gtk_tree_model_get(gtk_combo_box_get_model(combo), &iter, 0, (gpointer)&output, -1);
 		adj = g_object_get_qdata(G_OBJECT(self), output->quark);
 		assert(adj);
@@ -472,7 +512,7 @@ channel_class_init(ChannelClass *class)
 	gtk_widget_class_bind_template_child_full(GTK_WIDGET_CLASS(class), "mute", false, G_STRUCT_OFFSET(Channel, ui.mute));
 	gtk_widget_class_bind_template_child_full(GTK_WIDGET_CLASS(class), "autoset", false, G_STRUCT_OFFSET(Channel, ui.autoset));
 	gtk_widget_class_bind_template_child_full(GTK_WIDGET_CLASS(class), "autolevel", false, G_STRUCT_OFFSET(Channel, ui.autolevel));
-	//gtk_widget_class_bind_template_child_full(GTK_WIDGET_CLASS(class), "lowcut", false, G_STRUCT_OFFSET(Channel, ui.lowcut));
+	// gtk_widget_class_bind_template_child_full(GTK_WIDGET_CLASS(class), "lowcut", false, G_STRUCT_OFFSET(Channel, ui.lowcut));
 	gtk_widget_class_bind_template_child_full(GTK_WIDGET_CLASS(class), "dynamics", false, G_STRUCT_OFFSET(Channel, ui.dynamics));
 	gtk_widget_class_bind_template_child_full(GTK_WIDGET_CLASS(class), "dynamics_box", false, G_STRUCT_OFFSET(Channel, ui.dynamics_box));
 	gtk_widget_class_bind_template_child_full(GTK_WIDGET_CLASS(class), "fx", false, G_STRUCT_OFFSET(Channel, ui.fx));
@@ -516,21 +556,21 @@ channel_class_init(ChannelClass *class)
 	gtk_widget_class_bind_template_callback(GTK_WIDGET_CLASS(class), on_output_changed);
 
 	g_object_class_install_property(G_OBJECT_CLASS(class), PROP_TYPE,
-		g_param_spec_enum("type", NULL, NULL, channel_type_get_type(), CHANNEL_TYPE_INPUT, G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE));
+									g_param_spec_enum("type", NULL, NULL, channel_type_get_type(), CHANNEL_TYPE_INPUT, G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE));
 	g_object_class_install_property(G_OBJECT_CLASS(class), PROP_FLAGS,
-		g_param_spec_flags("flags", NULL, NULL, channel_flags_get_type(), 0, G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE));
+									g_param_spec_flags("flags", NULL, NULL, channel_flags_get_type(), 0, G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE));
 	g_object_class_install_property(G_OBJECT_CLASS(class), PROP_ID,
-		g_param_spec_int("id", NULL, NULL, 0, 20, 0, G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE));
+									g_param_spec_int("id", NULL, NULL, 0, CHANNEL_ID_MAX, 0, G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE));
 	g_object_class_install_property(G_OBJECT_CLASS(class), PROP_MIXER,
-		g_param_spec_object("mixer", NULL, NULL, mixer_get_type(), G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE));
+									g_param_spec_object("mixer", NULL, NULL, mixer_get_type(), G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE));
 	g_object_class_install_property(G_OBJECT_CLASS(class), PROP_NAME,
-		g_param_spec_string("name", NULL, NULL, NULL, G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE));
+									g_param_spec_string("name", NULL, NULL, NULL, G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE));
 	g_object_class_install_property(G_OBJECT_CLASS(class), PROP_RIGHT,
-		g_param_spec_object("right", NULL, NULL, channel_get_type(), G_PARAM_READWRITE));
+									g_param_spec_object("right", NULL, NULL, channel_get_type(), G_PARAM_READWRITE));
 	g_object_class_install_property(G_OBJECT_CLASS(class), PROP_RECORDVIEW,
-		g_param_spec_boolean("record-view", NULL, NULL, false, G_PARAM_CONSTRUCT | G_PARAM_READWRITE));
+									g_param_spec_boolean("record-view", NULL, NULL, false, G_PARAM_CONSTRUCT | G_PARAM_READWRITE));
 	g_object_class_install_property(G_OBJECT_CLASS(class), PROP_OUTPUTS_MODEL,
-		g_param_spec_object("outputs-model", NULL, NULL, GTK_TYPE_TREE_MODEL, G_PARAM_READWRITE));
+									g_param_spec_object("outputs-model", NULL, NULL, GTK_TYPE_TREE_MODEL, G_PARAM_READWRITE));
 
 	output_changed_signal = g_signal_new("output-changed", G_TYPE_FROM_CLASS(class), G_SIGNAL_RUN_FIRST, 0, NULL, NULL, NULL, G_TYPE_NONE, 1, G_TYPE_POINTER);
 }
@@ -540,9 +580,12 @@ on_stack_button_clicked(GtkWidget *button, Channel *channel)
 {
 	if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button)))
 		return;
-	if (channel->last_toggled == button) {
+	if (channel->last_toggled == button)
+	{
 		channel->last_toggled = NULL;
-	} else {
+	}
+	else
+	{
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(channel->stack_hide), true);
 	}
 }
@@ -556,7 +599,8 @@ on_stack_button_toggled(GtkWidget *button, Channel *channel)
 static void
 connect_button_signals(GtkWidget *button, Channel *channel)
 {
-	if (button != channel->stack_hide) {
+	if (button != channel->stack_hide)
+	{
 		g_signal_connect_after(button, "clicked", G_CALLBACK(on_stack_button_clicked), channel);
 		g_signal_connect_after(button, "toggled", G_CALLBACK(on_stack_button_toggled), channel);
 	}
@@ -570,8 +614,7 @@ channel_init(Channel *self)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(self->stack_hide), true);
 }
 
-int
-channel_get_id(Channel *self)
+int channel_get_id(Channel *self)
 {
 	return self->id;
 }
@@ -582,8 +625,7 @@ channel_get_name(Channel *self)
 	return gtk_label_get_text(GTK_LABEL(self->ui.name));
 }
 
-void
-channel_set_output_iter(Channel *self, GtkTreeIter *iter)
+void channel_set_output_iter(Channel *self, GtkTreeIter *iter)
 {
 	if (self->ui.output)
 		gtk_combo_box_set_active_iter(GTK_COMBO_BOX(self->ui.output), iter);

@@ -1,14 +1,14 @@
 <interface>
 	<template class="OSCMixWindow" parent="GtkApplicationWindow">
 		<property name="visible">true</property>
-		<property name="title">oscmix</property>
+		<property name="title">oscmix GTK UI (multiple unit version)</property>
 		<property name="default-width">1400</property>
 		<property name="default-height">1000</property>
 		<child type="titlebar">
 			<object class="GtkHeaderBar">
 				<property name="visible">true</property>
 				<property name="show-close-button">true</property>
-				<property name="title">oscmix</property>
+				<property name="title">oscmix GTK UI (multiple unit version)</property>
 			</object>
 		</child>
 		<child>

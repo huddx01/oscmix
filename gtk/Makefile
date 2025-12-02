@@ -15,13 +15,17 @@ LDFLAGS+=$(GTK_LDFLAGS)
 LDLIBS+=$(GTK_LDLIBS)
 
 OBJ=\
-	main.o\
-	mixer.o\
-	channel.o\
-	eqplot.o\
-	scaleentry.o\
-	resources.o\
-	../osc.o
+    main.o\
+    mixer.o\
+    channel.o\
+    eqplot.o\
+    scaleentry.o\
+    resources.o\
+    ../osc.o\
+    ../device_ff802.o\
+    ../device_ffucxii.o\
+    ../device_ffufxiii.o\
+    ../device_ffucx.o
 
 RES=\
 	oscmix.ui\
