@@ -11,13 +11,15 @@ extern const struct device ffucxii;
 extern const struct device ff802;
 extern const struct device ffufxiii;
 extern const struct device ffucx;
+extern const struct device ffufxp;
 static const struct device *devices[] = {
-	&ffucxii, &ff802, &ffufxiii, &ffucx,
+	&ffucxii, &ff802, &ffufxiii, &ffucx, &ffufxp,
 	};
 
 // TODO: Rework this, to set current_device based on user selection in settings or even better via auto-detect
 //const struct device *current_device = &ff802;
-const struct device *current_device = &ffufxiii;
+//const struct device *current_device = &ffufxiii;
+const struct device *current_device = &ffufxp;
 
 
 
