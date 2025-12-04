@@ -1,6 +1,6 @@
 // device_ffufxp.js
 export const device_ffufxp = {
-	deviceName: 'Fireface UFX +',
+	deviceName: 'Fireface UFX+',
 	midiPortNames: ['Port R', 'Port 4'], // Possible MIDI port names
 	inputNames: [
 		'Analog 1', 'Analog 2', 'Analog 3', 'Analog 4',
