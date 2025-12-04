@@ -5,8 +5,9 @@ import { device_ff802 } from './device_ff802.js';
 import { device_ffucxii } from './device_ffucxii.js';
 import { device_ffufxiii } from './device_ffufxiii.js';
 import { device_ffucx } from './device_ffucx.js';
+import { device_ffufxp } from './device_ffufxp.js';
 
-const devices = [device_ff802, device_ffucxii, device_ffufxiii, device_ffucx];
+const devices = [device_ff802, device_ffucxii, device_ffufxiii, device_ffucx, device_ffufxp];
 let currentDevice = device_ff802;
 
 updatePageTitle();
