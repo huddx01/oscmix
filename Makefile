@@ -10,6 +10,10 @@ MANDIR=$(PREFIX)/share/man
 OS!=uname
 OS?=$(shell uname)
 OS-$(OS)=y
+
+ARCH!=uname -m
+ARCH?=$(shell uname -m)
+
 ALSA?=$(OS-Linux)
 ALSA_CFLAGS?=$$(pkg-config --cflags alsa)
 ALSA_LDFLAGS?=$$(pkg-config --libs-only-L --libs-only-other alsa)
@@ -17,6 +21,9 @@ ALSA_LDLIBS?=$$(pkg-config --libs-only-l alsa)
 
 COREMIDI?=$(OS-Darwin)
 COREMIDI_LDLIBS?=-framework CoreMIDI -framework CoreFoundation
+
+REGTOOL_GENERIC_LIBS-$(OS-Linux)=$(ALSA_LDFLAGS) $(ALSA_LDLIBS)
+REGTOOL_GENERIC_LIBS-$(OS-Darwin)=fatal.o $(COREMIDI_LDLIBS)
 
 GTK?=y
 WEB?=n
@@ -69,6 +76,11 @@ COREMIDIIO_OBJ=\
 	fatal.o\
 	spawn.o
 
+REGTOOL_GENERIC_OBJ-$(OS-Darwin)=\
+	fatal.o
+
+REGTOOL_GENERIC_OBJ-$(OS-Linux)=
+
 oscmix.o $(DEVICES): device.h
 
 oscmix: $(OSCMIX_OBJ)
@@ -103,6 +115,10 @@ tools/regtool.o: tools/regtool.c
 
 tools/regtool: tools/regtool.o
 	$(CC) $(LDFLAGS) $(ALSA_LDFLAGS) -o $@ tools/regtool.o $(ALSA_LDLIBS)
+
+tools/regtool_generic: tools/regtool_generic.o $(REGTOOL_GENERIC_OBJ-y)
+	$(CC) $(LDFLAGS) -o $@ tools/regtool_generic.o $(REGTOOL_GENERIC_LIBS-y)
+
 
 .PHONY: install
 install: $(BIN)
