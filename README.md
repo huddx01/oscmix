@@ -54,29 +54,57 @@ See the manual, [oscmix.1], for more information.
 
 ### Linux
 
+On Linux systems, you can use alsarawio or asaseqio to run oscmix.
+
+#### 1. alsarawio
+
 On Linux systems, you can use bundled `alsarawio` program open and
 configure a given raw MIDI subdevice and set up these file descriptors
 appropriately.
 
-To determine your MIDI device, look for it in the output of `amidi -l`
-(the one ending in `,1` with the name `Fireface UCX II`).
+To determine your MIDI device, look for it in the output of `amidi -l`.
+(the last ending port with the name `Fireface xyz...`).
 
-For example:
+Example:
 
 ```sh
-alsarawio 2,0,1 oscmix
+$ amidi -l
+Dir Device    Name
+IO  hw:0,0,0  Fireface UFX III (xxxxxxxx) Por
+IO  hw:0,0,1  Fireface UFX III (xxxxxxxx) Por
+IO  hw:0,0,2  Fireface UFX III (xxxxxxxx) Por
+IO  hw:0,0,3  Fireface UFX III (xxxxxxxx) Por
 ```
+
+We use the last port from the result above to run oscmix:
+
+```sh
+alsarawio 0,0,3 oscmix
+```
+
+
+#### 2. alsaseqio
 
 There is also a tool `alsaseqio` that requires alsa-lib and uses
 the sequencer API.
 
-To determine the client and port for your device, find it (port 1
-of the Fireface UCX II) in the output of `aconnect -l`.
+To determine the client and port for your device, find the client
+and the last port in the output of `aconnect -l` for your device.
 
-For example:
-
+Example:
 ```sh
-alsaseqio 24:1 oscmix
+$ aconnect -l
+...
+client 16: 'Fireface UFX III (xxxxxxxx)' [type=Kernel,card=0]
+    0 'Fireface UFX III (xxxxxxxx) Por'
+    1 'Fireface UFX III (xxxxxxxx) Por'
+    2 'Fireface UFX III (xxxxxxxx) Por'
+    3 'Fireface UFX III (xxxxxxxx) Por'
+...
+```
+We use the client and last port from the result above to run oscmix:
+```sh
+alsaseqio 16:3 oscmix
 ```
 
 ### BSD
