@@ -9,31 +9,31 @@
 	--background-color: #1E2328;
 	--background-sidebar-color: #1E2328;
 	--background-submix-color: #47525C;
-	--text-color: #98AAB5;
-	--text-highlight-color: white;
+	--text-color: #b3c2cb;
+	--text-highlight-color: #ffffff;
 	--border-color: gray;
 	--border-highlight-color: lightgray;
 
 	/* Base Toggle-Button colors */
-	--toggle-hover: #606a6f;
-	--toggle-active: #f8f8f8;
-	--toggle-checked: #ccc;
+	--toggle-hover-color: #606a6f;
+	--toggle-active-color: #f8f8f8;
+	--toggle-checked-color: #ccc;
 
 	/* Mute, Solo & AdHoc Fader colors */
 	--mute-color: #4a86e8;
-	--mute-highlight: #1a45ee;
-	--mute-highlight-shadow: rgba(0, 95, 252, 0.8);
+	--mute-highlight-color: #1a45ee;
+	--mute-highlight-color-shadow: rgba(0, 95, 252, 0.8);
 	--solo-color: #dd5f00b5;
-	--solo-highlight: #f67c0a;
-	--solo-highlight-shadow: rgba(255, 102, 0, 0.8);
+	--solo-highlight-color: #f67c0a;
+	--solo-highlight-color-shadow: rgba(255, 102, 0, 0.8);
 	--adhoc-color: #ffffff00;
-	--adhoc-highlight: #d39f27;
-	--adhoc-highlight-shadow: rgb(122 99 42 / 82%);
+	--adhoc-highlight-color: #d39f27;
+	--adhoc-highlight-color-shadow: rgb(122 99 42 / 82%);
 
 	/* Store Button colors */
 	--store-color: #f8000085;
-	--store-highlight: #f80000;
-	--store-highlight-shadow: rgb(255 0 0 / 82%);
+	--store-highlight-color: #f80000;
+	--store-highlight-color-shadow: rgb(255 0 0 / 82%);
 
 	/* Meter-colors */
 	--meter-green: #4CAF50;
@@ -120,15 +120,15 @@ output {
 }
 
 .toggle-button:hover {
-	background-color: var(--toggle-hover);
+	background-color: var(--toggle-hover-color);
 }
 
 .toggle-button:active {
-	background-color: var(--toggle-active);
+	background-color: var(--toggle-active-color);
 }
 
 .toggle-button:has(> input[type="checkbox"]:checked) {
-	background-color: var(--toggle-checked);
+	background-color: var(--toggle-checked-color);
 }
 
 /* Mute & Solo Buttons */
@@ -166,13 +166,13 @@ output {
 
 /* Highlight if Global Mute/Solo enabled */
 body.global-mute-enabled .toggle-button.mute-button:has(> .mute-checkbox:checked) {
-	background-color: var(--mute-highlight) !important;
-	box-shadow: 0 0 8px 2px var(--mute-highlight-shadow);
+	background-color: var(--mute-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--mute-highlight-color-shadow);
 }
 
 body.global-solo-enabled .toggle-button.solo-button:has(> .solo-checkbox:checked) {
-	background-color: var(--solo-highlight) !important;
-	box-shadow: 0 0 8px 2px var(--solo-highlight-shadow);
+	background-color: var(--solo-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--solo-highlight-color-shadow);
 }
 
 #sidebar {
@@ -790,8 +790,8 @@ osc-knob::after {
 }
 
 .controlroom-button-group .toggle-button:has(#controlroom-muteenable:checked) {
-	background-color: var(--mute-highlight) !important;
-	box-shadow: 0 0 8px 2px var(--mute-highlight-shadow);
+	background-color: var(--mute-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--mute-highlight-color-shadow);
 	color: var(--text-highlight-color);
 }
 
@@ -801,8 +801,8 @@ osc-knob::after {
 }
 
 .controlroom-button-group .toggle-button:has(#main-soloenable:checked) {
-	background-color: var(--solo-highlight) !important;
-	box-shadow: 0 0 8px 2px var(--solo-highlight-shadow);
+	background-color: var(--solo-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--solo-highlight-color-shadow);
 	color: var(--text-highlight-color);
 }
 
@@ -812,8 +812,8 @@ osc-knob::after {
 }
 
 .controlroom-button-group .toggle-button:has(#main-adhocfaderenable:checked) {
-	background-color: var(--adhoc-highlight) !important;
-	box-shadow: 0 0 8px 2px var(--adhoc-highlight-shadow);
+	background-color: var(--adhoc-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--adhoc-highlight-color-shadow);
 	color: var(--text-highlight-color);
 }
 
@@ -823,8 +823,8 @@ osc-knob::after {
 }
 
 .controlroom-button-group .toggle-button:has(#setup-slotenable:checked) {
-	background-color: var(--mute-highlight) !important;
-	box-shadow: 0 0 8px 2px var(--mute-highlight-shadow);
+	background-color: var(--mute-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--mute-highlight-color-shadow);
 	color: var(--text-highlight-color);
 }
 
@@ -834,8 +834,8 @@ osc-knob::after {
 }
 
 .controlroom-button-group .toggle-button:has(#store-button:checked) {
-	background-color: var(--store-highlight) !important;
-	box-shadow: 0 0 8px 2px var(--store-highlight-shadow);
+	background-color: var(--store-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--store-highlight-color-shadow);
 	color: var(--text-highlight-color);
 }
 

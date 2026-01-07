@@ -1,16 +1,21 @@
 
 :root {
+
+	/* Dimensions */
+	--channel-width: 90px;
+	--sidebar-width: 19em;
+
 	/* Base Colors */
-	--background-color: #ffffff;
-	--background-sidebar-color: #ffffff;
-	--background-submix-color: #d9d9d9;
-	--text-color: #98AAB5;
-	--text-highlight-color: white;
+	--background-color: #1E2328;
+	--background-sidebar-color: #282c30;
+	--background-submix-color: #47525C;
+	--text-color: #d0ced6;
+	--text-highlight-color: #fbf8f8;
 	--border-color: gray;
 	--border-highlight-color: lightgray;
 
 	/* Base Toggle-Button colors */
-	--toggle-hover-color: #dadbdc;
+	--toggle-hover-color: #606a6f;
 	--toggle-active-color: #f8f8f8;
 	--toggle-checked-color: #ccc;
 
@@ -25,13 +30,21 @@
 	--adhoc-highlight-color: #d39f27;
 	--adhoc-highlight-color-shadow: rgb(122 99 42 / 82%);
 
+	/* Store/Load Button colors */
+	--store-color: #f8000085;
+	--store-highlight-color: #f80000;
+	--store-highlight-color-shadow: rgb(255 0 0 / 82%);
+	--load-color: rgba(0, 248, 0, 0.53);
+	--load-highlight-color: #00f800;
+	--load-highlight-color-shadow: rgb(255 0 0 / 82%);
+
 	/* Meter-colors */
 	--meter-green: #4CAF50;
 	--meter-yellow: #FFC107;
 	--meter-red: #F44336;
 
 	/* EQ-colors */
-	--eq-plot-bg: linear-gradient(to right, #6b0202c7, #004000b8, #000040bf);
+	--eq-plot-bg: linear-gradient(to right, #400000, #004000, #000040);
 
 	/* Knob-colors */
 	--knob-bg-color: #555;
@@ -132,6 +145,33 @@ output {
 	color: var(--text-highlight-color);
 }
 
+/* Rec & Play Buttons */
+.toggle-button.record-button:has(> .record-checkbox:checked) {
+	background-color: red !important;
+	color: var(--text-highlight-color);
+}
+
+.toggle-button.play-button:has(> .play-checkbox:checked) {
+	background-color: green !important;
+	color: var(--text-highlight-color);
+}
+
+/* Setup Slots & Store Buttons */
+.toggle-button.slot-button:has(> .slot-checkbox:checked) {
+	background-color: var(--mute-color);
+	color: var(--text-highlight-color);
+}
+
+.toggle-button.store-button:has(> .store-checkbox:checked) {
+	background-color: red;
+	color: var(--text-highlight-color);
+}
+
+.toggle-button.load-button:has(> .load-checkbox:checked) {
+	background-color: greenyellow;
+	color: var(--text-highlight-color);
+}
+
 /* Highlight if Global Mute/Solo enabled */
 body.global-mute-enabled .toggle-button.mute-button:has(> .mute-checkbox:checked) {
 	background-color: var(--mute-highlight-color) !important;
@@ -148,7 +188,7 @@ body.global-solo-enabled .toggle-button.solo-button:has(> .solo-checkbox:checked
 	border-left: 1px solid var(--border-color);
 	overflow-y: auto;
 	padding: 4px 0 4px 4px;
-	flex: 0 0 17em;
+	flex: 0 0 var(--sidebar-width);
 }
 
 #sidebar > details > :not(:first-child) {
@@ -253,7 +293,7 @@ label:has(#connection-type:not([data-value="WebSocket"])) ~ .connection-websocke
 .channel {
 	display: flex;
 	flex-direction: column;
-	width: 85px;
+	width:  var(--channel-width);
 }
 
 .channel > * {
@@ -460,8 +500,11 @@ input[type=range]:focus {
 }
 
 .channel:has(~ .channel-panel-eq :is(.eq, .lowcut):checked) .channel-show-eq-label,
-.channel:has(~ .channel-panel-dynamics :is(.dynamics, .autolevel):checked) .channel-show-dynamics-label {
+.channel:has(~ .channel-panel-dynamics :is(.dynamics, .autolevel):checked) .channel-show-dynamics-label,
+.channel:has(~ .channel-panel-settings :is(.roomeq, .loopback, .crossfeed):checked) .channel-show-settings-label
+{
 	box-shadow: inset 0 0 0.5em selecteditem;
+	box-shadow: inset 0 0 8px 2px orange;
 }
 
 .channel-panel-settings:has(.stereo:not(:checked)) .stereo-field {
@@ -780,11 +823,58 @@ osc-knob::after {
 	background-color: var(--adhoc-highlight-color) !important;
 	box-shadow: 0 0 8px 2px var(--adhoc-highlight-color-shadow);
 	color: var(--text-highlight-color);
+}
 
-	.controlroom-button-group .toggle-button:hover {
-		filter: brightness(1.1);
-	}
 
-	.controlroom-button-group .toggle-button:active {
-		filter: brightness(0.95);
-	}
+/* ---Setup Slots--- */
+.controlroom-button-group .toggle-button:has(#setup-slotenable) {
+	background-color: var(--mute-color) !important;
+}
+.controlroom-button-group .toggle-button:has(#setup-slotenable:checked) {
+	background-color: var(--mute-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--mute-highlight-color-shadow);
+	color: var(--text-highlight-color);
+}
+/* Store-Button */
+.controlroom-button-group .toggle-button:has(#store-button) {
+	background-color: var(--store-color) !important;
+}
+.controlroom-button-group .toggle-button:has(#store-button:checked) {
+	background-color: var(--store-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--store-highlight-color-shadow);
+	color: var(--text-highlight-color);
+}
+/* Load-Button */
+.controlroom-button-group .toggle-button:has(#load-button) {
+	background-color: var(--load-color) !important;
+}
+.controlroom-button-group .toggle-button:has(#load-button:checked) {
+	background-color: var(--load-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--store-highlight-color-shadow);
+	color: var(--text-highlight-color);
+}
+/* Store/Load-Button Effect */
+.controlroom-button-group .toggle-button:hover {
+	filter: brightness(1.1);
+}
+.controlroom-button-group .toggle-button:active {
+	filter: brightness(0.95);
+}
+
+.led-btn {
+	padding: 8px 12px;
+	margin: 4px;
+	border: 1px solid #555;
+	border-radius: 4px;
+	background-color: #333;
+	color: #ddd;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.led-btn.active {
+	background-color: orange; 
+	box-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
+	color: white;
+	border-color: #2E7D32;
+}

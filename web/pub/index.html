@@ -1,87 +1,138 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 	<head>
 		<title>oscmix Generic</title>
-		<link rel="preload" href="css/theme/tm_dark.css" as="style">
-		<link rel="stylesheet" href="css/theme/tm_dark.css" />
-		
-		<link rel="preload" href="css/help.css" as="style">
+		<link rel="preload" href="css/theme/tm_dark_hi.css" as="style" />
+		<link rel="stylesheet" href="css/theme/tm_dark_hi.css" />
+
+		<link rel="preload" href="css/help.css" as="style" />
 		<link rel="stylesheet" href="css/help.css" media="print" onload="this.media='all'" />
-		
-		<link rel="stylesheet" href="css/knob.css">
-		
-		<link rel="preload" href="js/oscmix.js" as="script">
-		<link rel="preload" href="js/param.js" as="script">
-		<link rel="preload" href="js/help.js" as="script">
-		
+		<link rel="stylesheet" href="css/knob.css" />
+
+		<link rel="preload" href="js/oscmix.js" as="script" />
+		<link rel="preload" href="js/param.js" as="script" />
+		<link rel="preload" href="js/help.js" as="script" />
 	</head>
 	<body>
 		<template id="channel-template">
 			<div class="channel-outer">
-				<input id="submix" class="submix" type="radio" form="view" name="submix" data-type="output">
-					<div class="channel">
-						<form id="channel-name-form" class="channel-name-form">
-							<input id="channel-name" class="channel-name">
-						</form>
-						<label id="pan">
-							<div class="knob-target"></div>
+				<input id="submix" class="submix" type="radio" form="view" name="submix" data-type="output" />
+				<div class="channel">
+					<form id="channel-name-form" class="channel-name-form">
+						<input id="channel-name" class="channel-name" />
+					</form>
+					<label id="pan">					
+						<div class="knob-target"></div>
+                    </label>
+					<div class="channel-mute">
+						<label class="toggle-button mute-button">M
+						    <input class="mute-checkbox" type="checkbox"/>
 						</label>
-						<div class="channel-mute">
-							<label class="toggle-button mute-button">M<input class="mute-checkbox" type="checkbox"></label>
-							<label class="toggle-button solo-button">S<input class="solo-checkbox" type="checkbox"></label>
-							<label class="toggle-button record-button">R<input class="record-checkbox" type="checkbox"></label>
-							<label class="toggle-button play-button">P<input class="play-checkbox" type="checkbox"></label>
-						</div>
-						<div id="channel-meter-value" class="channel-meter-value">
-							<div id="volume-meter-value">UFL</div>
-						</div>
-						<div id="channel-volume" class="channel-volume">
-							<div id="volume-meter" class="meter-wrapper">
-								<div class="meter-fill" style="height: 0%"></div>
-							</div>
-							<input id="volume-range" type="range" orient="vertical" min="-65" max="6" step="0.1" value="-65" list="volume-values">
-								<div class="channel-panel-buttons">
-									<label class="toggle-button">S<input type="checkbox" class="channel-show-settings"></label>
-									<label class="toggle-button channel-show-eq-label" data-type="input output">EQ<input type="checkbox" class="channel-show-eq"></label>
-									<label class="toggle-button channel-show-dynamics-label" data-type="input output">D<input type="checkbox" class="channel-show-dynamics"></label>
-								</div>
-						</div>
-						<input class="channel-volume-number" id="volume-number" type="number" min="-65" max="6" value="-65" step="0.5">
-							<select class="channel-volume-output" id="volume-output" data-type="input playback"></select>
+						<label class="toggle-button solo-button">S
+						    <input class="solo-checkbox" type="checkbox"/>
+						</label>
+						<label class="toggle-button record-button">R
+						    <input class="record-checkbox" type="checkbox"/>
+						</label>
+						<label class="toggle-button play-button">P
+						    <input class="play-checkbox" type="checkbox"/>
+						</label>
 					</div>
-					<div class="channel-panel channel-panel-settings">
-						<fieldset>
-							<label>Stereo<span><input type="checkbox" id="stereo" class="stereo"></span></label>
-							<label data-flags="hi-z">Instr.<span><input type="checkbox" id="hi-z"></span></label>
-							<label data-flags="48v">48V<span><input type="checkbox" id="48v"></span></label>
-							<label data-flags="reflevel">Ref. Level<select id="reflevel">
+					<div id="channel-meter-value" class="channel-meter-value">
+						<div id="volume-meter-value">UFL</div>
+					</div>
+					<div id="channel-volume" class="channel-volume">
+						<div id="volume-meter" class="meter-wrapper">
+							<div class="meter-fill" style="height: 0%"></div>
+						</div>
+						<input
+						id="volume-range"
+						type="range"
+						orient="vertical"
+						min="-65"
+						max="6"
+						step="0.1"
+						value="-65"
+						list="volume-values" />
+						<div class="channel-panel-buttons">
+							<label class="toggle-button"
+								>S<input type="checkbox" class="channel-show-settings"
+								/></label>
+							<label class="toggle-button channel-show-eq-label" data-type="input output"
+								>EQ<input type="checkbox" class="channel-show-eq"
+								/></label>
+							<label class="toggle-button channel-show-dynamics-label" data-type="input output"
+								>D<input type="checkbox" class="channel-show-dynamics"
+								/></label>
+						</div>
+					</div>
+					<input
+					class="channel-volume-number"
+					id="volume-number"
+					type="number"
+					min="-65"
+					max="6"
+					value="-65"
+					step="0.5" />
+					<select class="channel-volume-output" id="volume-output" data-type="input playback"></select>
+				</div>
+				<div class="channel-panel channel-panel-settings">
+					<fieldset>
+						<label>Stereo
+							<span>
+								<input type="checkbox" id="stereo" class="stereo" />
+							</span>
+						</label>
+						<label data-flags="hi-z">Instr.
+							<span>
+								<input type="checkbox" id="hi-z" />
+							</span>
+						</label>
+						<label data-flags="48v">48V
+							<span>
+								<input type="checkbox" id="48v" />
+							</span>
+						</label>
+						<label data-flags="reflevel">Ref. Level
+							<select id="reflevel">
 								<option data-type="output">+4 dBu</option>
 								<option>+13 dBu</option>
 								<option>+19 dBu</option>
 								<option data-type="output">+24 dBu</option>
-							</select></label>
-							<label data-flags="gain">Gain
-								<div class="knob-target"></div>
-							</label>
-							<!--							<label data-flags="eq/band1gain">bg1-->
-							<!--								<div class="knob-target"></div>-->
-							<!--							</label>-->
-							<label data-flags="autoset">Autoset<span><input type="checkbox" id="autoset"></span></label>
-<!---->
-<!--							<label data-flags="fx">FX-->
-<!--								<div class="knob-target"></div>-->
-<!--							</label>-->
-														<label>FX
-															<div class="fx-control">
-																<input type="range" class="fx-slider" orient="vertical" min="-65" max="0" step="0.5" value="-65">
-																<input type="number" id="fx" min="-65" max="0" step="0.5" value="-65">
-															</div>
-														</label>
-							<!--						<label id="fx">-->
-							<!--							<div class="knob-target"></div>-->
-							<!--						</label>-->
-							<label data-type="output">Crossfeed<select id="crossfeed">
+							</select>
+						</label>
+						<label data-flags="gain">Gain
+							<div class="knob-target"></div>
+						</label>
+						<!--							<label data-flags="eq/band1gain">bg1-->
+						<!--								<div class="knob-target"></div>-->
+						<!--							</label>-->
+						<label data-flags="autoset">Autoset
+							<span>
+								<input type="checkbox" id="autoset" />
+							</span>
+						</label>
+						<!---->
+						<!--							<label data-flags="fx">FX-->
+						<!--								<div class="knob-target"></div>-->
+						<!--							</label>-->
+						<label>FX
+							<div class="fx-control">
+								<input
+								type="range"
+								class="fx-slider"
+								orient="vertical"
+								min="-65"
+								max="0"
+								step="0.5"
+								value="-65" />
+								<input type="number" id="fx" min="-65" max="0" step="0.5" value="-65" />
+							</div>
+						</label>
+						<!--						<label id="fx">-->
+						<!--							<div class="knob-target"></div>-->
+						<!--						</label>-->
+						<label data-type="output">Crossfeed<select id="crossfeed">
 								<option>Off</option>
 								<option>1</option>
 								<option>2</option>
@@ -89,136 +140,188 @@
 								<option>4</option>
 								<option>5</option>
 							</select></label>
-							<label class="stereo-field">M/S Proc<span><input type="checkbox" id="msproc"></span></label>
-							<label>Phase<span><input type="checkbox" id="phase"></span></label>
-							<label data-type="output">Loopback<span><input type="checkbox" id="loopback" value="0"></span></label>
-							<label data-type="output" >Volume Cal.
-								<input id="volumecal" type="range" orient="vertical" min="-24" max="3" step="0.1" value="0">
+						<label class="stereo-field">M/S Proc<span><input type="checkbox" id="msproc" /></span></label>
+						<label>Phase<span><input type="checkbox" id="phase" /></span></label>
+						<label data-type="output">Loopback<span><input type="checkbox" id="loopback" value="0" /></span></label>
+						<label data-type="output">Volume Cal.
+							<input
+							id="volumecal"
+							type="range"
+							orient="vertical"
+							min="-24"
+							max="3"
+							step="0.1"
+							value="0" />
+						</label>
+						<label data-type="output">Room EQ
+							<span>
+								<input type="checkbox" id="roomeq" />
+							</span>
+						</label>
+						<label data-type="output">REQ Delay
+							<input
+							id="roomeq/delay"
+							type="range"
+							orient="vertical"
+							min="0"
+							max="4.25"
+							step="0.1"
+							value="0" />
+						</label>
+						<label data-type="output">REQ b1 Type
+							<input
+							id="roomeq/band1type"
+							type="range"
+							orient="vertical"
+							min="0"
+							max="3"
+							step="1"
+							value="0" />
+						</label>
+						<label data-type="output">REQ b1 Gain
+							<input
+							id="roomeq/band1gain"
+							type="range"
+							orient="vertical"
+							min="-20"
+							max="20"
+							step="0.1"
+							value="0" />
+						</label>
+						<label data-type="output">REQ b2 Gain
+							<input
+							id="roomeq/band2gain"
+							type="range"
+							orient="vertical"
+							min="-20"
+							max="20"
+							step="0.1"
+							value="0" />
+						</label>
+						<!-- VOLUMECAL KNOB HIER
+						<label data-flags="volumecal">VolCal
+						<div class="knob-target"></div>
+						</label>-->
+						<!--							<button id="roomeq-show" data-type="output" class="roomeq">Room EQ</button>-->
+					</fieldset>
+				</div>
+				<div class="channel-panel channel-panel-eq" data-type="input output">
+					<svg id="eq-plot" class="eq-plot">
+						<path id="eq-grid" class="eq-grid" />
+						<polyline id="eq-curve" class="eq-curve" />
+					</svg>
+					<details open>
+						<summary>EQ<input type="checkbox" id="eq" class="eq" /></summary>
+						<div class="eq-controls">
+							<div>Band</div>
+							<div>1</div>
+							<div>2</div>
+							<div>3</div>
+							<div>Type</div>
+							<select id="eq/band1type">
+								<option value="PEAK">Peak</option>
+								<option value="LOW_SHELF">Low Shelf</option>
+								<option value="HIGH_PASS">High Pass</option>
+								<option value="LOW_PASS">Low Pass</option>
+							</select>
+							<output>Peak</output>
+							<select id="eq/band3type">
+								<option value="PEAK">Peak</option>
+								<option value="HIGH_SHELF">High Shelf</option>
+								<option value="LOW_PASS">Low Pass</option>
+								<option value="HIGH_PASS">High Pass</option>
+							</select>
+							<div>Gain</div>
+							<input id="eq/band1gain" type="number" min="-20" max="20" step="0.5" />
+							<input id="eq/band2gain" type="number" min="-20" max="20" step="0.5" />
+							<input id="eq/band3gain" type="number" min="-20" max="20" step="0.5" />
+							<div>Freq.</div>
+							<input id="eq/band1freq" type="number" min="20" max="20000" />
+							<input id="eq/band2freq" type="number" min="20" max="20000" />
+							<input id="eq/band3freq" type="number" min="20" max="20000" />
+							<div>Q</div>
+							<input id="eq/band1q" type="number" min="0.4" max="9.9" step="0.1" />
+							<input id="eq/band2q" type="number" min="0.4" max="9.9" step="0.1" />
+							<input id="eq/band3q" type="number" min="0.4" max="9.9" step="0.1" />
+							<!--
+							<label data-flags="eq/band1gain">bg1
+							<div class="knob-target"></div>
 							</label>
-							<label data-type="output">Room EQ
-								<span>
-								<input type="checkbox" id="roomeq">
-								</span>
-							</label>
-							<label data-type="output" >rEQ Delay
-								<input id="roomeq/delay" type="range" orient="vertical" min="0" max="4.25" step="0.1" value="0">
-							</label>
-							<label data-type="output" >rEQ b1 Type
-								<input id="roomeq/band1type" type="range"  orient="vertical" min="0" max="3" step="1" value="0">
-							</label>
-							<label data-type="output" >rEQ b1 Gain
-								<input id="roomeq/band1gain" type="range"  orient="vertical" min="-20" max="20" step="0.1" value="0">
-							</label>
-							<label data-type="output" >rEQ b2 Gain
-								<input id="roomeq/band2gain" type="range"  orient="vertical" min="-20" max="20" step="0.1" value="0">
-							</label>
-							<!-- VOLUMECAL KNOB HIER
-							<label data-flags="volumecal">VolCal
-								<div class="knob-target"></div>
-							</label>-->
-							<!--							<button id="roomeq-show" data-type="output" class="roomeq">Room EQ</button>-->
-						</fieldset>
-					</div>
-					<div class="channel-panel channel-panel-eq" data-type="input output">
-						<svg id="eq-plot" class="eq-plot">
-							<path id="eq-grid" class="eq-grid"/>
-							<polyline id="eq-curve" class="eq-curve"/>
-						</svg>
-						<details open>
-							<summary>EQ<input type="checkbox" id="eq" class="eq"></summary>
-							<div class="eq-controls">
-								<div>Band</div>
-								<div>1</div>
-								<div>2</div>
-								<div>3</div>
-								<div>Type</div>
-								<select id="eq/band1type">
-									<option value="PEAK">Peak</option>
-									<option value="LOW_SHELF">Low Shelf</option>
-									<option value="HIGH_PASS">High Pass</option>
-									<option value="LOW_PASS">Low Pass</option>
-								</select>
-								<output>Peak</output>
-								<select id="eq/band3type">
-									<option value="PEAK">Peak</option>
-									<option value="HIGH_SHELF">High Shelf</option>
-									<option value="LOW_PASS">Low Pass</option>
-									<option value="HIGH_PASS">High Pass</option>
-								</select>
-								<div>Gain</div>
-								<input id="eq/band1gain" type="number" min="-20" max="20" step="0.5">
-									<input id="eq/band2gain" type="number" min="-20" max="20" step="0.5">
-										<input id="eq/band3gain" type="number" min="-20" max="20" step="0.5">
-											<div>Freq.</div>
-											<input id="eq/band1freq" type="number" min="20" max="20000">
-												<input id="eq/band2freq" type="number" min="20" max="20000">
-													<input id="eq/band3freq" type="number" min="20" max="20000">
-														<div>Q</div>
-														<input id="eq/band1q" type="number" min="0.4" max="9.9" step="0.1">
-															<input id="eq/band2q" type="number" min="0.4" max="9.9" step="0.1">
-																<input id="eq/band3q" type="number" min="0.4" max="9.9" step="0.1">
-																	<!--
-																	<label data-flags="eq/band1gain">bg1
-																	<div class="knob-target"></div>
-																	</label>
-																	<osc-knob id="eq/band1gain" min="-20" max="20" step="0.5" value="0" unit="dB" size="40" position="bottom-right"></osc-knob>
-																	<osc-knob id="eq/band2gain" min="-20" max="20" step="0.5" value="0" unit="dB" size="40"  position="bottom-right"></osc-knob>
-																	<osc-knob id="eq/band3gain" min="-20" max="20" step="0.5" value="0" unit="dB" size="40" position="bottom-right"></osc-knob>
-																	<div>Freq.</div>
-																	<osc-knob id="eq/band1freq" min="20" max="20000" step="1" value="1000" unit="Hz" size="40"></osc-knob>
-																	<osc-knob id="eq/band2freq" min="20" max="20000" step="1" value="1000" unit="Hz" size="40"></osc-knob>
-																	<osc-knob id="eq/band3freq" min="20" max="20000" step="1" value="1000" unit="Hz" size="40"></osc-knob>
-																	<div>Q</div>
-																	<osc-knob id="eq/band1q" min="0.4" max="9.9" step="0.1" value="1.0" size="40"></osc-knob>
-																	<osc-knob id="eq/band2q" min="0.4" max="9.9" step="0.1" value="1.0" size="40"></osc-knob>
-																	<osc-knob id="eq/band3q" min="0.4" max="9.9" step="0.1" value="1.0" size="40"></osc-knob>
-																	-->
-																</div>
-						</details>
-						<details open>
-							<summary>Low Cut<input id="lowcut" class="lowcut" type="checkbox"></summary>
-							<fieldset>
-								<label>Slope<select id="lowcut/slope">
+							<osc-knob id="eq/band1gain" min="-20" max="20" step="0.5" value="0" unit="dB" size="40" position="bottom-right"></osc-knob>
+							<osc-knob id="eq/band2gain" min="-20" max="20" step="0.5" value="0" unit="dB" size="40"  position="bottom-right"></osc-knob>
+							<osc-knob id="eq/band3gain" min="-20" max="20" step="0.5" value="0" unit="dB" size="40" position="bottom-right"></osc-knob>
+							<div>Freq.</div>
+							<osc-knob id="eq/band1freq" min="20" max="20000" step="1" value="1000" unit="Hz" size="40"></osc-knob>
+							<osc-knob id="eq/band2freq" min="20" max="20000" step="1" value="1000" unit="Hz" size="40"></osc-knob>
+							<osc-knob id="eq/band3freq" min="20" max="20000" step="1" value="1000" unit="Hz" size="40"></osc-knob>
+							<div>Q</div>
+							<osc-knob id="eq/band1q" min="0.4" max="9.9" step="0.1" value="1.0" size="40"></osc-knob>
+							<osc-knob id="eq/band2q" min="0.4" max="9.9" step="0.1" value="1.0" size="40"></osc-knob>
+							<osc-knob id="eq/band3q" min="0.4" max="9.9" step="0.1" value="1.0" size="40"></osc-knob>
+							-->
+						</div>
+					</details>
+					<details open>
+						<summary>Low Cut<input id="lowcut" class="lowcut" type="checkbox" /></summary>
+						<fieldset>
+							<label
+								>Slope<select id="lowcut/slope">
 									<option>6 dB/oct</option>
 									<option>12 dB/oct</option>
 									<option>18 dB/oct</option>
 									<option>24 dB/oct</option>
-								</select></label>
-								<label>Freq.<input id="lowcut/freq" type="number" min="20" max="500"></label>
-							</fieldset>
-						</details>
-					</div>
-					<div class="channel-panel channel-panel-dynamics" data-type="input output">
-						<details open>
-							<summary>Dynamics<input id="dynamics" class="dynamics" type="checkbox"></summary>
-							<fieldset>
-								<label>Gain<input id="dynamics/gain" type="number" min="-30" max="30" step="0.5"></label>
-								<label>Attack<input id="dynamics/attack" type="number" min="0" max="200" step="1"></label>
-								<label>Release<input id="dynamics/release" type="number" min="100" max="999" step="1"></label>
-								<label>Comp. Thres.<input id="dynamics/compthres" type="number" min="-60" max="0" step="0.5"></label>
-								<label>Comp. Ratio<input id="dynamics/compratio" type="number" min="1" max="10" step="0.1"></label>
-								<label>Exp. Thres.<input id="dynamics/expthres" type="number" min="-99" max="-20" step="0.5"></label>
-								<label>Exp. Ratio<input id="dynamics/expratio" type="number" min="1" max="10" step="0.1"></label>
-							</fieldset>
-						</details>
-						<details open>
-							<summary>Auto Level<input id="autolevel" class="autolevel" type="checkbox"></summary>
-							<fieldset>
-								<label>Max Gain<input id="autolevel/maxgain" type="number" min="0" max="18" step="0.5"></label>
-								<label>Headroom<input id="autolevel/headroom" type="number" min="3" max="12" step="0.5"></label>
-								<label>Rise Time<input id="autolevel/risetime" type="number" min="0.1" max="9.9" step="0.1"></label>
-							</fieldset>
-						</details>
-					</div>
+								</select></label
+							>
+							<label>Freq.<input id="lowcut/freq" type="number" min="20" max="500" /></label>
+						</fieldset>
+					</details>
+				</div>
+				<div class="channel-panel channel-panel-dynamics" data-type="input output">
+					<details open>
+						<summary>Dynamics<input id="dynamics" class="dynamics" type="checkbox" /></summary>
+						<fieldset>
+							<label>Gain<input id="dynamics/gain" type="number" min="-30" max="30" step="0.5" /></label>
+							<label>Attack<input id="dynamics/attack" type="number" min="0" max="200" step="1" /></label>
+							<label
+								>Release<input id="dynamics/release" type="number" min="100" max="999" step="1"
+								/></label>
+							<label
+								>Comp. Thres.<input id="dynamics/compthres" type="number" min="-60" max="0" step="0.5"
+								/></label>
+							<label
+								>Comp. Ratio<input id="dynamics/compratio" type="number" min="1" max="10" step="0.1"
+								/></label>
+							<label
+								>Exp. Thres.<input id="dynamics/expthres" type="number" min="-99" max="-20" step="0.5"
+								/></label>
+							<label
+								>Exp. Ratio<input id="dynamics/expratio" type="number" min="1" max="10" step="0.1"
+								/></label>
+						</fieldset>
+					</details>
+					<details open>
+						<summary>Auto Level<input id="autolevel" class="autolevel" type="checkbox" /></summary>
+						<fieldset>
+							<label>Max Gain
+							    <input id="autolevel/maxgain" type="number" min="0" max="18" step="0.5"/>
+							</label>
+							<label>Headroom
+							    <input id="autolevel/headroom" type="number" min="3" max="12" step="0.5"/></label>
+							<label>Rise Time
+							    <input id="autolevel/risetime" type="number" min="0.1" max="9.9" step="0.1"/>
+							</label>
+						</fieldset>
+					</details>
+				</div>
 			</div>
 		</template>
 		<div id="channels">
 			<details open><summary>Inputs</summary></details>
 			<div id="inputs" class="channel-strip"></div>
-			<hr>
+			<hr />
 			<details open><summary>Playbacks</summary></details>
 			<div id="playbacks" class="channel-strip"></div>
-			<hr>
+			<hr />
 			<details open><summary>Outputs</summary></details>
 			<div id="outputs" class="channel-strip"></div>
 		</div>
@@ -227,13 +330,17 @@
 				<summary>Connection<span id="connection-icon"></span></summary>
 				<form id="connection">
 					<fieldset>
-						<label>Type<select id="connection-type">
-							<option id="connection-type-websocket" selected>WebSocket</option>
-							<option id="connection-type-midi">MIDI</option>
-						</select></label>
-						<label class="connection-midi">MIDI Input<select id="connection-midi-input" ></select></label>
-						<label class="connection-midi">MIDI Output<select id="connection-midi-output" ></select></label>
-						<label class="connection-websocket">Server<input id="connection-websocket-address" size="1" value="ws://localhost:8222" ></label>
+						<label
+							>Type<select id="connection-type">
+								<option id="connection-type-websocket" selected>WebSocket</option>
+								<option id="connection-type-midi">MIDI</option>
+							</select>
+						</label>
+						<label class="connection-midi">MIDI Input<select id="connection-midi-input"></select></label>
+						<label class="connection-midi">MIDI Output<select id="connection-midi-output"></select></label>
+						<label class="connection-websocket"
+							>Server<input id="connection-websocket-address" size="1" value="ws://localhost:8222"
+							/></label>
 					</fieldset>
 					<fieldset>
 						<button id="connection-connect">Connect</button>
@@ -244,7 +351,640 @@
 				</form>
 			</details>
 			<hr />
+		
+
+			<details open>
+				<summary>
+					DSP Version: <span id="hardware-dspvers"></span> - Load: <span id="hardware-dspload"></span>%
+				</summary>
+				<form id="global">
+					<div class="controlroom-button-group">
+						<label class="toggle-button" title="Global Mute Enable">
+							M<input id="controlroom-muteenable" type="checkbox" />
+						</label>
+						<label class="toggle-button" title="Global Solo Enable">
+							S<input id="main-soloenable" type="checkbox" />
+						</label>
+						<label class="toggle-button" title="Global AdHoc Fadergroup">
+							F<input id="main-adhocfaderenable" type="checkbox" />
+						</label>
+					</div>
+					<fieldset>
+						<!--<label>DSP Load<output id="hardware-dspload"></output></label>-->
+						<!--<label>DSP Version<output id="hardware-dspvers"></output></label>	-->
+					</fieldset>
+				</form>
+			</details>
+
 			<details>
+				<summary>Reverb<input id="reverb-enabled" type="checkbox" /></summary>
+				<fieldset>
+					<label>Type
+                        <select id="reverb-type">
+							<option>Small Room</option>
+							<option>Medium Room</option>
+							<option>Large Room</option>
+							<option>Walls</option>
+							<option>Shorty</option>
+							<option>Attack</option>
+							<option>Swagger</option>
+							<option>Old School</option>
+							<option>Echoistic</option>
+							<option>8plus9</option>
+							<option>Grand Wide</option>
+							<option>Thicker</option>
+							<option>Envelope</option>
+							<option>Gated</option>
+							<option>Space</option>
+						</select>
+					</label>
+					<label>Pre Delay<input id="reverb-predelay" type="number" min="0" max="999" step="1" /></label>
+					<label>Low Cut<input id="reverb-lowcut" type="number" min="20" max="500" step="1" /></label>
+					<label>Room Scale<input id="reverb-roomscale" type="number" min="0.5" max="3" step="0.01" /></label>
+					<label>Attack<input id="reverb-attack" type="number" min="5" max="400" step="1" /></label>
+					<label>Hold<input id="reverb-hold" type="number" min="5" max="400" step="1" /></label>
+					<label>Release<input id="reverb-release" type="number" min="5" max="400" step="1" /></label>
+					<label>High Cut<input id="reverb-highcut" type="number" min="2000" max="20000" step="100" /></label>
+					<label>Time<input id="reverb-time" type="number" min="0.1" max="4.9" step="0.1" /></label>
+					<label>High Damp<input id="reverb-highdamp" type="number" min="2000" max="20000" step="100"/></label>
+					<label>Smooth<input id="reverb-smooth" type="number" min="0" max="100" step="1" /></label>
+					<label>Volume<input id="reverb-volume" type="number" min="-65" max="6" step="0.5" /></label>
+					<label>Width<input id="reverb-width" type="number" min="0" max="1" step="0.01" /></label>
+				</fieldset>
+			</details>
+	
+			<details>
+				<summary>Echo<input id="echo-enabled" type="checkbox" /></summary>
+				<fieldset>
+					<label>Type
+                        <select id="echo-type">
+							<option>Stereo Echo</option>
+							<option>Stereo Cross</option>
+							<option>Pong Echo</option>
+						</select></label>
+					<label>Delay<input id="echo-delay" type="number" min="0" max="2" step="0.01" /></label>
+					<label>Feedback<input id="echo-feedback" type="number" min="0" max="100" step="1" /></label>
+					<label>Width<input id="echo-width" type="number" min="0" max="1" step="0.01" /></label>
+					<label>High Cut
+                        <select id="echo-highcut">
+							<option>Off</option>
+							<option>16 kHz</option>
+							<option>12 kHz</option>
+							<option>8 kHz</option>
+							<option>4 kHz</option>
+							<option>2 kHz</option>
+						</select>
+					</label>
+					<label>Volume<input id="echo-volume" type="number" min="-65" max="6" step="0.5" /></label>
+				</fieldset>
+			</details>
+			<hr />
+			<details open>
+				<summary>Mixer View</summary>
+				<form id="view">
+					<fieldset>
+						<label
+							>Routing Mode<select id="routing-mode" name="routingmode">
+								<option value="submix">Submix</option>
+								<option value="free">Free</option>
+							</select></label
+						>
+						<label
+							>Level Meter FX<span><input id="meter-fx" name="meterfx" type="checkbox" /></span
+							></label>
+						<label
+							>Level Meter RMS<span><input id="meter-rms" name="meterrms" type="checkbox" /></span
+							></label>
+					</fieldset>
+				</form>
+			</details>
+			<hr />
+
+
+			<!--			<details>
+			<summary>Reverb<input id="reverb-enabled" type="checkbox"></summary>
+			<fieldset>
+			<label>Type<select id="reverb-type">
+			<option>Small Room</option>
+			<option>Medium Room</option>
+			<option>Large Room</option>
+			<option>Walls</option>
+			<option>Shorty</option>
+			<option>Attack</option>
+			<option>Swagger</option>
+			<option>Old School</option>
+			<option>Echoistic</option>
+			<option>8plus9</option>
+			<option>Grand Wide</option>
+			<option>Thicker</option>
+			<option>Envelope</option>
+			<option>Gated</option>
+			<option>Space</option>
+			</select></label>
+			<label>Pre Delay<input id="reverb-predelay" type="number" min="0" max="999" step="1"></label>
+			<label>Low Cut<input id="reverb-lowcut" type="number" min="20" max="500" step="1"></label>
+			<label>Room Scale<input id="reverb-roomscale" type="number" min="0.5" max="3" step="0.01"></label>
+			<label>Attack<input id="reverb-attack" type="number" min="5" max="400" step="1"></label>
+			<label>Hold<input id="reverb-hold" type="number" min="5" max="400" step="1"></label>
+			<label>Release<input id="reverb-release" type="number" min="5" max="400" step="1"></label>
+			<label>High Cut<input id="reverb-highcut" type="number" min="2000" max="20000" step="100"></label>
+			<label>Time<input id="reverb-time" type="number" min="0.1" max="4.9" step="0.1"></label>
+			<label>High Damp<input id="reverb-highdamp" type="number" min="2000" max="20000" step="100"></label>
+			<label>Smooth<input id="reverb-smooth" type="number" min="0" max="100" step="1"></label>
+			<label>Volume<input id="reverb-volume" type="number" min="-65" max="6" step="0.5"></label>
+			<label>Width<input id="reverb-width" type="number" min="0" max="1" step="0.01"></label>
+			</fieldset>
+			</details>
+			<hr>
+			<details>
+			<summary>Echo<input id="echo-enabled" type="checkbox"></summary>
+			<fieldset>
+			<label>Type<select id="echo-type">
+			<option>Stereo Echo</option>
+			<option>Stereo Cross</option>
+			<option>Pong Echo</option>
+			</select></label>
+			<label>Delay<input id="echo-delay" type="number" min="0" max="2" step="0.01"></label>
+			<label>Feedback<input id="echo-feedback" type="number" min="0" max="100" step="1"></label>
+			<label>Width<input id="echo-width" type="number" min="0" max="1" step="0.01"></label>
+			<label>High Cut<select id="echo-highcut">
+			<option>Off</option>
+			<option>16 kHz</option>
+			<option>12 kHz</option>
+			<option>8 kHz</option>
+			<option>4 kHz</option>
+			<option>2 kHz</option>
+			</select></label>
+			<label>Volume<input id="echo-volume" type="number" min="-65" max="6" step="0.5"></label>
+			</fieldset>
+			</details>
+			<hr>-->
+
+			<details open>
+				<summary>Control Room</summary>
+				<fieldset>
+					<label
+						>Main Out<select id="controlroom-mainout">
+							<option>Analog 1/2</option>
+							<option>Analog 3/4</option>
+							<option>Analog 5/6</option>
+							<option>Analog 7/8</option>
+							<option>Phones 9/10</option>
+							<option>Phones 11/12</option>
+							<option>AES L/R</option>
+							<option>ADAT 1/2</option>
+							<option>ADAT 3/4</option>
+							<option>ADAT 5/6</option>
+							<option>ADAT 7/8</option>
+							<option>ADAT 9/10</option>
+							<option>ADAT 11/12</option>
+							<option>ADAT 13/14</option>
+							<option>ADAT 15/16</option>
+						</select></label
+					>
+					<label
+						>Main Mono<span><input id="controlroom-mainmono" type="checkbox" /></span
+						></label>
+					<label
+						>Dim Reduction<input
+						id="controlroom-dimreduction"
+						type="number"
+						min="-65"
+						max="0"
+						step="0.1"
+						value="-20"
+						/></label>
+					<label
+						>Dim<span><input id="controlroom-dim" type="checkbox" /></span
+						></label>
+					<label
+						>Recall Volume<input
+						id="controlroom-recallvolume"
+						type="number"
+						min="-65"
+						max="0"
+						step="0.1"
+						value="-10"
+						/></label>
+				</fieldset>
+			</details>
+			<hr />
+			<details>
+				<summary>DURec</summary>
+				<fieldset>
+					<label
+						>File:
+						<select id="durec-file">
+							<option value="-1">New Recording...</option>
+						</select>
+					</label>
+					<label>Samplerate: <output id="durec-samplerate">---</output></label>
+					<label>Channels: <output id="durec-channels">--</output></label>
+					<label
+						>Time:
+						<input type="range" id="durec-time" min="0" max="0" step="1" />
+					</label>
+					<output id="durec-time-display">00:00:00</output>
+					<div class="durec-controls">
+						<button id="durec-record">Record</button>
+						<button id="durec-play">Play</button>
+						<button id="durec-stop">Stop</button>
+						<button id="durec-delete">Delete</button>
+					</div>
+				</fieldset>
+			</details>
+			<hr />
+			<details open>
+				<summary>Hardware</summary>
+				<fieldset>
+					<label
+						>LCD Contrast
+						<input
+						type="range"
+						id="hardware-lcdcontrast"
+						orient="vertical"
+						min="-20"
+						max="20"
+						step="1"
+						value="0" />
+					</label>
+					<label
+						>Clock Source<select id="clock-source">
+							<option>Internal</option>
+							<option>Word Clock</option>
+							<option>AES (S/PDIF)</option>
+							<option>Opt. 1 (AES)</option>
+							<option>Opt. 2 (Optical)</option>
+							<option>MADI Opt.</option>
+							<option>MADI Coax.</option>
+						</select></label
+					>
+					<label>Sample Rate<output id="clock-samplerate"></output></label>
+					<label
+						>Wck. Out<span><input id="clock-wckout" type="checkbox" /></span
+						></label>
+					<label
+						>Wck. Single<span><input id="clock-wcksingle" type="checkbox" /></span
+						></label>
+					<label
+						>Wck. Term.<span><input id="clock-wckterm" type="checkbox" /></span
+						></label>
+					<label
+						>AES In<select id="hardware-aesin">
+							<option>XLR</option>
+							<option>Opt. 2</option>
+						</select></label
+					>
+					<label
+						>AES State Pro<select id="hardware-spdifout">
+							<option>Consumer</option>
+							<option>Professional</option>
+						</select></label
+					>
+					<label
+						>Opt. 1 In<select id="hardware-opticalin">
+							<option>ADAT</option>
+							<option>S/PDIF</option>
+						</select></label
+					>
+					<label
+						>Opt. 1 Out<select id="hardware-opticalout">
+							<option>ADAT</option>
+							<option>S/PDIF</option>
+						</select></label
+					>
+					<label
+						>Opt. 2 In<select id="hardware-opticalin2">
+							<option>ADAT</option>
+							<option>S/PDIF</option>
+							<option>AES</option>
+						</select></label
+					>
+					<label
+						>Opt. 2 Out<select id="hardware-opticalout2">
+							<option>ADAT</option>
+							<option>S/PDIF</option>
+							<option>AES</option>
+						</select></label
+					>
+					<label
+						>MADI In
+						<select id="hardware-madiinput">
+							<option>Optical</option>
+							<option>Coaxial</option>
+							<option>Auto</option>
+							<option>Split</option>
+						</select>
+					</label>
+					<label
+						>MADI Out
+						<select id="hardware-madioutput">
+							<option>Optical</option>
+							<option>Mirror</option>
+							<option>Split</option>
+						</select>
+					</label>
+					<label
+						>MADI Frame
+						<select id="hardware-madiframe">
+							<option>96K Frame</option>
+							<option>48K Frame</option>
+						</select>
+					</label>
+					<label
+						>MADI Format
+						<select id="hardware-madiformat">
+							<option>56 (28) ch</option>
+							<option>64 (32 ch)</option>
+						</select>
+					</label>
+					<label
+						>Record EQ+D<span><input id="hardware-eqdrecord" type="checkbox" /></span
+						></label>
+					<label
+						>DSP Available
+						<output id="hardware-dspavail"></output>
+					</label>
+					<label
+						>DSP Status
+						<output id="hardware-dspstatus"></output>
+					</label>
+					<label
+						>CC Mode<select id="hardware-ccmode">
+							<option>Off</option>
+							<option>On</option>
+						</select></label
+					>
+					<label
+						>Interface Mode<select id="hardware-interfacemode">
+							<option>Auto</option>
+							<option>USB2</option>
+							<option>USB3</option>
+							<option>CC</option>
+						</select></label
+					>
+					<label
+						>CC Mix<select id="hardware-ccmix">
+							<option>TotalMix</option>
+							<option>6 ch. + phones</option>
+							<option>8 ch.</option>
+							<option>20 ch.</option>
+						</select></label
+					>
+
+					<label
+						>CC Routing<select id="hardware-ccrouting">
+							<option>All Ch.</option>
+							<option>Phones</option>
+						</select></label
+					>
+					<label
+						>Standalone MIDI<select id="hardware-standalonemidi">
+							<option>Off</option>
+							<option>MIDI 1</option>
+							<option>MIDI 2</option>
+						</select></label
+					>
+					<label
+						>Standalone ARC<select id="hardware-standalonearc">
+							<option>Volume</option>
+							<option>1s Op</option>
+							<option>Normal</option>
+						</select></label
+					>
+				</fieldset>
+			</details>
+			<hr />
+			<details>
+				<summary>Keys</summary>
+				<fieldset>
+					<label>Lock Keys
+                        <select id="hardware-lockkeys">
+							<option>Off</option>
+							<option>Keys</option>
+							<option>All</option>
+						</select>
+					</label>
+					<label>Remap Keys
+					    <span>
+					        <input id="hardware-remapkeys" type="checkbox" />
+					    </span>
+					</label>
+					<!--					<label>Remap Keys<select id="hardware-remapkeys">-->
+					<!--						<option>Off</option>-->
+					<!--						<option>On</option>-->
+					<!--					</select></label>-->
+					<label>MIC / GAIN
+                        <select id="hardware-programkey01">
+							<option>Default</option>
+							<option>Load Setup 1</option>
+							<option>Load Setup 2</option>
+							<option>Load Setup 3</option>
+							<option>Load Setup 4</option>
+							<option>Load Setup 5</option>
+							<option>Load Setup 6</option>
+							<option>DIM</option>
+							<option>Recall</option>
+							<option>Mute Enable</option>
+							<option>Main Mono</option>
+							<option>Main Mute</option>
+							<option>Main Out Low Cut</option>
+							<option>Main Out EQ</option>
+							<option>Main Out Dynamics</option>
+							<option>Main Out AutoLevel</option>
+							<option>Phones 9/10 Mute</option>
+							<option>Phones 9/10 Low Cut</option>
+							<option>Phones 9/10 EQ</option>
+							<option>Phones 9/10 Dynamics</option>
+							<option>Phones 9/10 AutoLevel</option>
+							<option>Phones 11/12 Mute</option>
+							<option>Phones 11/12 Low Cut</option>
+							<option>Phones 11/12 EQ</option>
+							<option>Phones 11/12 Dynamics</option>
+							<option>Phones 11/12 AutoLevel</option>
+							<option>Reverb enable</option>
+							<option>Echo enable</option>
+							<option>Durec Record</option>
+							<option>Durec Play/Pause</option>
+							<option>Durec Stop</option>
+							<option>Durec Previous</option>
+							<option>Durec Next</option>
+							<option>TotalMix FX</option>
+						</select>
+					</label>
+					<label>REC / PLAY
+                        <select id="hardware-programkey02">
+							<option>Default</option>
+							<option>Load Setup 1</option>
+							<option>Load Setup 2</option>
+							<option>Load Setup 3</option>
+							<option>Load Setup 4</option>
+							<option>Load Setup 5</option>
+							<option>Load Setup 6</option>
+							<option>DIM</option>
+							<option>Recall</option>
+							<option>Mute Enable</option>
+							<option>Main Mono</option>
+							<option>Main Mute</option>
+							<option>Main Out Low Cut</option>
+							<option>Main Out EQ</option>
+							<option>Main Out Dynamics</option>
+							<option>Main Out AutoLevel</option>
+							<option>Phones 9/10 Mute</option>
+							<option>Phones 9/10 Low Cut</option>
+							<option>Phones 9/10 EQ</option>
+							<option>Phones 9/10 Dynamics</option>
+							<option>Phones 9/10 AutoLevel</option>
+							<option>Phones 11/12 Mute</option>
+							<option>Phones 11/12 Low Cut</option>
+							<option>Phones 11/12 EQ</option>
+							<option>Phones 11/12 Dynamics</option>
+							<option>Phones 11/12 AutoLevel</option>
+							<option>Reverb enable</option>
+							<option>Echo enable</option>
+							<option>Durec Record</option>
+							<option>Durec Play/Pause</option>
+							<option>Durec Stop</option>
+							<option>Durec Previous</option>
+							<option>Durec Next</option>
+							<option>TotalMix FX</option>
+						</select>
+					</label>
+					<label>CHAN / MIX
+                        <select id="hardware-programkey03">
+							<option>Default</option>
+							<option>Load Setup 1</option>
+							<option>Load Setup 2</option>
+							<option>Load Setup 3</option>
+							<option>Load Setup 4</option>
+							<option>Load Setup 5</option>
+							<option>Load Setup 6</option>
+							<option>DIM</option>
+							<option>Recall</option>
+							<option>Mute Enable</option>
+							<option>Main Mono</option>
+							<option>Main Mute</option>
+							<option>Main Out Low Cut</option>
+							<option>Main Out EQ</option>
+							<option>Main Out Dynamics</option>
+							<option>Main Out AutoLevel</option>
+							<option>Phones 9/10 Mute</option>
+							<option>Phones 9/10 Low Cut</option>
+							<option>Phones 9/10 EQ</option>
+							<option>Phones 9/10 Dynamics</option>
+							<option>Phones 9/10 AutoLevel</option>
+							<option>Phones 11/12 Mute</option>
+							<option>Phones 11/12 Low Cut</option>
+							<option>Phones 11/12 EQ</option>
+							<option>Phones 11/12 Dynamics</option>
+							<option>Phones 11/12 AutoLevel</option>
+							<option>Reverb enable</option>
+							<option>Echo enable</option>
+							<option>Durec Record</option>
+							<option>Durec Play/Pause</option>
+							<option>Durec Stop</option>
+							<option>Durec Previous</option>
+							<option>Durec Next</option>
+							<option>TotalMix FX</option>
+						</select>
+					</label>
+					<label>SETUP / REV
+                        <select id="hardware-programkey04">
+							<option>Default</option>
+							<option>Load Setup 1</option>
+							<option>Load Setup 2</option>
+							<option>Load Setup 3</option>
+							<option>Load Setup 4</option>
+							<option>Load Setup 5</option>
+							<option>Load Setup 6</option>
+							<option>DIM</option>
+							<option>Recall</option>
+							<option>Mute Enable</option>
+							<option>Main Mono</option>
+							<option>Main Mute</option>
+							<option>Main Out Low Cut</option>
+							<option>Main Out EQ</option>
+							<option>Main Out Dynamics</option>
+							<option>Main Out AutoLevel</option>
+							<option>Phones 9/10 Mute</option>
+							<option>Phones 9/10 Low Cut</option>
+							<option>Phones 9/10 EQ</option>
+							<option>Phones 9/10 Dynamics</option>
+							<option>Phones 9/10 AutoLevel</option>
+							<option>Phones 11/12 Mute</option>
+							<option>Phones 11/12 Low Cut</option>
+							<option>Phones 11/12 EQ</option>
+							<option>Phones 11/12 Dynamics</option>
+							<option>Phones 11/12 AutoLevel</option>
+							<option>Reverb enable</option>
+							<option>Echo enable</option>
+							<option>Durec Record</option>
+							<option>Durec Play/Pause</option>
+							<option>Durec Stop</option>
+							<option>Durec Previous</option>
+							<option>Durec Next</option>
+							<option>TotalMix FX</option>
+						</select>
+					</label>
+				</fieldset>
+			</details>
+            <hr />
+            <details>
+				<summary>Setups</summary>
+				<form id="setup" title="Setup Slots">
+					<div class="controlroom-button-group">
+						<fieldset>
+							<label class="toggle-button" title="Setup 1"
+								>Setup 1
+								<input type="radio" name="setup-slot" value="0" class="setup-slot" />
+							</label>
+							<label class="toggle-button" title="Setup 2"
+								>Setup 2
+								<input type="radio" name="setup-slot" value="1" class="setup-slot" />
+							</label>
+							<label class="toggle-button" title="Setup 3"
+								>Setup 3
+								<input type="radio" name="setup-slot" value="2" class="setup-slot" />
+							</label>
+							<label class="toggle-button" title="Setup 4"
+								>Setup 4
+								<input type="radio" name="setup-slot" value="3" class="setup-slot" />
+							</label>
+							<label class="toggle-button" title="Setup 5"
+								>Setup 5
+								<input type="radio" name="setup-slot" value="4" class="setup-slot" />
+							</label>
+							<label class="toggle-button" title="Setup 6"
+								>Setup 6
+								<input type="radio" name="setup-slot" value="5" class="setup-slot" />
+							</label>
+						</fieldset>
+					</div>
+					<div class="controlroom-button-group">
+						<label class="toggle-button" title="Store current state into selected setup slot on device">
+							Store<input id="store-button" type="checkbox" />
+						</label>
+						<label class="toggle-button" title="Load selected setup state from device">
+							Load<input id="load-button" type="checkbox" />
+						</label>
+					</div>
+					<!--
+					<div class="store-action">
+					<button type="button" id="store-button" class="toggle-button">Store</button>
+					</div>-->
+				</form>
+			</details>
+			<hr />
+			<details>
+				<summary>ARC USB</summary>
+				<fieldset>
+					<label title="Open ARC USB Control Window">ARC Control
+						<button id="open-arc-control">Open ARC</button>
+					</label>
+				</fieldset>
+			</details>
+			<hr />
+				<details>
 				<summary>UI Settings</summary>
 				<fieldset>
 					<label>Help:
@@ -255,10 +995,11 @@
 					<fieldset>
 						<label>Theme:
 							<select id="ui-style-select">
+								<option value="css/theme/tm_dark_hi.css">TM dark (High Contrast)</option>
+								<option value="css/theme/tm_dark.css">TM dark</option>
+								<option value="css/theme/tm_light.css">TM light</option>
 								<option value="css/theme/default.css">Minimal</option>
 								<option value="css/theme/cust.css">Custom</option>
-								<option value="css/theme/tm_light.css">TM light</option>
-								<option value="css/theme/tm_dark.css">TM dark</option>
 							</select>
 						</label>
 					</fieldset>
@@ -270,395 +1011,36 @@
 				<summary>Debug</summary>
 				<form id="debug">
 					<fieldset>
-						<label>Register (0x...)
-							<input id="debug-register">
+						<label
+							>Register (0x...)
+							<input id="debug-register" />
 						</label>
-						<label>Value (0x...)
-							<input id="debug-value">
+						<label
+							>Value (0x...)
+							<input id="debug-value" />
 						</label>
-						<label>Send to Unit
+						<label
+							>Send to Unit
 							<button id="debug-set-register">Set</button>
 						</label>
 					</fieldset>
-
 				</form>
 			</details>
-			<hr>
-			<details open>
-				<summary>Global</summary>
-				<form id="global">
-					<div class="controlroom-button-group">
-						<label class="toggle-button" title="Global Mute Enable">
-							M<input id="controlroom-muteenable" type="checkbox">
-						</label>
-						<label class="toggle-button" title="Global Solo Enable">
-							S<input id="main-soloenable" type="checkbox">
-						</label>
-						<label class="toggle-button" title="Global AdHoc Fadergroup">
-							F<input id="main-adhocfaderenable" type="checkbox">
-						</label>
-					</div>
-					<fieldset>
-						<label>DSP Version<output id="hardware-dspvers"></output></label>
-						<label>DSP Load<output id="hardware-dspload"></output></label>
-					</fieldset>
-				</form>
-			</details>
-			<hr>
-			<details open>
-				<summary>View</summary>
-				<form id="view">
-					<fieldset>
-						<label>Routing Mode<select id="routing-mode" name="routingmode">
-							<option value="submix">Submix</option>
-							<option value="free">Free</option>
-						</select></label>
-						<label>Level Meter FX<span><input id="meter-fx" name="meterfx" type="checkbox"></span></label>
-						<label>Level Meter RMS<span><input id="meter-rms" name="meterrms" type="checkbox"></span></label>
-					</fieldset>
-				</form>
-			</details>
-			<hr>
-			<details open>
-				<summary>ARC USB</summary>
-				<fieldset>
-					<label title="ARC USB Control">ARC Control
-					<button id="open-arc-control">Open ARC</button>
-					</label>
-				</fieldset>
-			</details>
-			<hr>
-			<details open>
-				<summary>Setups</summary>
-				<form id="setup">
-					<div class="controlroom-button-group">
-						<fieldset>
-						<label class="toggle-button" title="Setup 1">Slot 1
-							<input type="radio" name="setup-slot" value="0" class="setup-slot">
-						</label>
-						<label class="toggle-button" title="Setup 2">Slot 2
-							<input type="radio" name="setup-slot" value="1" class="setup-slot">
-						</label>
-						<label class="toggle-button" title="Setup 3">Slot 3
-							<input type="radio" name="setup-slot" value="2" class="setup-slot">
-						</label>
-						<label class="toggle-button" title="Setup 4">Slot 4
-							<input type="radio" name="setup-slot" value="3" class="setup-slot">
-						</label>
-						<label class="toggle-button" title="Setup 5">Slot 5
-							<input type="radio" name="setup-slot" value="4" class="setup-slot">
-						</label>
-						<label class="toggle-button" title="Setup 6">Slot 6
-							<input type="radio" name="setup-slot" value="5" class="setup-slot">
-						</label>
-						</fieldset>
-					</div>
-
-					<div class="controlroom-button-group">
-						<label class="toggle-button" title="Store selected setup to Unit">
-							Store<input id="store-button" type="checkbox">
-						</label>
-					</div>
-
-					<!--
-					<div class="store-action">
-
-						<button type="button" id="store-button" class="toggle-button">Store</button>
-				</div>-->
-
-				</form>
-			</details>
-			<hr>
-			<details>
-				<summary>Reverb<input id="reverb-enabled" type="checkbox"></summary>
-				<fieldset>
-					<label>Type<select id="reverb-type">
-						<option>Small Room</option>
-						<option>Medium Room</option>
-						<option>Large Room</option>
-						<option>Walls</option>
-						<option>Shorty</option>
-						<option>Attack</option>
-						<option>Swagger</option>
-						<option>Old School</option>
-						<option>Echoistic</option>
-						<option>8plus9</option>
-						<option>Grand Wide</option>
-						<option>Thicker</option>
-						<option>Envelope</option>
-						<option>Gated</option>
-						<option>Space</option>
-					</select></label>
-					<label>Pre Delay<input id="reverb-predelay" type="number" min="0" max="999" step="1"></label>
-					<label>Low Cut<input id="reverb-lowcut" type="number" min="20" max="500" step="1"></label>
-					<label>Room Scale<input id="reverb-roomscale" type="number" min="0.5" max="3" step="0.01"></label>
-					<label>Attack<input id="reverb-attack" type="number" min="5" max="400" step="1"></label>
-					<label>Hold<input id="reverb-hold" type="number" min="5" max="400" step="1"></label>
-					<label>Release<input id="reverb-release" type="number" min="5" max="400" step="1"></label>
-					<label>High Cut<input id="reverb-highcut" type="number" min="2000" max="20000" step="100"></label>
-					<label>Time<input id="reverb-time" type="number" min="0.1" max="4.9" step="0.1"></label>
-					<label>High Damp<input id="reverb-highdamp" type="number" min="2000" max="20000" step="100"></label>
-					<label>Smooth<input id="reverb-smooth" type="number" min="0" max="100" step="1"></label>
-					<label>Volume<input id="reverb-volume" type="number" min="-65" max="6" step="0.5"></label>
-					<label>Width<input id="reverb-width" type="number" min="0" max="1" step="0.01"></label>
-				</fieldset>
-			</details>
-			<hr>
-			<details>
-				<summary>Echo<input id="echo-enabled" type="checkbox"></summary>
-				<fieldset>
-					<label>Type<select id="echo-type">
-						<option>Stereo Echo</option>
-						<option>Stereo Cross</option>
-						<option>Pong Echo</option>
-					</select></label>
-					<label>Delay<input id="echo-delay" type="number" min="0" max="2" step="0.01"></label>
-					<label>Feedback<input id="echo-feedback" type="number" min="0" max="100" step="1"></label>
-					<label>Width<input id="echo-width" type="number" min="0" max="1" step="0.01"></label>
-					<label>High Cut<select id="echo-highcut">
-						<option>Off</option>
-						<option>16 kHz</option>
-						<option>12 kHz</option>
-						<option>8 kHz</option>
-						<option>4 kHz</option>
-						<option>2 kHz</option>
-					</select></label>
-					<label>Volume<input id="echo-volume" type="number" min="-65" max="6" step="0.5"></label>
-				</fieldset>
-			</details>
-			<hr>
-			<details>
-				<summary>DURec</summary>
-				<fieldset>
-					<label>File:
-						<select id="durec-file">
-							<option value="-1">New Recording...</option>
-						</select>
-					</label>
-					<label>Samplerate: <output id="durec-samplerate">---</output></label>
-					<label>Channels: <output id="durec-channels">--</output></label>
-					<label>Time:
-						<input type="range" id="durec-time" min="0" max="0" step="1">
-					</label>
-					<output id="durec-time-display">00:00:00</output>
-					<div class="durec-controls">
-						<button id="durec-record">Record</button>
-						<button id="durec-play">Play</button>
-						<button id="durec-stop">Stop</button>
-						<button id="durec-delete">Delete</button>
-					</div>
-				</fieldset>
-			</details>
-			<hr>
-			<details open>
-				<summary>Control Room</summary>
-				<fieldset>
-					<label>Main Out<select id="controlroom-mainout">
-						<option>Analog 1/2</option>
-						<option>Analog 3/4</option>
-						<option>Analog 5/6</option>
-						<option>Analog 7/8</option>
-						<option>Phones 9/10</option>
-						<option>Phones 11/12</option>
-						<option>AES L/R</option>
-						<option>ADAT 1/2</option>
-						<option>ADAT 3/4</option>
-						<option>ADAT 5/6</option>
-						<option>ADAT 7/8</option>
-						<option>ADAT 9/10</option>
-						<option>ADAT 11/12</option>
-						<option>ADAT 13/14</option>
-						<option>ADAT 15/16</option>
-					</select></label>
-					<label>Main Mono<span><input id="controlroom-mainmono" type="checkbox"></span></label>
-					<label>Dim Reduction<input id="controlroom-dimreduction" type="number" min="-65" max="0" step="0.1" value="-20" ></label>
-					<label>Dim<span><input id="controlroom-dim" type="checkbox"></span></label>
-					<label>Recall Volume<input id="controlroom-recallvolume" type="number" min="-65" max="0" step="0.1" value="-10"></label>
-				</fieldset>
-			</details>
-			<hr>
-			<details open>
-				<summary>Hardware</summary>
-				<fieldset>
-					<label>LCD Contrast
-						<input type="range" id="hardware-lcdcontrast" orient="vertical" min="-20" max="20" step="1" value="0">
-					</label>
-					<label>Clock Source<select id="clock-source">
-						<option>Internal</option>
-						<option>Word Clock</option>
-						<option>AES (S/PDIF)</option>
-						<option>Opt. 1 (AES)</option>
-						<option>Opt. 2 (Optical)</option>
-						<option>MADI Opt.</option>
-						<option>MADI Coax.</option>
-					</select></label>
-					<label>Sample Rate<output id="clock-samplerate"></output></label>
-					<label>Wck. Out<span><input id="clock-wckout" type="checkbox"></span></label>
-					<label>Wck. Single<span><input id="clock-wcksingle" type="checkbox"></span></label>
-					<label>Wck. Term.<span><input id="clock-wckterm" type="checkbox"></span></label>
-					<label>AES In<select id="hardware-aesin">
-						<option>XLR</option>
-						<option>Opt. 2</option>
-					</select></label>
-					<label>AES State Pro<select id="hardware-spdifout">
-						<option>Consumer</option>
-						<option>Professional</option>
-					</select></label>
-					<label>Opt. 1 In<select id="hardware-opticalin">
-						<option>ADAT</option>
-						<option>S/PDIF</option>
-					</select></label>
-					<label>Opt. 1 Out<select id="hardware-opticalout">
-						<option>ADAT</option>
-						<option>S/PDIF</option>
-					</select></label>
-					<label>Opt. 2 In<select id="hardware-opticalin2">
-						<option>ADAT</option>
-						<option>S/PDIF</option>
-						<option>AES</option>
-					</select></label>
-					<label>Opt. 2 Out<select id="hardware-opticalout2">
-						<option>ADAT</option>
-						<option>S/PDIF</option>
-						<option>AES</option>
-					</select></label>
-					<label>MADI In
-						<select id="hardware-madiinput">
-							<option>Optical</option>
-							<option>Coaxial</option>
-							<option>Auto</option>
-							<option>Split</option>
-						</select>
-					</label>
-					<label>MADI Out
-						<select id="hardware-madioutput">
-							<option>Optical</option>
-							<option>Mirror</option>
-							<option>Split</option>
-						</select>
-					</label>
-					<label>MADI Frame
-						<select id="hardware-madiframe">
-							<option>96K Frame</option>
-							<option>48K Frame</option>
-						</select>
-					</label>
-					<label>MADI Format
-						<select id="hardware-madiformat">
-							<option>56 (28) ch</option>
-							<option>64 (32 ch)</option>
-						</select>
-					</label>
-					<label>Record EQ+D<span><input id="hardware-eqdrecord" type="checkbox"></span></label>
-					<label>DSP Available
-						<output id="hardware-dspavail"></output>
-					</label>
-					<label>DSP Status
-						<output id="hardware-dspstatus"></output>
-					</label>
-					<label>CC Mode<select id="hardware-ccmode">
-						<option>Off</option>
-						<option>On</option>
-					</select></label>
-					<label>Interface Mode<select id="hardware-interfacemode">
-						<option>Auto</option>
-						<option>USB2</option>
-						<option>USB3</option>
-						<option>CC</option>
-					</select></label>
-					<label>CC Mix<select id="hardware-ccmix">
-						<option>TotalMix</option>
-						<option>6 ch. + phones</option>
-						<option>8 ch.</option>
-						<option>20 ch.</option>
-					</select></label>
-
-					<label>CC Routing<select id="hardware-ccrouting">
-						<option>All Ch.</option>
-						<option>Phones</option>
-					</select></label>
-					<label>Standalone MIDI<select id="hardware-standalonemidi">
-						<option>Off</option>
-						<option>MIDI 1</option>
-						<option>MIDI 2</option>
-					</select></label>
-					<label>Standalone ARC<select id="hardware-standalonearc">
-						<option>Volume</option>
-						<option>1s Op</option>
-						<option>Normal</option>
-					</select></label>
-				</fieldset>
-			</details>
-			<hr>
-			<details open>
-				<summary>Keys</summary>
-				<fieldset>
-				<label>Lock Keys<select id="hardware-lockkeys">
-					<option>Off</option>
-					<option>Keys</option>
-					<option>All</option>
-				</select></label>
-				<label>Remap Keys<span><input id="hardware-remapkeys" type="checkbox"></span></label>
-				<!--					<label>Remap Keys<select id="hardware-remapkeys">-->
-				<!--						<option>Off</option>-->
-				<!--						<option>On</option>-->
-				<!--					</select></label>-->
-				<label>MIC / GAIN<select id="hardware-programkey01">
-					<option>Default</option> <option>Load Setup 1</option> <option>Load Setup 2</option> <option>Load Setup 3</option> <option>Load Setup 4</option> <option>Load Setup 5</option> <option>Load Setup 6</option>
-					<option>DIM</option> <option>Recall</option> <option>Mute Enable</option> <option>Main Mono</option> <option>Main Mute</option>
-					<option>Main Out Low Cut</option> <option>Main Out EQ</option> <option>Main Out Dynamics</option> <option>Main Out AutoLevel</option>
-					<option>Phones 9/10 Mute</option> <option>Phones 9/10 Low Cut</option> <option>Phones 9/10 EQ</option> <option>Phones 9/10 Dynamics</option> <option>Phones 9/10 AutoLevel</option>
-					<option>Phones 11/12 Mute</option> <option>Phones 11/12 Low Cut</option> <option>Phones 11/12 EQ</option> <option>Phones 11/12 Dynamics</option> <option>Phones 11/12 AutoLevel</option>
-					<option>Reverb enable</option> <option>Echo enable</option>
-					<option>Durec Record</option> <option>Durec Play/Pause</option> <option>Durec Stop</option> <option>Durec Previous</option> <option>Durec Next</option>
-					<option>TotalMix FX</option>
-				</select></label>
-				<label>REC / PLAY<select id="hardware-programkey02">
-					<option>Default</option> <option>Load Setup 1</option> <option>Load Setup 2</option> <option>Load Setup 3</option> <option>Load Setup 4</option> <option>Load Setup 5</option> <option>Load Setup 6</option>
-					<option>DIM</option> <option>Recall</option> <option>Mute Enable</option> <option>Main Mono</option> <option>Main Mute</option>
-					<option>Main Out Low Cut</option> <option>Main Out EQ</option> <option>Main Out Dynamics</option> <option>Main Out AutoLevel</option>
-					<option>Phones 9/10 Mute</option> <option>Phones 9/10 Low Cut</option> <option>Phones 9/10 EQ</option> <option>Phones 9/10 Dynamics</option> <option>Phones 9/10 AutoLevel</option>
-					<option>Phones 11/12 Mute</option> <option>Phones 11/12 Low Cut</option> <option>Phones 11/12 EQ</option> <option>Phones 11/12 Dynamics</option> <option>Phones 11/12 AutoLevel</option>
-					<option>Reverb enable</option> <option>Echo enable</option>
-					<option>Durec Record</option> <option>Durec Play/Pause</option> <option>Durec Stop</option> <option>Durec Previous</option> <option>Durec Next</option>
-					<option>TotalMix FX</option>
-				</select></label>
-				<label>CHAN / MIX<select id="hardware-programkey03">
-					<option>Default</option> <option>Load Setup 1</option> <option>Load Setup 2</option> <option>Load Setup 3</option> <option>Load Setup 4</option> <option>Load Setup 5</option> <option>Load Setup 6</option>
-					<option>DIM</option> <option>Recall</option> <option>Mute Enable</option> <option>Main Mono</option> <option>Main Mute</option>
-					<option>Main Out Low Cut</option> <option>Main Out EQ</option> <option>Main Out Dynamics</option> <option>Main Out AutoLevel</option>
-					<option>Phones 9/10 Mute</option> <option>Phones 9/10 Low Cut</option> <option>Phones 9/10 EQ</option> <option>Phones 9/10 Dynamics</option> <option>Phones 9/10 AutoLevel</option>
-					<option>Phones 11/12 Mute</option> <option>Phones 11/12 Low Cut</option> <option>Phones 11/12 EQ</option> <option>Phones 11/12 Dynamics</option> <option>Phones 11/12 AutoLevel</option>
-					<option>Reverb enable</option> <option>Echo enable</option>
-					<option>Durec Record</option> <option>Durec Play/Pause</option> <option>Durec Stop</option> <option>Durec Previous</option> <option>Durec Next</option>
-					<option>TotalMix FX</option>
-				</select></label>
-				<label>SETUP / REV<select id="hardware-programkey04">
-					<option>Default</option> <option>Load Setup 1</option> <option>Load Setup 2</option> <option>Load Setup 3</option> <option>Load Setup 4</option> <option>Load Setup 5</option> <option>Load Setup 6</option>
-					<option>DIM</option> <option>Recall</option> <option>Mute Enable</option> <option>Main Mono</option> <option>Main Mute</option>
-					<option>Main Out Low Cut</option> <option>Main Out EQ</option> <option>Main Out Dynamics</option> <option>Main Out AutoLevel</option>
-					<option>Phones 9/10 Mute</option> <option>Phones 9/10 Low Cut</option> <option>Phones 9/10 EQ</option> <option>Phones 9/10 Dynamics</option> <option>Phones 9/10 AutoLevel</option>
-					<option>Phones 11/12 Mute</option> <option>Phones 11/12 Low Cut</option> <option>Phones 11/12 EQ</option> <option>Phones 11/12 Dynamics</option> <option>Phones 11/12 AutoLevel</option>
-					<option>Reverb enable</option> <option>Echo enable</option>
-					<option>Durec Record</option> <option>Durec Play/Pause</option> <option>Durec Stop</option> <option>Durec Previous</option> <option>Durec Next</option>
-					<option>TotalMix FX</option>
-				</select></label>
-				</fieldset>
-			</details>
+			<hr />
 		</div>
 		<datalist id="volume-values">
-			<option value="6" label="6 dB">
-			<option value="0" label="0 dB">
-			<option value="-6" label="-6 dB">
-			<option value="-18" label="-18 dB">
-			<option value="-42" label="-42 dB">
+			<option value="6" label="6 dB"></option>
+			<option value="0" label="0 dB"></option>
+			<option value="-6" label="-6 dB"></option>
+			<option value="-18" label="-18 dB"></option>
+			<option value="-42" label="-42 dB"></option>
 		</datalist>
 		<script>
-			window.addEventListener('DOMContentLoaded', function() {
-				if (typeof configureFromUrl === 'function') {
+			window.addEventListener("DOMContentLoaded", function () {
+				if (typeof configureFromUrl === "function") {
 					configureFromUrl();
 				}
-				if (typeof initHelp !== 'undefined') {
+				if (typeof initHelp !== "undefined") {
 					initHelp();
 				}
 			});
