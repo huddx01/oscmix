@@ -26,11 +26,11 @@ implemented in oscmix.
 
 ### Devices in WIP State
 
-- RME Fireface UFX III
 - RME Fireface 802
 - RME Fireface UCX
 - RME Fireface UFX+
-
+- RME Fireface UFX II
+- RME Fireface UFX III
 
 
 ## Download
