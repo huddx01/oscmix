@@ -470,21 +470,21 @@ jobs:
       - name: Check if web artifact exists
         if: hashFiles('web-artifact/*.tar.gz') == ''
         run: |
-          echo "No web artifact found – skipping deployment to github-pages."
+          echo "No web artifact found – skipping deployment to gh-pages."
           exit 0
 
-      - name: Switch to github-pages branch (create if not exists)
+      - name: Switch to gh-pages branch (create if not exists)
         run: |
           cd repo
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
-          if git ls-remote --heads origin github-pages | grep github-pages; then
-            git checkout github-pages
+          if git ls-remote --heads origin gh-pages | grep gh-pages; then
+            git checkout gh-pages
           else
-            git checkout --orphan github-pages
+            git checkout --orphan gh-pages
             git rm -rf .
             git commit --allow-empty -m "Initial orphan branch for GitHub Pages"
-            git push origin github-pages
+            git push origin gh-pages
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -495,7 +495,7 @@ jobs:
           find . -mindepth 1 -not -path './.git*' -delete
           tar xzf ../web-artifact/*.tar.gz
 
-      - name: Commit and push to github-pages
+      - name: Commit and push to gh-pages
         run: |
           cd repo
           git config user.name "github-actions[bot]"
@@ -505,5 +505,5 @@ jobs:
             echo "No changes to commit – working tree clean."
           else
             git commit -m "Update GitHub Pages from web artifact ${{ needs.version-info.outputs.artifact_version }}"
-            git push origin github-pages
+            git push origin gh-pages
           fi
