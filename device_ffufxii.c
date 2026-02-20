@@ -12,7 +12,7 @@ static const char *const reflevel_output_xlr[] = {"-10dBV", "+4dBu", "Hi Gain", 
 static const char *const reflevel_phones[] = {"Low", "High"};
 
 #define MIX_IN_BASE  0x4000
-#define MIX_PB_BASE  0x5780
+#define MIX_PB_BASE  0x4780
 #define MIX_STRIDE   64
 
 static const struct channelinfo inputs[] = {
@@ -86,20 +86,6 @@ regtoctl(int reg, struct param *p)
 			}
 		}
 	}
-	/* ---------- NEW MIX HANDLING ---------- */
-	// TODO: Verify if this is correct.
-	else if (reg >= 0x0B40 && reg < 0x0B40 + 0x30 * LEN(outputs)) {
-		unsigned offset = reg - 0x0B40;
-		unsigned out = offset / 0x30;
-		unsigned in  = offset % 0x30;
-		if (out < LEN(outputs) && in < LEN(inputs)) {
-			p->out = out;
-			p->in  = in;
-			return MIX;
-		}
-		return -1;
-	}
-	/* -------------------------------------- */
 	else if (reg - 0x30A0U < 0x20 * LEN(outputs)) {
 
 		unsigned base = reg - 0x30A0;
@@ -139,6 +125,19 @@ regtoctl(int reg, struct param *p)
 			case 0x1D: return ROOMEQ_BAND9GAIN;
 			case 0x1E: return ROOMEQ_BAND9FREQ;
 			case 0x1F: return ROOMEQ_BAND9Q;
+			default: return -1;
+		}
+	}
+	else if (reg >= 0x0B40 && reg < 0x0C1C) {
+		idx = (reg - 0x0B40) / 0x0A;
+		unsigned par = reg - (0x0B40 + 0x0A * idx);
+		switch (par) {
+			case 0x0: return MIX;
+			case 0x1: return MIX;
+			case 0x2: return MIX;
+			case 0x3: return MIX;
+			case 0x4: return MIX;
+			case 0x5: return MIX;
 			default: return -1;
 		}
 	}
