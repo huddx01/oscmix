@@ -25,6 +25,11 @@ COREMIDI_LDLIBS?=-framework CoreMIDI -framework CoreFoundation
 REGTOOL_GENERIC_LIBS-$(OS-Linux)=$(ALSA_LDFLAGS) $(ALSA_LDLIBS)
 REGTOOL_GENERIC_LIBS-$(OS-Darwin)=fatal.o $(COREMIDI_LDLIBS)
 
+LIBUSB?=y
+LIBUSB_CFLAGS?=$$(pkg-config --cflags libusb-1.0)
+LIBUSB_LDFLAGS?=$$(pkg-config --libs-only-L --libs-only-other libusb-1.0)
+LIBUSB_LDLIBS?=$$(pkg-config --libs-only-l libusb-1.0)
+
 GTK?=y
 WEB?=n
 
@@ -120,6 +125,17 @@ tools/regtool: tools/regtool.o
 tools/regtool_generic: tools/regtool_generic.o $(REGTOOL_GENERIC_OBJ-y)
 	$(CC) $(LDFLAGS) -o $@ tools/regtool_generic.o $(REGTOOL_GENERIC_LIBS-y)
 
+tools/regtool_usb.o: tools/regtool_usb.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LIBUSB_CFLAGS) -c -o $@ tools/regtool_usb.c
+
+tools/regtool_usb: tools/regtool_usb.o
+	$(CC) $(LDFLAGS) $(LIBUSB_LDFLAGS) -o $@ tools/regtool_usb.o $(LIBUSB_LDLIBS) -lpthread
+
+tools/usbdesc.o: tools/usbdesc.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LIBUSB_CFLAGS) -c -o $@ tools/usbdesc.c
+
+tools/usbdesc: tools/usbdesc.o
+	$(CC) $(LDFLAGS) $(LIBUSB_LDFLAGS) -o $@ tools/usbdesc.o $(LIBUSB_LDLIBS)
 
 .PHONY: install
 install: $(BIN)
@@ -134,7 +150,11 @@ clean:
 		wsdgram $(WSDGRAM_OBJ)\
 		alsarawio alsarawio.o\
 		alsaseqio alsaseqio.o\
-		coremidiio coremidiio.o fatal.o spawn.o
+		coremidiio coremidiio.o fatal.o spawn.o\
+		tools/regtool tools/regtool.o\
+		tools/regtool_generic tools/regtool_generic.o\
+		tools/regtool_usb tools/regtool_usb.o\
+		tools/usbdesc tools/usbdesc.o
 
 	$(MAKE) -C gtk clean
 	$(MAKE) -C web clean

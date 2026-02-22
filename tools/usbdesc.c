@@ -14,7 +14,7 @@ main(int argc, char *argv[])
 		fprintf(stderr, "libusb_init: %s\n", libusb_strerror(ret));
 		return 1;
 	}
-	dev = libusb_open_device_with_vid_pid(NULL, 0x2a39, 0x3fd9);
+	dev = libusb_open_device_with_vid_pid(NULL, 0x2a39, 0x3fde);
 	if (!dev) {
 		fprintf(stderr, "libusb_open failed\n");
 		return 1;
