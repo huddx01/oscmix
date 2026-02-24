@@ -1,4 +1,9 @@
 :root {
+
+	/* Dimensions */
+	--channel-width: 90px;
+	--sidebar-width: 19em;
+	
 	/* Base Colors */
 	--background-color: rgba(239, 239, 239, 0.8);
 	--background-sidebar-color: #ffffff;
@@ -24,6 +29,14 @@
 	--adhoc-highlight-color: #d39f27;
 	--adhoc-highlight-color-shadow: rgb(122 99 42 / 82%);
 
+	/* Store/Load Button colors */
+	--store-color: #f8000085;
+	--store-highlight-color: #f80000;
+	--store-highlight-color-shadow: rgb(255 0 0 / 82%);
+	--load-color: rgba(0, 248, 0, 0.53);
+	--load-highlight-color: #00f800;
+	--load-highlight-color-shadow: rgb(255 0 0 / 82%);
+	
 	/* Meter-colors */
 	--meter-red: #f33628;
 	--meter-orange: #ff8100;
@@ -120,6 +133,7 @@ output {
 
 .toggle-button:has(> input[type="checkbox"]:checked) {
 	background-color: var(--toggle-checked-color);
+	color: var(--background-color);
 }
 
 /* Mute & Solo Buttons */
@@ -130,6 +144,33 @@ output {
 
 .toggle-button.solo-button:has(> .solo-checkbox:checked) {
 	background-color: var(--solo-color) !important;
+	color: var(--text-highlight-color);
+}
+
+/* Rec & Play Buttons */
+.toggle-button.record-button:has(> .record-checkbox:checked) {
+	background-color: red !important;
+	color: var(--text-highlight-color);
+}
+
+.toggle-button.play-button:has(> .play-checkbox:checked) {
+	background-color: green !important;
+	color: var(--text-highlight-color);
+}
+
+/* Setup Slots & Store Buttons */
+.toggle-button.slot-button:has(> .slot-checkbox:checked) {
+	background-color: var(--mute-color);
+	color: var(--text-highlight-color);
+}
+
+.toggle-button.store-button:has(> .store-checkbox:checked) {
+	background-color: red;
+	color: var(--text-highlight-color);
+}
+
+.toggle-button.load-button:has(> .load-checkbox:checked) {
+	background-color: greenyellow;
 	color: var(--text-highlight-color);
 }
 
@@ -254,7 +295,7 @@ label:has(#connection-type:not([data-value="WebSocket"])) ~ .connection-websocke
 .channel {
 	display: flex;
 	flex-direction: column;
-	width: 85px;
+	width:  var(--channel-width);
 }
 
 .channel > * {
@@ -266,15 +307,24 @@ label:has(#connection-type:not([data-value="WebSocket"])) ~ .connection-websocke
 }
 
 .channel:has(.channel-show-settings:not(:checked)) ~ .channel-panel-settings {
-	display: none;
+	width: 0;
+	padding: 0;
+	border-left-width: 0;
+	overflow: hidden;
 }
 
 .channel:has(.channel-show-eq:not(:checked)) ~ .channel-panel-eq {
-	display: none;
+	width: 0;
+	padding: 0;
+	border-left-width: 0;
+	overflow: hidden;
 }
 
 .channel:has(.channel-show-dynamics:not(:checked)) ~ .channel-panel-dynamics {
-	display: none;
+	width: 0;
+	padding: 0;
+	border-left-width: 0;
+	overflow: hidden;
 }
 
 .channel-name-form {
@@ -466,7 +516,10 @@ input[type=range]:focus {
 }
 
 .channel-panel-settings:has(.stereo:not(:checked)) .stereo-field {
-	display: none;
+		width: 0;
+	padding: 0;
+	border-left-width: 0;
+	overflow: hidden;
 }
 
 .channel-panel {
@@ -476,6 +529,11 @@ input[type=range]:focus {
 	padding: 4px;
 	width: 200px;
 	overflow-y: auto;
+	min-width: 0;   
+	transition: width 0.3s ease,
+	            padding 0.3s ease,
+	            border-left-width 0.3s ease !important;
+	box-sizing: border-box;   
 }
 
 .channel-panel fieldset {
@@ -779,11 +837,57 @@ osc-knob::after {
 	background-color: var(--adhoc-highlight-color) !important;
 	box-shadow: 0 0 8px 2px var(--adhoc-highlight-color-shadow);
 	color: var(--text-highlight-color);
+}
 
-	.controlroom-button-group .toggle-button:hover {
-		filter: brightness(1.1);
-	}
+/* ---Setup Slots--- */
+.controlroom-button-group .toggle-button:has(#setup-slotenable) {
+	background-color: var(--mute-color) !important;
+}
+.controlroom-button-group .toggle-button:has(#setup-slotenable:checked) {
+	background-color: var(--mute-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--mute-highlight-color-shadow);
+	color: var(--text-highlight-color);
+}
+/* Store-Button */
+.controlroom-button-group .toggle-button:has(#store-button) {
+	background-color: var(--store-color) !important;
+}
+.controlroom-button-group .toggle-button:has(#store-button:checked) {
+	background-color: var(--store-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--store-highlight-color-shadow);
+	color: var(--text-highlight-color);
+}
+/* Load-Button */
+.controlroom-button-group .toggle-button:has(#load-button) {
+	background-color: var(--load-color) !important;
+}
+.controlroom-button-group .toggle-button:has(#load-button:checked) {
+	background-color: var(--load-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--store-highlight-color-shadow);
+	color: var(--text-highlight-color);
+}
+/* Store/Load-Button Effect */
+.controlroom-button-group .toggle-button:hover {
+	filter: brightness(1.1);
+}
+.controlroom-button-group .toggle-button:active {
+	filter: brightness(0.95);
+}
 
-	.controlroom-button-group .toggle-button:active {
-		filter: brightness(0.95);
-	}
+.led-btn {
+	padding: 8px 12px;
+	margin: 4px;
+	border: 1px solid #555;
+	border-radius: 4px;
+	background-color: #333;
+	color: #ddd;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.led-btn.active {
+	background-color: orange; 
+	box-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
+	color: white;
+	border-color: #2E7D32;
+}

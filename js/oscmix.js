@@ -15,11 +15,11 @@ let arcControlWindow = null;
 
 // Debug flags
 let debugFlags = {
-	incoming: true,
-	outgoing: true,
+	incoming: false,
+	outgoing: false,
 	level: false,
 	arc: false,
-	other: true
+	other: false
 };
 
 // Load debug flags from localStorage
@@ -58,7 +58,6 @@ function setupDebugListeners() {
 
 updatePageTitle();
 
-// ARC Conn state
 let connectionStatus = {
 	connected: false,
 	oscActive: false,
@@ -306,7 +305,6 @@ class Interface {
 
 		for (let i = 0; i < currentDevice.outputNames.length; i++) {
 			this.methods.set(`/output/${i + 1}/volumecal`, (args) => {
-				//
 				console.log(`VolumeCal for output ${i + 1}: ${args[0]}`);
 			});
 		}
@@ -794,74 +792,6 @@ class Channel {
 				panKnob.updateFromOSC(args[0]);
 			});
 		}
-		//		let fxKnob; // Deklaration außerhalb
-		//
-		//		const fxTarget = fragment.querySelector('label[data-flags="fx"] .knob-target');
-		//		if (fxTarget) {
-		//			fxKnob = new Knob({ // Zuweisung statt Neudeklaration
-		//				id: `fx-${type}-${index}`,
-		//				min: -65,
-		//				max: 0,
-		//				value: -65,
-		//				unit: 'dB',
-		//				size: 25,
-		//				step: 0.5,
-		//				resetValue: -65,
-		//				sendDuringDrag: true,
-		//				sendInterval: 150,
-		//				borderColor: '#0000ff',
-		//				valueColor: 'white'
-		//			});
-		//
-		//			fxTarget.innerHTML = '';
-		//			fxTarget.appendChild(fxKnob.element);
-		//
-		//			fxKnob.element.addEventListener('user-change', (event) => {
-		//				const value = event.detail.value;
-		//				iface.send(`/${type}/${index+1}/fx`, ',f', [value]);
-		//			});
-		//
-		//			// OSC-Handler INSIDE the if-block setzen
-		//			iface.methods.set(`/${type}/${index+1}/fx`, (args) => {
-		//				fxKnob.updateFromOSC(args[0]);
-		//			});
-		//		}
-		// VolumeCal Knob für Outputs
-		//		if (type === Channel.OUTPUT) {
-		//			//console.error('VolumeCal target ');
-		//			const volumeCalTarget = fragment.querySelector('[data-flags="volumecal"] .knob-target');
-		//			let volumeCalKnob;
-		//			if (volumeCalTarget) {
-		//				volumeCalKnob = new Knob({
-		//					id: `volumecal-${index}`,
-		//					min: -12,
-		//					max: 12,
-		//					value: 0,
-		//					unit: 'dB',
-		//					size: 25,
-		//					step: 0.5,
-		//					resetValue: 0,
-		//					sendDuringDrag: true,
-		//					sendInterval: 150,
-		//					borderColor: '#00ff00',  // Grüner Rahmen
-		//					valueColor: '#00ffff'    // Cyan Text
-		//				});
-		//
-		//				volumeCalTarget.innerHTML = '';
-		//				volumeCalTarget.appendChild(volumeCalKnob.element);
-		//
-		//				volumeCalKnob.element.addEventListener('user-change', (event) => {
-		//					const value = event.detail.value;
-		//					iface.send(`/output/${index+1}/volumecal`, ',f', [value]);
-		//				});
-		//
-		//				iface.methods.set(`/output/${index+1}/volumecal`, (args) => {
-		//					volumeCalKnob.updateFromOSC(args[0]);
-		//				});
-		//			} else {
-		//				console.error('VolumeCal target not found in template');
-		//			}
-		//		}
 
 		const fxInput = fragment.getElementById("fx");
 		const fxSlider = fragment.querySelector(".fx-slider");
@@ -927,15 +857,15 @@ class Channel {
 						for (const option of options) option.disabled = event.target.checked;
 					});
 				}
-              
-                stereo.addEventListener('change', () => {
-                    const settingsCheckbox = fragment.querySelector('.channel-show-settings');
-                    if (settingsCheckbox && settingsCheckbox.checked) {
-                        settingsCheckbox.checked = false;               /
-                        settingsCheckbox.dispatchEvent(new Event('change', { bubbles: true })); 
-                    }
-                });
-                
+
+				stereo.addEventListener('change', () => {
+					const settingsCheckbox = fragment.querySelector('.channel-show-settings');
+					if (settingsCheckbox && settingsCheckbox.checked) {
+						settingsCheckbox.checked = false;
+						settingsCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+					}
+				});
+
 				const submix = fragment.getElementById("submix");
 				submix.value = index;
 				fragment.children[0].addEventListener("click", (event) => {
@@ -1487,13 +1417,7 @@ function setupInterface() {
 	iface.bind("/hardware/opticalin", ",i", document.getElementById("hardware-opticalin"), "selectedIndex", "change");
 	iface.bind("/hardware/opticalout", ",i", document.getElementById("hardware-opticalout"), "selectedIndex", "change");
 	iface.bind("/hardware/opticalin2", ",i", document.getElementById("hardware-opticalin2"), "selectedIndex", "change");
-	iface.bind(
-		"/hardware/opticalout2",
-		",i",
-		document.getElementById("hardware-opticalout2"),
-		"selectedIndex",
-		"change"
-	);
+	iface.bind("/hardware/opticalout2", ",i", document.getElementById("hardware-opticalout2"), "selectedIndex", "change");
 	iface.bind("/hardware/spdifout", ",i", document.getElementById("hardware-spdifout"), "selectedIndex", "change");
 	iface.bind("/hardware/ccmix", ",i", document.getElementById("hardware-ccmix"), "selectedIndex", "change");
 	iface.bind("/hardware/ccmode", ",i", document.getElementById("hardware-ccmode"), "selectedIndex", "change");

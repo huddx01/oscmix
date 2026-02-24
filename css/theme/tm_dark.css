@@ -28,10 +28,13 @@
 	--adhoc-highlight-color: #d39f27;
 	--adhoc-highlight-color-shadow: rgb(122 99 42 / 82%);
 
-	/* Store Button colors */
+	/* Store/Load Button colors */
 	--store-color: #f8000085;
 	--store-highlight-color: #f80000;
 	--store-highlight-color-shadow: rgb(255 0 0 / 82%);
+	--load-color: rgba(0, 248, 0, 0.53);
+	--load-highlight-color: #00f800;
+	--load-highlight-color-shadow: rgb(255 0 0 / 82%);
 
 	/* Meter-colors */
 	--meter-red: #f33628;
@@ -129,6 +132,7 @@ output {
 
 .toggle-button:has(> input[type="checkbox"]:checked) {
 	background-color: var(--toggle-checked-color);
+	color: var(--background-color);
 }
 
 /* Mute & Solo Buttons */
@@ -297,15 +301,24 @@ label:has(#connection-type:not([data-value="WebSocket"])) ~ .connection-websocke
 }
 
 .channel:has(.channel-show-settings:not(:checked)) ~ .channel-panel-settings {
-	display: none;
+	width: 0;
+	padding: 0;
+	border-left-width: 0;
+	overflow: hidden;
 }
 
 .channel:has(.channel-show-eq:not(:checked)) ~ .channel-panel-eq {
-	display: none;
+	width: 0;
+	padding: 0;
+	border-left-width: 0;
+	overflow: hidden;
 }
 
 .channel:has(.channel-show-dynamics:not(:checked)) ~ .channel-panel-dynamics {
-	display: none;
+	width: 0;
+	padding: 0;
+	border-left-width: 0;
+	overflow: hidden;
 }
 
 .channel-name-form {
@@ -495,12 +508,14 @@ input[type=range]:focus {
 .channel:has(~ .channel-panel-dynamics :is(.dynamics, .autolevel):checked) .channel-show-dynamics-label,
 .channel:has(~ .channel-panel-settings :is(.roomeq, .loopback, .crossfeed):checked) .channel-show-settings-label
 {
-	box-shadow: inset 0 0 0.5em selecteditem;
-	box-shadow: inset 0 0 8px 2px orange;
+	box-shadow: inset 0 0 1.5em selecteditem;
 }
 
 .channel-panel-settings:has(.stereo:not(:checked)) .stereo-field {
-	display: none;
+		width: 0;
+	padding: 0;
+	border-left-width: 0;
+	overflow: hidden;
 }
 
 .channel-panel {
@@ -510,6 +525,11 @@ input[type=range]:focus {
 	padding: 4px;
 	width: 200px;
 	overflow-y: auto;
+	min-width: 0;   
+	transition: width 0.3s ease,
+	            padding 0.3s ease,
+	            border-left-width 0.3s ease !important;
+	box-sizing: border-box;   
 }
 
 .channel-panel fieldset {
