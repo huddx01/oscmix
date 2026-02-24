@@ -927,7 +927,15 @@ class Channel {
 						for (const option of options) option.disabled = event.target.checked;
 					});
 				}
-
+              
+                stereo.addEventListener('change', () => {
+                    const settingsCheckbox = fragment.querySelector('.channel-show-settings');
+                    if (settingsCheckbox && settingsCheckbox.checked) {
+                        settingsCheckbox.checked = false;               /
+                        settingsCheckbox.dispatchEvent(new Event('change', { bubbles: true })); 
+                    }
+                });
+                
 				const submix = fragment.getElementById("submix");
 				submix.value = index;
 				fragment.children[0].addEventListener("click", (event) => {
