@@ -229,7 +229,7 @@ The [web](web) directory contains a web frontend that can communicate
 with oscmix through OSC over a WebSocket, or by directly to an
 instance of oscmix compiled as WebAssembly running directly in the browser.
 
-<img width="1930" height="1095" alt="oscmix-web" src="https://github.com/user-attachments/assets/4bcc5755-0c3d-47cc-b5a9-a73a9178bcf3" />
+<img width="1930" height="1095" alt="oscmix-web" src="doc/webui.png" />
 
 
 The web UI for this fork/dev branch is automatically deployed at
