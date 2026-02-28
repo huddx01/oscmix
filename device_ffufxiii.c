@@ -494,7 +494,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 const struct device ffufxiii = {
 	.id = "ffufxiii",
 	.name = "Fireface UFX III",
-	.version = 20,
+	.version = 25,
 	.flags = DEVICE_HAS_DUREC | DEVICE_HAS_ROOMEQ,
 	.inputs = inputs,
 	.inputslen = LEN(inputs),
