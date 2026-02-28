@@ -1,6 +1,6 @@
-// ════════════════════════════════════════════════
-//  CONFIG
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//CONFIG
+//-------------------------------------------------
 const N        = 9;
 const DB_MAX   = 20, DB_MIN = -20;
 const Q_MIN    = 0.4, Q_MAX = 9.9;
@@ -13,10 +13,10 @@ const FULL_CHOICE_BANDS = new Set([0,7,8]);
 const FILTER_TYPES      = ['Bell','Shelving','Low Pass','High Pass'];
 const SHELVING_POL_FREQ = 1000;
 
-// ════════════════════════════════════════════════
-//  THEME  — reads CSS custom properties at draw-time
-//  so a future theme-toggle only needs to swap :root vars
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//THEME  — reads CSS custom properties at draw-time
+//so a future theme-toggle only needs to swap :root vars
+//-------------------------------------------------
 function getTheme() {
 	const s = getComputedStyle(document.documentElement);
 	const v = name => s.getPropertyValue(name).trim();
@@ -48,15 +48,15 @@ function getTheme() {
 	};
 }
 
-// ════════════════════════════════════════════════
-//  TMREQ TYPE MAP
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//TMREQ TYPE MAP
+//-------------------------------------------------
 const TMREQ_TYPE_TO_NAME = { '0.00':'Bell', '1.00':'Shelving', '2.00':'Low Pass', '3.00':'High Pass' };
 const TMREQ_NAME_TO_TYPE = { 'Bell':'0.00', 'Shelving':'1.00', 'Low Pass':'2.00', 'High Pass':'3.00' };
 
-// ════════════════════════════════════════════════
-//  STATE
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//STATE
+//-------------------------------------------------
 let bands = Array.from({length:N}, (_,i) => ({
 	gain:DEFAULT_GAIN, freq:DEFAULT_FREQS[i], q:DEFAULT_Q, type:'Bell'
 }));
@@ -65,9 +65,9 @@ let delay     = 0.00;   // ms, 0.00–42.50
 let volCal    = 0.00;   // dB, -24.0–3.0
 let presets   = JSON.parse(localStorage.getItem('roomEq_presets') || '{}');
 
-// ════════════════════════════════════════════════
-//  HELPERS
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//HELPERS
+//-------------------------------------------------
 function freqToNorm(f) {
 	return (Math.log10(f)-Math.log10(FREQ_MIN)) /
 	(Math.log10(FREQ_MAX)-Math.log10(FREQ_MIN));
@@ -84,9 +84,9 @@ function clampParam(p,v) {
 	if (p==='q')    return Math.max(Q_MIN,Math.min(Q_MAX,v));
 }
 
-// ════════════════════════════════════════════════
-//  BUILD DOM
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//BUILD DOM
+//-------------------------------------------------
 const container    = document.getElementById('bandsContainer');
 const knobCanvases = [];
 // Extra knobs: delay & volCal — built after bands
@@ -125,9 +125,9 @@ for (let i=0; i<N; i++) {
 	container.appendChild(div);
 }
 
-// ════════════════════════════════════════════════
-//  BUILD EXTRA KNOBS (Delay & VolCal)
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//BUILD EXTRA KNOBS (Delay & VolCal)
+//-------------------------------------------------
 function buildExtraKnob(key, label, containerEl) {
 	const wrap = document.createElement('div'); wrap.className = 'knob-wrap';
 	const klbl = document.createElement('div'); klbl.className = 'knob-label'; klbl.textContent = label;
@@ -145,9 +145,9 @@ const extraKnobContainer = document.getElementById('extraKnobContainer');
 buildExtraKnob('delay',  'Delay',  extraKnobContainer);
 buildExtraKnob('volCal', 'VolCal', extraKnobContainer);
 
-// ════════════════════════════════════════════════
-//  EXTRA KNOB DRAW (Delay & VolCal)
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//EXTRA KNOB DRAW (Delay & VolCal)
+//-------------------------------------------------
 function getExtraNorm(key) {
 	if (key === 'delay')  return delay / 42.50;
 	if (key === 'volCal') return (volCal - (-24.0)) / (3.0 - (-24.0));
@@ -196,12 +196,12 @@ function drawAllExtraKnobs() {
 	drawExtraKnob('volCal');
 }
 
-// ════════════════════════════════════════════════
-//  KNOB DRAW (Bands)
-//  — grey track ring
-//  — orange filled arc from start to current value
-//  — orange pointer line (no center dot)
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//KNOB DRAW (Bands)
+//— grey track ring
+//— orange filled arc from start to current value
+//— orange pointer line (no center dot)
+//-------------------------------------------------
 function getNorm(bi,param) {
 	const b=bands[bi];
 	if (param==='gain') return (b.gain-DB_MIN)/(DB_MAX-DB_MIN);
@@ -268,9 +268,9 @@ function drawAllKnobs() {
 	drawAllExtraKnobs();
 }
 
-// ════════════════════════════════════════════════
-//  KNOB INTERACTION
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//KNOB INTERACTION
+//-------------------------------------------------
 let knobDrag=null;
 
 function setupKnobEvents(kc,bi,param) {
@@ -340,13 +340,8 @@ window.addEventListener('mousemove',e=>{
 });
 
 window.addEventListener('mouseup',()=>{
-	if (extraKnobDrag) {
-		if (extraKnobDrag.key === 'delay')  notifyOSC_delay();
-		if (extraKnobDrag.key === 'volCal') notifyOSC_volCal();
-		extraKnobDrag=null; hideTooltip();
-	}
+	if (extraKnobDrag) { extraKnobDrag=null; hideTooltip(); }
 	if (knobDrag) {
-		notifyOSC_band(knobDrag.bi, knobDrag.param);
 		document.getElementById(`band-${knobDrag.bi}`).classList.remove('active');
 		knobDrag=null; hideTooltip();
 	}
@@ -367,9 +362,9 @@ function setDefault(i,p) {
 	if (p==='q')    bands[i].q=DEFAULT_Q;
 }
 
-// ════════════════════════════════════════════════
-//  TOOLTIP
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//TOOLTIP
+//-------------------------------------------------
 const tooltipEl=document.getElementById('tooltip');
 function tooltipStr(i,p) {
 	const b=bands[i];
@@ -385,9 +380,9 @@ window.addEventListener('mousemove',e=>{
 	tooltipEl.style.top =(e.clientY-20)+'px';
 });
 
-// ════════════════════════════════════════════════
-//  CANVAS / EQ DRAW
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//CANVAS / EQ DRAW
+//-------------------------------------------------
 const canvas=document.getElementById('eqCanvas');
 const ctx   =canvas.getContext('2d');
 let nodeDrag=null, hoveredNode=-1;
@@ -536,8 +531,6 @@ canvas.addEventListener('mousedown',e=>{
 });
 window.addEventListener('mouseup',()=>{
 	if(nodeDrag){
-		notifyOSC_band(nodeDrag.band, 'gain');
-		notifyOSC_band(nodeDrag.band, 'freq');
 		document.getElementById(`band-${nodeDrag.band}`).classList.remove('active');
 		nodeDrag=null;hideTooltip();canvas.style.cursor='crosshair';
 	}
@@ -571,9 +564,9 @@ canvas.addEventListener('touchmove',e=>{
 },{passive:true});
 canvas.addEventListener('touchend',()=>{tN=-1;});
 
-// ════════════════════════════════════════════════
-//  PRESETS
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//PRESETS
+//-------------------------------------------------
 const presetSelect=document.getElementById('presetSelect');
 
 function refreshPresets(){
@@ -608,17 +601,19 @@ presetSelect.addEventListener('change',()=>{
 		if(s)s.value=bands[i].type;});
 	drawAllKnobs();
 	drawEQ();
+	notifyOSC_fullState();
 });
 
-// ════════════════════════════════════════════════
-//  RESET / BYPASS
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//RESET / BYPASS
+//-------------------------------------------------
 function resetEQ(){
 	bands.forEach((b,i)=>{b.gain=DEFAULT_GAIN;b.freq=DEFAULT_FREQS[i];b.q=DEFAULT_Q;b.type='Bell';});
 	FULL_CHOICE_BANDS.forEach(i=>{const s=document.getElementById(`ftype-${i}`);if(s)s.value='Bell';});
 	delay=0.00; volCal=0.00;
 	drawAllKnobs();
 	drawEQ();
+	notifyOSC_fullState();
 }
 
 function updateBypassBtn(){
@@ -640,9 +635,9 @@ function toggleBypass(){
 	drawEQ();
 }
 
-// ════════════════════════════════════════════════
-//  JSON EXPORT / IMPORT
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//JSON EXPORT / IMPORT
+//-------------------------------------------------
 function exportJSON(){
 	const data={
 		preset:document.getElementById('presetName').value.trim()||'untitled',
@@ -688,15 +683,16 @@ function importJSON(event){
 			FULL_CHOICE_BANDS.forEach(i=>{const s=document.getElementById(`ftype-${i}`);if(s)s.value=bands[i].type;});
 			drawAllKnobs();
 			drawEQ();
+			notifyOSC_fullState();
 		} catch(err){alert('File Read Error: '+err.message);}
 	};
 	reader.readAsText(file);
 	event.target.value='';
 }
 
-// ════════════════════════════════════════════════
-//  TMREQ EXPORT / IMPORT
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//TMREQ EXPORT / IMPORT
+//-------------------------------------------------
 
 function buildTmreqChannel(channelName) {
 	const lines = [];
@@ -795,6 +791,7 @@ function applyTmreqData(data) {
 	});
 	drawAllKnobs();
 	drawEQ();
+	notifyOSC_fullState();
 }
 
 function importTmreq(event) {
@@ -851,17 +848,6 @@ function importTmreq(event) {
 	event.target.value='';
 }
 
-// ════════════════════════════════════════════════
-//  OSC BRIDGE  (postMessage ↔ oscmix opener)
-//
-//  OSC type map (matches TotalMix / oscmix):
-//    Bell=0, Shelving=1, Low Pass=2, High Pass=3
-//
-//  Delay scaling:
-//    internal: 0–42.50 ms
-//    OSC:      0–4.25  (device sends ÷10)
-// ════════════════════════════════════════════════
-
 const OSC_TYPE_TO_NAME = { 0:'Bell', 1:'Shelving', 2:'Low Pass', 3:'High Pass' };
 const OSC_NAME_TO_TYPE = { 'Bell':0, 'Shelving':1, 'Low Pass':2, 'High Pass':3 };
 
@@ -901,7 +887,7 @@ function notifyOSC_band(bandIdx, param) {
 function notifyOSC_delay() {
 	const addr = oscAddr('roomeq/delay');
 	if (!addr) return;
-	oscSend(addr, delay / 10); // internal ms → OSC ÷10
+	oscSend(addr, delay / 10); // internal ms -> OSC ÷10
 }
 
 function notifyOSC_volCal() {
@@ -917,25 +903,59 @@ function notifyOSC_bypass() {
 	oscSend(addr, bypassed ? 0 : 1);
 }
 
-// ── Patch existing interaction points to fire OSC notifications ──
-// Note: mouseup notifications for knobDrag, extraKnobDrag, and nodeDrag
-// are handled directly in the original mouseup handlers above (before null-reset).
+// Sends the complete current state to the device.
+// Used after preset load, JSON/tmreq import, and reset.
+function notifyOSC_fullState() {
+	for (let i = 0; i < N; i++) {
+		notifyOSC_band(i, 'gain');
+		notifyOSC_band(i, 'freq');
+		notifyOSC_band(i, 'q');
+		if (FULL_CHOICE_BANDS.has(i)) notifyOSC_band(i, 'type');
+	}
+	notifyOSC_delay();
+	notifyOSC_volCal();
+	notifyOSC_bypass();
+}
 
-// Canvas wheel → Q  (use the event parameter, not the global)
-canvas.addEventListener('wheel', (e) => {
+// Patch existing interaction points to fire OSC notifications ──
+// We wrap the functions that already exist, calling notify after state update.
+
+// Band knob drag end -> notify on mouseup
+const _origMouseup = window.onmouseup;
+window.addEventListener('mouseup', () => {
+	if (knobDrag) {
+		notifyOSC_band(knobDrag.bi, knobDrag.param);
+	}
+	if (extraKnobDrag) {
+		if (extraKnobDrag.key === 'delay')  notifyOSC_delay();
+		if (extraKnobDrag.key === 'volCal') notifyOSC_volCal();
+	}
+});
+
+// Canvas node drag end -> gain + freq
+const _origCanvasMouseup = canvas.onmouseup;
+window.addEventListener('mouseup', () => {
+	if (nodeDrag) {
+		notifyOSC_band(nodeDrag.band, 'gain');
+		notifyOSC_band(nodeDrag.band, 'freq');
+	}
+});
+
+// Canvas wheel -> Q
+canvas.addEventListener('wheel', () => {
 	const r   = canvas.getBoundingClientRect();
-	const hit = getNodeAt(e.clientX - r.left, e.clientY - r.top);
+	const hit = getNodeAt(event.clientX - r.left, event.clientY - r.top);
 	if (hit >= 0) notifyOSC_band(hit, 'q');
 }, { passive: true, capture: true });
 
-// Knob wheel nudge → already fires nudge(), patch nudge to notify
+// Knob wheel nudge -> already fires nudge(), patch nudge to notify
 const _origNudge = nudge;
 window.nudge = function(i, p, dir) {
 	_origNudge(i, p, dir);
 	notifyOSC_band(i, p);
 };
 
-// Knob dblclick reset → patch setDefault
+// Knob dblclick reset -> patch setDefault
 const _origSetDefault = setDefault;
 window.setDefault = function(i, p) {
 	_origSetDefault(i, p);
@@ -950,7 +970,7 @@ FULL_CHOICE_BANDS.forEach(i => {
 
 // Extra knob wheel — already fires drawExtraKnob, patch wheel handler
 // (delay & volCal wheel events are defined inline in setupExtraKnobEvents,
-//  we hook via the existing wheel listener capture phase)
+//we hook via the existing wheel listener capture phase)
 const _extraKnobWheelNotify = (e) => {
 	const key = e.target?.dataset?.extraParam;
 	if (key === 'delay')  notifyOSC_delay();
@@ -987,7 +1007,7 @@ window.addEventListener('message', (e) => {
 
 	// roomeq/delay
 	if (sub === 'roomeq/delay') {
-		delay = Math.max(0, Math.min(42.50, value * 10)); // OSC ×10 → internal ms
+		delay = Math.max(0, Math.min(42.50, value * 10)); // OSC ×10 -> internal ms
 		drawExtraKnob('delay');
 		return;
 	}
@@ -1027,9 +1047,9 @@ if (oscChannel) {
 	if (h1) h1.textContent = `Room EQ [${oscChannel}] v.0.0.1`;
 }
 
-// ════════════════════════════════════════════════
-//  INIT
-// ════════════════════════════════════════════════
+//-------------------------------------------------
+//INIT
+//-------------------------------------------------
 refreshPresets();
 window.addEventListener('resize',resizeCanvas);
 resizeCanvas();
