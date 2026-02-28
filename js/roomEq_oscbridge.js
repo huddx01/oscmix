@@ -39,11 +39,12 @@ export class RoomEQBridge {
     window.addEventListener('message', (e) => {
       if (!e.data || e.data.type !== 'ROOMEQ_OSC_SEND') return;
       const { addr, value } = e.data;
-      // Determine OSC type: freq/q use float, type uses int, rest use float
+      // Determine OSC type: q use float, type/freq uses int, rest use float
       const isType = addr.endsWith('type');
+      const isFreq = addr.endsWith('freq');
       const isBypass = addr.match(/\/roomeq$/);
       try {
-        if (isType || isBypass) {
+        if (isType || isFreq || isBypass) {
           this.#iface.send(addr, ',i', [Math.round(value)]);
         } else {
           this.#iface.send(addr, ',f', [value]);
