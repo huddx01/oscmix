@@ -6,6 +6,8 @@ on:
       - dev
     paths:
       - 'web/pub/**'
+  workflow_dispatch: 
+  
 
 permissions:
   contents: write
