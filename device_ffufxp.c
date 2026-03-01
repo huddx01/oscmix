@@ -250,7 +250,6 @@ regtoctl(int reg, struct param *p)
 		case 0x3068: return UNKNOWN;
 
 		case 0x3078: return HARDWARE_AESIN;
-
 		case 0x307A: return HARDWARE_SPDIFOUT;
 		case 0x307C: return HARDWARE_INTERFACEMODE;
 		case 0x307D: return HARDWARE_CCROUTING;
@@ -263,7 +262,6 @@ regtoctl(int reg, struct param *p)
 		case 0x3084: return HARDWARE_PROGRAMKEY03;
 		case 0x3085: return HARDWARE_PROGRAMKEY04;
 		case 0x3086: return HARDWARE_LCDCONTRAST;
-
 		case 0x3087: return HARDWARE_OPTICALOUT;
 		case 0x3088: return HARDWARE_OPTICALOUT2;
 
