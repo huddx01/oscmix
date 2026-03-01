@@ -554,6 +554,7 @@ jobs:
           echo "- regtool" >> $GITHUB_OUTPUT
           echo "- gtk/oscmix-gtk (incl. gtk/gschemas.compiled)" >> $GITHUB_OUTPUT
           echo "- run-oscmix-gtk.sh (starts the binary above)" >> $GITHUB_OUTPUT
+          echo "- separate *.AppImage file contains all necessary files in a single app container (make it executable before starting)" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "**macOS (arm64 and x86_64)**" >> $GITHUB_OUTPUT
           echo "- oscmix" >> $GITHUB_OUTPUT
