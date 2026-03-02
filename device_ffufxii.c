@@ -235,7 +235,7 @@ regtoctl(int reg, struct param *p)
 		// TODO: Looks like the same regs as in ffufxp
 		case 0x3078: return HARDWARE_AESIN;
 		case 0x307A: return HARDWARE_SPDIFOUT;
-		case 0x307C: return HARDWARE_INTERFACEMODE;
+		case 0x307C: return HARDWARE_CCMODE;
 		case 0x307D: return HARDWARE_CCROUTING;
 		case 0x307E: return HARDWARE_STANDALONEMIDI;
 		case 0x307F: return HARDWARE_STANDALONEARC;
@@ -402,7 +402,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 
 		case HARDWARE_AESIN:          return 0x3078;
 		case HARDWARE_SPDIFOUT:       return 0x307A;
-		case HARDWARE_INTERFACEMODE:  return 0x307B;
+		case HARDWARE_CCMODE:         return 0x307B;
 		case HARDWARE_CCROUTING:      return 0x307C;
 		case HARDWARE_STANDALONEMIDI: return 0x307D;
 		case HARDWARE_STANDALONEARC:  return 0x307E;
@@ -476,7 +476,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 const struct device ffufxii = {
 	.id = "ffufxii",
 	.name = "Fireface UFX II",
-	.version = 01,
+	.version = 25,
 	.flags = DEVICE_HAS_DUREC | DEVICE_HAS_ROOMEQ,
 	.inputs = inputs,
 	.inputslen = LEN(inputs),
