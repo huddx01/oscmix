@@ -234,10 +234,10 @@ regtoctl(int reg, struct param *p)
 		case 0x3068: return UNKNOWN;
 
 
-		case 0x3078: return HARDWARE_AESIN;
+		case 0x3078: return HARDWARE_AESIN; //Tested
 		case 0x3079: return HARDWARE_OPTICALOUT; // Tested
-		case 0x307B: return HARDWARE_OPTICALOUT2; // Tested
-		case 0x307A: return HARDWARE_SPDIFOUT;
+		case 0x307A: return HARDWARE_OPTICALOUT2; // Tested
+		case 0x307B: return HARDWARE_SPDIFOUT; // Tested
 		case 0x307C: return HARDWARE_INTERFACEMODE; // cannot be tested beacause this option is blocked when device is connected
 		case 0x307D: return HARDWARE_CCROUTING; // tested
 		case 0x307E: return HARDWARE_STANDALONEMIDI; // Tested
