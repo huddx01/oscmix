@@ -155,7 +155,7 @@ channel_constructed(GObject *obj)
 	case CHANNEL_TYPE_INPUT:
 		if (self->flags & CHANNEL_FLAG_ANALOG)
 		{
-			gtk_widget_show(self->ui.gain_button);
+            gtk_widget_show(self->ui.gain_button);
 			mixer_bind(osc, g_strdup_printf("/%s/%d/gain", type->value_nick, self->id), G_TYPE_FLOAT, self->ui.gain, "value");
 			gtk_widget_show(self->ui.autoset);
 			mixer_bind(osc, g_strdup_printf("/%s/%d/autoset", type->value_nick, self->id), G_TYPE_BOOLEAN, self->ui.autoset, "active");
@@ -163,6 +163,7 @@ channel_constructed(GObject *obj)
 		// 48V immer zeigen, wenn MIC-Flag gesetzt
 		if (self->flags & CHANNEL_FLAG_MIC)
 		{
+		    gtk_adjustment_set_upper(self->ui.gain, 75);
 			gtk_widget_show(self->ui.mic48v);
 			mixer_bind(osc, g_strdup_printf("/%s/%d/48v", type->value_nick, self->id), G_TYPE_BOOLEAN, self->ui.mic48v, "active");
 		}
@@ -356,6 +357,7 @@ channel_dispose(GObject *obj)
 	self = OSCMIX_CHANNEL(obj);
 	mixer_disconnect_by_data(self->osc, self);
 }
+
 
 static void
 on_stereo_toggled(GtkToggleButton *button, gpointer ptr)

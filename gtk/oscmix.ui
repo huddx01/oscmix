@@ -100,7 +100,7 @@
 								<child>
 									<object class="GtkExpander">
 										<property name="visible">true</property>
-										<property name="expanded">true</property>
+										<property name="expanded">false</property>
 										<child type="label">
 											<object class="GtkLabel">
 												<property name="visible">true</property>
@@ -822,7 +822,7 @@
 								<child>
 									<object class="GtkExpander">
 										<property name="visible">true</property>
-										<property name="expanded">true</property>
+										<property name="expanded">false</property>
 										<child type="label">
 											<object class="GtkLabel">
 												<property name="visible">true</property>
@@ -1059,7 +1059,7 @@
 								<child>
 									<object class="GtkExpander">
 										<property name="visible">true</property>
-										<property name="expanded">true</property>
+										<property name="expanded">false</property>
 										<child type="label">
 											<object class="GtkLabel">
 												<property name="visible">true</property>
@@ -1217,11 +1217,11 @@
 								<child>
 									<object class="GtkExpander">
 										<property name="visible">true</property>
-										<property name="expanded">false</property>
+										<property name="expanded">true</property>
 										<child type="label">
 											<object class="GtkLabel">
 												<property name="visible">true</property>
-												<property name="label">Hardware</property>
+												<property name="label">Clock</property>
 											</object>
 										</child>
 										<child>
@@ -1285,7 +1285,7 @@
 												</child>
 												<child>
 													<object class="GtkLabel">
-														<property name="visible">true</property>
+														<property name="visible">false</property>
 														<property name="halign">start</property>
 														<property name="label">W. Clock Out</property>
 													</object>
@@ -1296,7 +1296,7 @@
 												</child>
 												<child>
 													<object class="GtkSwitch" id="clock_wckout">
-														<property name="visible">true</property>
+														<property name="visible">false</property>
 														<property name="halign">end</property>
 													</object>
 													<packing>
@@ -1346,6 +1346,54 @@
 														<property name="top-attach">4</property>
 													</packing>
 												</child>
+								            </object>
+										</child>	
+									</object>			
+							    </child>
+							    <child>
+									<object class="GtkSeparator">
+										<property name="visible">true</property>
+									</object>
+								</child>
+							    <child>
+									<object class="GtkExpander">
+										<property name="visible">true</property>
+										<property name="expanded">true</property>
+										<child type="label">
+											<object class="GtkLabel">
+												<property name="visible">true</property>
+												<property name="label">Hardware</property>
+											</object>
+										</child>
+										<child>
+											<object class="GtkGrid">
+												<property name="visible">true</property>
+												<property name="row-spacing">4</property>
+												<child>
+													<object class="GtkLabel">
+														<property name="visible">true</property>
+														<property name="halign">start</property>
+														<property name="label">AES Input</property>
+													</object>
+													<packing>
+														<property name="left-attach">0</property>
+														<property name="top-attach">1</property>
+													</packing>
+												</child>
+												<child>
+													<object class="GtkComboBoxText" id="aesin">
+														<property name="visible">true</property>
+														<property name="hexpand">true</property>
+														<items>
+															<item>XLR</item>
+															<item>Opt. 2</item>
+														</items>
+													</object>
+													<packing>
+														<property name="left-attach">1</property>
+														<property name="top-attach">1</property>
+													</packing>
+												</child>
 												<child>
 													<object class="GtkLabel">
 														<property name="visible">true</property>
@@ -1354,7 +1402,7 @@
 													</object>
 													<packing>
 														<property name="left-attach">0</property>
-														<property name="top-attach">5</property>
+														<property name="top-attach">2</property>
 													</packing>
 												</child>
 												<child>
@@ -1368,7 +1416,33 @@
 													</object>
 													<packing>
 														<property name="left-attach">1</property>
-														<property name="top-attach">5</property>
+														<property name="top-attach">2</property>
+													</packing>
+												</child>
+                                                <child>
+													<object class="GtkLabel">
+														<property name="visible">true</property>
+														<property name="halign">start</property>
+														<property name="label">Optical 2 Out</property>
+													</object>
+													<packing>
+														<property name="left-attach">0</property>
+														<property name="top-attach">3</property>
+													</packing>
+												</child>
+												<child>
+													<object class="GtkComboBoxText" id="opticalout2">
+														<property name="visible">true</property>
+														<property name="hexpand">true</property>
+														<items>
+															<item>ADAT 2</item>
+															<item>S/PDIF</item>
+															<item>AES</item>
+														</items>
+													</object>
+													<packing>
+														<property name="left-attach">1</property>
+														<property name="top-attach">3</property>
 													</packing>
 												</child>
 												<child>
@@ -1379,7 +1453,7 @@
 													</object>
 													<packing>
 														<property name="left-attach">0</property>
-														<property name="top-attach">6</property>
+														<property name="top-attach">4</property>
 													</packing>
 												</child>
 												<child>
@@ -1392,12 +1466,57 @@
 													</object>
 													<packing>
 														<property name="left-attach">1</property>
-														<property name="top-attach">6</property>
+														<property name="top-attach">4</property>
 													</packing>
 												</child>
 												<child>
 													<object class="GtkLabel">
 														<property name="visible">true</property>
+														<property name="halign">start</property>
+														<property name="label">CC Mode</property>
+													</object>
+													<packing>
+														<property name="left-attach">0</property>
+														<property name="top-attach">5</property>
+													</packing>
+												</child>
+												<child>
+													<object class="GtkSwitch" id="interfacemode">
+														<property name="visible">true</property>
+														<property name="halign">end</property>
+													</object>
+													<packing>
+														<property name="left-attach">1</property>
+														<property name="top-attach">5</property>
+													</packing>
+												</child>
+												<child>
+													<object class="GtkLabel">
+														<property name="visible">true</property>
+														<property name="halign">start</property>
+														<property name="label">CC Routing</property>
+													</object>
+													<packing>
+														<property name="left-attach">0</property>
+														<property name="top-attach">6</property>
+													</packing>
+												</child>
+												<child>
+													<object class="GtkComboBoxText" id="ccrouting">
+														<property name="visible">true</property>
+														<items>
+															<item>24 ch.</item>
+															<item>Phones</item>
+														</items>
+													</object>
+													<packing>
+														<property name="left-attach">1</property>
+														<property name="top-attach">6</property>
+													</packing>
+												</child>
+												<child>
+													<object class="GtkLabel">
+														<property name="visible">false</property>
 														<property name="halign">start</property>
 														<property name="label">CC Mix</property>
 													</object>
@@ -1408,7 +1527,7 @@
 												</child>
 												<child>
 													<object class="GtkComboBoxText" id="ccmix">
-														<property name="visible">true</property>
+														<property name="visible">false</property>
 														<items>
 															<item>TotalMix</item>
 															<item>6 ch. + phones</item>
@@ -1433,9 +1552,13 @@
 													</packing>
 												</child>
 												<child>
-													<object class="GtkSwitch" id="standalonemidi">
+													<object class="GtkComboBoxText" id="standalonemidi">
 														<property name="visible">true</property>
-														<property name="halign">end</property>
+														<items>
+															<item>Off</item>
+															<item>MIDI 1</item>
+															<item>MIDI 2</item>
+														</items>
 													</object>
 													<packing>
 														<property name="left-attach">1</property>
@@ -1511,6 +1634,33 @@
 													<packing>
 														<property name="left-attach">1</property>
 														<property name="top-attach">11</property>
+													</packing>
+												</child>
+												<child>
+													<object class="GtkLabel">
+														<property name="visible">true</property>
+														<property name="halign">start</property>
+														<property name="label">LCD Contrast</property>
+													</object>
+													<packing>
+														<property name="left-attach">0</property>
+														<property name="top-attach">12</property>
+													</packing>
+												</child>
+												<child>
+													<object class="GtkAdjustment" id="lcdcontrast_adjustment">
+														<property name="lower">-20</property>
+														<property name="upper">20</property>
+														<property name="step-increment">1</property>
+													</object>
+													<object class="ScaleEntry" id="lcdcontrast">
+														<property name="visible">true</property>
+														<property name="adjustment">lcdcontrast_adjustment</property>
+														<property name="unit"> %</property>
+													</object>
+													<packing>
+														<property name="left-attach">1</property>
+														<property name="top-attach">12</property>
 													</packing>
 												</child>
 											</object>

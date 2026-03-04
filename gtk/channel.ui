@@ -225,9 +225,9 @@
 											</object>
 										</child>
 										<child>
-											<object class="GtkSpinButton" id="gain_button">
+											<object class="ScaleEntry" id="gain_button">
 												<property name="adjustment">gain</property>
-												<property name="digits">1</property>
+												<property name="unit"> dB</property>
 											</object>
 										</child>
 										<child>
@@ -1049,7 +1049,7 @@
 	</object>
 	<object class="GtkAdjustment" id="gain">
 		<property name="lower">0</property>
-		<property name="upper">24</property>
+		<property name="upper">12</property>
 		<property name="value">0</property>
 		<property name="step-increment">0.5</property>
 	</object>

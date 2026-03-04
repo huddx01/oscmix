@@ -16,14 +16,8 @@ static const char *const reflevel_phones[] = {"Low", "High"};
 #define MIX_STRIDE   64
 
 static const struct channelinfo inputs[] = {
-	{"Analog 1",  INPUT_HAS_GAIN | INPUT_HAS_REFLEVEL,
-			.gain={0, 120},
-			.reflevel={reflevel_input, LEN(reflevel_input)}
-	},
-	{"Analog 2",  INPUT_HAS_GAIN | INPUT_HAS_REFLEVEL,
-			.gain={0, 120},
-			.reflevel={reflevel_input, LEN(reflevel_input)}
-	},
+	{"Analog 1",  INPUT_HAS_GAIN | INPUT_HAS_REFLEVEL, .gain={0, 120}, .reflevel={reflevel_input, LEN(reflevel_input)}},
+	{"Analog 2",  INPUT_HAS_GAIN | INPUT_HAS_REFLEVEL, .gain={0, 120}, .reflevel={reflevel_input, LEN(reflevel_input)}},
 	{"Analog 3",  INPUT_HAS_GAIN | INPUT_HAS_REFLEVEL, .gain={0, 120}, .reflevel={reflevel_input, LEN(reflevel_input)}},
 	{"Analog 4",  INPUT_HAS_GAIN | INPUT_HAS_REFLEVEL, .gain={0, 120}, .reflevel={reflevel_input, LEN(reflevel_input)}},
 	{"Analog 5",  INPUT_HAS_GAIN | INPUT_HAS_REFLEVEL, .gain={0, 120}, .reflevel={reflevel_input, LEN(reflevel_input)}},
@@ -156,6 +150,7 @@ regtoctl(int reg, struct param *p)
 		case 0x000A: return INPUT_HIZ;
 		case 0x000B: return INPUT_AUTOSET;
 
+
 		case 0x05A0: return OUTPUT_VOLUME;
 		case 0x05A1: return OUTPUT_PAN;
 		case 0x05A2: return OUTPUT_MUTE;
@@ -168,6 +163,7 @@ regtoctl(int reg, struct param *p)
 		case 0x05A9: return OUTPUT_CROSSFEED;
 		case 0x05AA: return UNKNOWN;
 		case 0x05AB: return OUTPUT_VOLUMECAL;
+
 
 		case 0x000C: return LOWCUT;
 		case 0x000D: return LOWCUT_FREQ;
@@ -197,6 +193,7 @@ regtoctl(int reg, struct param *p)
 		case 0x0025: return AUTOLEVEL_HEADROOM;
 		case 0x0026: return AUTOLEVEL_RISETIME;
 
+
 		case 0x3000: return REVERB;
 		case 0x3001: return REVERB_TYPE;
 		case 0x3002: return REVERB_PREDELAY;
@@ -212,6 +209,7 @@ regtoctl(int reg, struct param *p)
 		case 0x300C: return REVERB_VOLUME;
 		case 0x300D: return REVERB_WIDTH;
 
+
 		case 0x3014: return ECHO;
 		case 0x3015: return ECHO_TYPE;
 		case 0x3016: return ECHO_DELAY;
@@ -220,6 +218,7 @@ regtoctl(int reg, struct param *p)
 		case 0x3019: return ECHO_VOLUME;
 		case 0x301A: return ECHO_WIDTH;
 
+
 		case 0x3050: return CTLROOM_MAINOUT;
 		case 0x3051: return CTLROOM_MAINMONO;
 		case 0x3052: return CTLROOM_MUTEENABLE;
@@ -227,33 +226,40 @@ regtoctl(int reg, struct param *p)
 		case 0x3054: return CTLROOM_DIM;
 		case 0x3055: return CTLROOM_RECALLVOLUME;
 
+
 		case 0x3064: return CLOCK_SOURCE;
 		case 0x3065: return CLOCK_SAMPLERATE;
 		case 0x3066: return CLOCK_WCKSINGLE;
 		case 0x3067: return CLOCK_WCKTERM;
 		case 0x3068: return UNKNOWN;
-		// TODO: Looks like the same regs as in ffufxp
-		case 0x3078: return HARDWARE_AESIN;
-		case 0x307A: return HARDWARE_SPDIFOUT;
-		case 0x307C: return HARDWARE_CCMODE;
-		case 0x307D: return HARDWARE_CCROUTING;
-		case 0x307E: return HARDWARE_STANDALONEMIDI;
-		case 0x307F: return HARDWARE_STANDALONEARC;
-		case 0x3080: return HARDWARE_LOCKKEYS;
-		case 0x3081: return HARDWARE_REMAPKEYS;
-		case 0x3082: return HARDWARE_PROGRAMKEY01;
-		case 0x3083: return HARDWARE_PROGRAMKEY02;
-		case 0x3084: return HARDWARE_PROGRAMKEY03;
-		case 0x3085: return HARDWARE_PROGRAMKEY04;
-		case 0x3086: return HARDWARE_LCDCONTRAST;
-		case 0x3087: return HARDWARE_OPTICALOUT;
-		case 0x3088: return HARDWARE_OPTICALOUT2;
+
+
+		case 0x3078: return HARDWARE_AESIN; //Tested
+		case 0x3079: return HARDWARE_OPTICALOUT; // Tested
+		case 0x307A: return HARDWARE_OPTICALOUT2; // Tested
+		case 0x307B: return HARDWARE_SPDIFOUT; // Tested
+		case 0x307C: return HARDWARE_INTERFACEMODE; // cannot be tested beacause this option is blocked when device is connected
+		case 0x307D: return HARDWARE_CCROUTING; // tested
+		case 0x307E: return HARDWARE_STANDALONEMIDI; // Tested
+		case 0x307F: return HARDWARE_STANDALONEARC; // Tested
+        case 0x3080: return HARDWARE_LOCKKEYS; // Tested
+		case 0x3081: return HARDWARE_REMAPKEYS; //Tested
+		case 0x3086: return HARDWARE_LCDCONTRAST; // Tested
+
+		// TODO: Verify if this is coorrect. Just my guess for now.
+		//case 0x3082: return HARDWARE_PROGRAMKEY01;
+		//case 0x3083: return HARDWARE_PROGRAMKEY02;
+		//case 0x3084: return HARDWARE_PROGRAMKEY03;
+		//case 0x3085: return HARDWARE_PROGRAMKEY04;
+
+
 
 		case 0x3200: return HARDWARE_DSPVERLOAD;
 		case 0x3201: return HARDWARE_DSPAVAIL;
 		case 0x3202: return HARDWARE_DSPSTATUS;
 		case 0x3203: return HARDWARE_ARCDELTA;
 		case 0x3204: return HARDWARE_ARCBUTTONS;
+
 
 		case 0x3580: return DUREC_STATUS;
 		case 0x3581: return DUREC_TIME;
@@ -273,12 +279,17 @@ regtoctl(int reg, struct param *p)
 		case 0x358F: return DUREC_INFO;
 		case 0x3590: return DUREC_LENGTH;
 		case 0x3E02: return SETUP_ARCLEDS;
+
+		// TODO: Verify if these registers exist and what they do.
+		//case 0x3D43: return HARDWARE_STANDALONEMIDI;
+		//case 0x3D44: return HARDWARE_CCMODE;
+		//case 0x3D45: return HARDWARE_STANDALONEARC;
 	}
 	return -1;
 }
 static int ctltoreg(enum control ctl, const struct param *p)
 {
-	int reg, idx = -1, flags = 0;
+	int reg, reg_out, idx = -1, flags = 0;
 	if ((unsigned)p->in < LEN(inputs)) {
 		flags = inputs[p->in].flags;
 		idx = p->in;
@@ -306,6 +317,8 @@ static int ctltoreg(enum control ctl, const struct param *p)
 			reg = 0x0A; goto channel;
 		case INPUT_AUTOSET:        if (!(flags & INPUT_HAS_AUTOSET)) break;
 			reg = 0x0B; goto channel;
+			
+			
 		case OUTPUT_VOLUME:      reg = 0x00; goto channel;
 		case OUTPUT_PAN:         reg = 0x01; goto channel;
 		case OUTPUT_MUTE:        reg = 0x02; goto channel;
@@ -317,8 +330,10 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case OUTPUT_REFLEVEL:    if (!(flags & OUTPUT_HAS_REFLEVEL)) break;
 			reg = 0x08; goto channel;
 		case OUTPUT_CROSSFEED:   reg = 0x09; goto channel;
-		// register 0x0A is unknown.
+		// register 0x0A is unknown. Maybe sth with roomeq?
 		case OUTPUT_VOLUMECAL:   reg = 0x0B; goto channel;
+		
+		
 		case LOWCUT:             reg = 0x0C; goto channel;
 		case LOWCUT_FREQ:        reg = 0x0D; goto channel;
 		case LOWCUT_SLOPE:       reg = 0x0E; goto channel;
@@ -334,6 +349,8 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case EQ_BAND3GAIN:       reg = 0x18; goto channel;
 		case EQ_BAND3FREQ:       reg = 0x19; goto channel;
 		case EQ_BAND3Q:          reg = 0x1A; goto channel;
+		
+		
 		case DYNAMICS:           reg = 0x1B; goto channel;
 		case DYNAMICS_GAIN:      reg = 0x1C; goto channel;
 		case DYNAMICS_ATTACK:    reg = 0x1D; goto channel;
@@ -342,6 +359,8 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case DYNAMICS_COMPRATIO: reg = 0x20; goto channel;
 		case DYNAMICS_EXPTHRES:  reg = 0x21; goto channel;
 		case DYNAMICS_EXPRATIO:  reg = 0x22; goto channel;
+		
+		
 		case AUTOLEVEL:          reg = 0x23; goto channel;
 		case AUTOLEVEL_MAXGAIN:  reg = 0x24; goto channel;
 		case AUTOLEVEL_HEADROOM: reg = 0x25; goto channel;
@@ -388,6 +407,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case ECHO_VOLUME:             return 0x3019;
 		case ECHO_WIDTH:              return 0x301A;
 
+
 		case CTLROOM_MAINOUT:         return 0x3050;
 		case CTLROOM_MAINMONO:        return 0x3051;
 		case CTLROOM_MUTEENABLE:      return 0x3052;
@@ -395,34 +415,41 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case CTLROOM_DIM:             return 0x3054;
 		case CTLROOM_RECALLVOLUME:    return 0x3055;
 
+
 		case CLOCK_SOURCE:            return 0x3064;
 		case CLOCK_SAMPLERATE:        return 0x3065;
 		case CLOCK_WCKSINGLE:         return 0x3066;
 		case CLOCK_WCKTERM:           return 0x3067;
 
+
 		case HARDWARE_AESIN:          return 0x3078;
-		case HARDWARE_SPDIFOUT:       return 0x307A;
-		case HARDWARE_CCMODE:         return 0x307B;
-		case HARDWARE_CCROUTING:      return 0x307C;
-		case HARDWARE_STANDALONEMIDI: return 0x307D;
-		case HARDWARE_STANDALONEARC:  return 0x307E;
-
-		case HARDWARE_LOCKKEYS:       return 0x307F;
-		case HARDWARE_REMAPKEYS:      return 0x3080;
-		case HARDWARE_PROGRAMKEY01:   return 0x3081;
-		case HARDWARE_PROGRAMKEY02:   return 0x3082;
-		case HARDWARE_PROGRAMKEY03:   return 0x3083;
-		case HARDWARE_PROGRAMKEY04:   return 0x3084;
-		case HARDWARE_LCDCONTRAST:    return 0x3085;
-
 		case HARDWARE_OPTICALOUT:     return 0x3087;
 		case HARDWARE_OPTICALOUT2:    return 0x3088;
+		case HARDWARE_SPDIFOUT:       return 0x307A; // 307B-1 
+
+		case HARDWARE_INTERFACEMODE:  return 0x307B; // ctltoreg works, but 307C in regtoctl cannot be tested because option in device is blocked when connected
+		case HARDWARE_CCROUTING:      return 0x307C; // 307D-1 
+		case HARDWARE_STANDALONEMIDI: return 0x307D; // 307E-1
+		case HARDWARE_STANDALONEARC:  return 0x307E; // 307F-1
+		case HARDWARE_LOCKKEYS:       return 0x307F; // 3080-1
+		case HARDWARE_REMAPKEYS:      return 0x3080; // 3081-1
+		case HARDWARE_LCDCONTRAST:    return 0x3085; // 3086-1 
+
+
+		
+		//case HARDWARE_PROGRAMKEY01:   return 0x3082;
+		//case HARDWARE_PROGRAMKEY02:   return 0x3083;
+		//case HARDWARE_PROGRAMKEY03:   return 0x3084;
+		//case HARDWARE_PROGRAMKEY04:   return 0x3085;
+
+
 
 		case HARDWARE_DSPVERLOAD:     return 0x3200;
 		case HARDWARE_DSPAVAIL:       return 0x3201;
 		case HARDWARE_DSPSTATUS:      return 0x3202;
 		case HARDWARE_ARCDELTA:       return 0x3203;
 		case HARDWARE_ARCBUTTONS:     return 0x3204;
+
 
 		case ROOMEQ_DELAY:            reg = 0x30A0; goto roomeq;
 		case ROOMEQ:                  reg = 0x30A1; goto roomeq;
@@ -476,7 +503,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 const struct device ffufxii = {
 	.id = "ffufxii",
 	.name = "Fireface UFX II",
-	.version = 25,
+	.version = 01,
 	.flags = DEVICE_HAS_DUREC | DEVICE_HAS_ROOMEQ,
 	.inputs = inputs,
 	.inputslen = LEN(inputs),

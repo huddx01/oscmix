@@ -7,6 +7,7 @@
 #include "../device.h" 
 
 
+
 extern const struct device ffucxii;
 extern const struct device ff802;
 extern const struct device ffufxiii;
@@ -65,13 +66,18 @@ struct _OSCMixWindow {
 	gpointer clock_wckout;
 	gpointer clock_wcksingle;
 	gpointer clock_wckterm;
+	gpointer aesin;
 	gpointer opticalout;
+	gpointer opticalout2;
 	gpointer spdifout;
+	gpointer interfacemode;
+	gpointer ccrouting;
 	gpointer ccmix;
 	gpointer standalonemidi;
 	gpointer standalonearc;
 	gpointer lockkeys;
 	gpointer remapkeys;
+	gpointer lcdcontrast;
 
 	gpointer inputs;
 	gpointer playbacks;
@@ -429,13 +435,20 @@ oscmix_window_class_init(OSCMixWindowClass *class)
 	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, clock_wckout);
 	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, clock_wcksingle);
 	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, clock_wckterm);
+	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, aesin);
 	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, opticalout);
+	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, opticalout2);
 	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, spdifout);
+	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, interfacemode);
+	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, ccrouting);
 	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, ccmix);
 	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, standalonemidi);
 	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, standalonearc);
 	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, lockkeys);
 	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, remapkeys);
+	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, lcdcontrast);
+	
+	
 
 	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, inputs);
 	gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(class), OSCMixWindow, playbacks);
@@ -481,6 +494,10 @@ setup_channels(OSCMixWindow *self, ChannelType type, GtkBox *box)
 		num_channels = current_device->outputslen;
         channels = current_device->outputs;
     }
+
+
+    
+
 
     left = NULL;
     for (i = 0; i < num_channels; ++i) {
@@ -607,13 +624,18 @@ oscmix_window_init(OSCMixWindow *self)
 	mixer_bind(self->osc, "/clock/wckout", G_TYPE_INT, self->clock_wckout, "active");
 	mixer_bind(self->osc, "/clock/wcksingle", G_TYPE_INT, self->clock_wcksingle, "active");
 	mixer_bind(self->osc, "/clock/wckterm", G_TYPE_INT, self->clock_wckterm, "active");
+	mixer_bind(self->osc, "/hardware/aesin", G_TYPE_INT, self->aesin, "active");
 	mixer_bind(self->osc, "/hardware/opticalout", G_TYPE_INT, self->opticalout, "active");
+	mixer_bind(self->osc, "/hardware/opticalout2", G_TYPE_INT, self->opticalout2, "active");
 	mixer_bind(self->osc, "/hardware/spdifout", G_TYPE_INT, self->spdifout, "active");
+	mixer_bind(self->osc, "/hardware/interfacemode", G_TYPE_INT, self->interfacemode, "active");
+	mixer_bind(self->osc, "/hardware/ccrouting", G_TYPE_INT, self->ccrouting, "active");
 	mixer_bind(self->osc, "/hardware/ccmix", G_TYPE_INT, self->ccmix, "active");
 	mixer_bind(self->osc, "/hardware/standalonemidi", G_TYPE_INT, self->standalonemidi, "active");
 	mixer_bind(self->osc, "/hardware/standalonearc", G_TYPE_INT, self->standalonearc, "active");
 	mixer_bind(self->osc, "/hardware/lockkeys", G_TYPE_INT, self->lockkeys, "active");
 	mixer_bind(self->osc, "/hardware/remapkeys", G_TYPE_INT, self->remapkeys, "active");
+	mixer_bind(self->osc, "/hardware/lcdcontrast", G_TYPE_INT, self->lcdcontrast, "value");
 	mixer_connect(self->osc, "/durec/numfiles", on_durec_numfiles, self);
 	mixer_connect(self->osc, "/durec/name", on_durec_name, self);
 	mixer_connect(self->osc, "/durec/samplerate", on_durec_samplerate, self);
