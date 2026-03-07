@@ -838,31 +838,31 @@ newsamplerate(struct context *ctx, int val)
 
 // see register in maptree (line 1483) why this is commented out...
 /*
-static void
-setregs(struct context *ctx, struct oscmsg *msg)
-{
-	int reg, val;
+ static void
+ setregs(struct context *ctx, struct oscmsg *msg)
+ {
+ int reg, val;
 
-	while (*msg->type) {
-		if (*msg->type != 'i') {
-			msg->err = "expected integer for register";
-			break;
-		}
-		reg = oscgetint(msg);
-		if (msg->err) break;
+ while (*msg->type) {
+ if (*msg->type != 'i') {
+ msg->err = "expected integer for register";
+ break;
+ }
+ reg = oscgetint(msg);
+ if (msg->err) break;
 
-		if (*msg->type != 'i') {
-			msg->err = "expected integer for value";
-			break;
-		}
-		val = oscgetint(msg);
-		if (msg->err) break;
+ if (*msg->type != 'i') {
+ msg->err = "expected integer for value";
+ break;
+ }
+ val = oscgetint(msg);
+ if (msg->err) break;
 
-		setreg(reg, val);
-	}
-	oscend(msg);
-}
-*/
+ setreg(reg, val);
+ }
+ oscend(msg);
+ }
+ */
 static void
 newmeter(struct context *ctx, int val)
 {
@@ -1152,6 +1152,13 @@ setsetuparcleds(struct context *ctx, struct oscmsg *msg)
 }
 
 static void
+newdevice(struct context *ctx, int val)
+{
+	(void)val;
+	oscsend("/device", ",ss", device->id, device->name);
+}
+
+static void
 setrefresh(struct context *ctx, struct oscmsg *msg)
 {
 	struct input *pb;
@@ -1160,6 +1167,8 @@ setrefresh(struct context *ctx, struct oscmsg *msg)
 
 	dsp.vers = -1;
 	dsp.load = -1;
+	/* Send device identity first so clients can configure themselves */
+	oscsend("/device", ",ss", device->id, device->name);
 	setval(ctx, device->refresh);
 	/* FIXME: needs lock */
 	for (i = 0; i < device->outputslen; ++i) {
@@ -1484,11 +1493,12 @@ static const struct node roottree[] = {
 	}},
 
 	// {"register", -1, .set=setregs},	// generates stack overflow inside maptree() because node->ctl will be -1
-  // correct - michaelforney removed this in https://github.com/michaelforney/oscmix/commit/42372e8decf30ead9e4d0134b3f05c7efa7b2aad
-  // I reimplemented this to be able to set regs/vals from webui for debugging/testing purposes. 
-  // But its not really necessary -> commented out the function in (line 836) 
+	// correct - michaelforney removed this in https://github.com/michaelforney/oscmix/commit/42372e8decf30ead9e4d0134b3f05c7efa7b2aad
+	// I reimplemented this to be able to set regs/vals from webui for debugging/testing purposes.
+	// But its not really necessary -> commented out the function in (line 836)
 
-  
+
+	{"device", .new=newdevice},
 	{"refresh", REFRESH, .set=setrefresh},
 	{0},
 };
@@ -1596,9 +1606,9 @@ oscsendenum(const char *addr, int val, const char *const names[], size_t namesle
 		oscsend(addr, ",is", val, names[val]);
 	} else {
 		fprintf(stderr, "unknown value for '%s': %d\n", addr, val);
-fprintf(stderr, "nameslen=%zu\n", nameslen);
+		fprintf(stderr, "nameslen=%zu\n", nameslen);
 		fprintf(stderr, "unexpected enum value %d\n", val);
-		
+
 		oscsend(addr, ",i", val);
 	}
 }

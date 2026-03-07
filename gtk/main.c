@@ -4,9 +4,9 @@
 #include "mixer.h"
 #include "scaleentry.h"
 #include "../osc.h"
-#include "../device.h" 
+#include "../device.h"
 
-
+/* All known devices - must match oscmix.c */
 extern const struct device ffucxii;
 extern const struct device ff802;
 extern const struct device ffufxiii;
@@ -15,18 +15,18 @@ extern const struct device ffufxp;
 extern const struct device ffufxii;
 static const struct device *devices[] = {
 	&ffucxii, &ff802, &ffufxiii, &ffucx, &ffufxp, &ffufxii
-	};
+};
+static const int devices_count = sizeof(devices) / sizeof(devices[0]);
 
-// TODO: Rework this, to set current_device based on user selection in settings or even better via auto-detect
-//const struct device *current_device = &ff802;
-const struct device *current_device = &ffufxiii;
-//const struct device *current_device = &ffufxp;
-//const struct device *current_device = &ffufxii;
+/* Timeout in seconds to wait for /device before prompting offline mode */
+#define DEVICE_DETECT_TIMEOUT_S 5
 
 
 struct _OSCMixWindow {
 	GtkApplicationWindow base;
 	Mixer *osc;
+	const struct device *current_device;  /* set via /device OSC or offline dialog */
+	guint device_timeout_source;          /* GSource id for detect timeout, 0 when inactive */
 	gpointer send_host;
 	gpointer send_port;
 	gpointer recv_host;
@@ -218,7 +218,7 @@ on_mainout_osc(GValue *arg, guint len, gpointer ptr)
 			}
 		} while (gtk_tree_model_iter_next(self->outputs_model, &iter));
 	}
-	
+
 }
 
 static void
@@ -387,6 +387,129 @@ on_durec_delete(GtkButton *button, gpointer ptr)
 	mixer_send(self->osc, "/durec/delete", &val);
 }
 
+/* Forward declarations for filter functions used in apply_device */
+static gboolean output_visible(GtkTreeModel *model, GtkTreeIter *iter, gpointer ptr);
+static void output_modify(GtkTreeModel *model, GtkTreeIter *iter, GValue *val, int col, gpointer ptr);
+
+/*
+ * apply_device - finalize device selection and build channel UI.
+ * Called either from on_device_osc (auto-detect) or after offline dialog.
+ * Cancels the pending timeout if still active.
+ */
+static void
+apply_device(OSCMixWindow *self, const struct device *dev)
+{
+	if (self->device_timeout_source != 0) {
+		g_source_remove(self->device_timeout_source);
+		self->device_timeout_source = 0;
+	}
+	self->current_device = dev;
+
+	self->inputs_array = g_ptr_array_new();
+	self->outputs_store = gtk_list_store_new(1, channel_get_type());
+	self->outputs_model = gtk_tree_model_filter_new(GTK_TREE_MODEL(self->outputs_store), NULL);
+	gtk_tree_model_filter_set_modify_func(GTK_TREE_MODEL_FILTER(self->outputs_model), 2, (GType[]){channel_get_type(), G_TYPE_STRING}, output_modify, NULL, NULL);
+	gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(self->outputs_model), output_visible, NULL, NULL);
+	gtk_combo_box_set_model(self->mainout, self->outputs_model);
+	setup_channels(self, dev, CHANNEL_TYPE_OUTPUT, self->outputs);
+	setup_channels(self, dev, CHANNEL_TYPE_INPUT, self->inputs);
+	setup_channels(self, dev, CHANNEL_TYPE_PLAYBACK, self->playbacks);
+}
+
+/*
+ * show_offline_device_dialog - prompt user to select a device for offline use.
+ * Returns the selected device, or NULL if cancelled.
+ */
+static const struct device *
+show_offline_device_dialog(GtkWindow *parent)
+{
+	GtkWidget *dialog, *combo, *content;
+	const struct device *selected = NULL;
+	int i, response;
+
+	dialog = gtk_dialog_new_with_buttons(
+										 "Select Device (Offline Mode)",
+										 parent,
+										 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+										 "_Cancel", GTK_RESPONSE_CANCEL,
+										 "_OK",     GTK_RESPONSE_OK,
+										 NULL);
+	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+
+	combo = gtk_combo_box_text_new();
+	for (i = 0; i < devices_count; ++i)
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), devices[i]->id, devices[i]->name);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+
+	content = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+	gtk_container_set_border_width(GTK_CONTAINER(content), 12);
+	gtk_box_pack_start(GTK_BOX(content),
+					   gtk_label_new("No device was detected. Select a device to use in offline mode:"),
+					   FALSE, FALSE, 8);
+	gtk_box_pack_start(GTK_BOX(content), combo, FALSE, FALSE, 4);
+	gtk_widget_show_all(dialog);
+
+	response = gtk_dialog_run(GTK_DIALOG(dialog));
+	if (response == GTK_RESPONSE_OK) {
+		const char *id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo));
+		for (i = 0; i < devices_count; ++i) {
+			if (g_strcmp0(devices[i]->id, id) == 0) {
+				selected = devices[i];
+				break;
+			}
+		}
+	}
+	gtk_widget_destroy(dialog);
+	return selected;
+}
+
+/*
+ * on_device_timeout - fires if no /device message arrived within the timeout.
+ * Shows the offline device selection dialog.
+ */
+static gboolean
+on_device_timeout(gpointer ptr)
+{
+	OSCMixWindow *self = OSCMIX_WINDOW(ptr);
+	const struct device *dev;
+
+	self->device_timeout_source = 0;  /* source has fired, mark as inactive */
+
+	dev = show_offline_device_dialog(GTK_WINDOW(self));
+	if (dev)
+		apply_device(self, dev);
+
+	return G_SOURCE_REMOVE;
+}
+
+/*
+ * on_device_osc - called when oscmix sends /device with ",ss" (id, name).
+ * Matches the id against the known devices array and applies the device.
+ */
+static void
+on_device_osc(GValue *arg, guint len, gpointer ptr)
+{
+	OSCMixWindow *self = OSCMIX_WINDOW(ptr);
+	const char *id;
+	int i;
+
+	if (len < 1 || !G_VALUE_HOLDS_STRING(&arg[0]))
+		return;
+
+	/* Ignore if device already set (e.g. repeated /refresh) */
+	if (self->current_device)
+		return;
+
+	id = g_value_get_string(&arg[0]);
+	for (i = 0; i < devices_count; ++i) {
+		if (g_strcmp0(devices[i]->id, id) == 0) {
+			apply_device(self, devices[i]);
+			return;
+		}
+	}
+	g_warning("on_device_osc: unknown device id '%s'", id);
+}
+
 static void
 oscmix_window_class_init(OSCMixWindowClass *class)
 {
@@ -459,77 +582,74 @@ oscmix_window_class_init(OSCMixWindowClass *class)
 }
 
 static void
-setup_channels(OSCMixWindow *self, ChannelType type, GtkBox *box)
+setup_channels(OSCMixWindow *self, const struct device *dev, ChannelType type, GtkBox *box)
 {
-    Channel *chan, *left;
-    GtkWidget *sep;
-    GtkTreeIter iter;
-    int num_channels, i;
-    const struct channelinfo *channels;
+	Channel *chan, *left;
+	GtkWidget *sep;
+	GtkTreeIter iter;
+	int num_channels, i;
+	const struct channelinfo *channels;
 
-    // Hole die Kanalinfos aus dem aktuellen Gerät
-    if (type == CHANNEL_TYPE_INPUT) {
-        num_channels = current_device->inputslen;
-        channels = current_device->inputs;
-    } else if (type == CHANNEL_TYPE_OUTPUT) {
-        num_channels = current_device->outputslen;
-        channels = current_device->outputs;
-    } else {
-        // PLAYBACK: Fallback auf input_names wie bisher, falls keine Info vorhanden
-        //num_channels = 0;
-        //channels = NULL;
-		num_channels = current_device->outputslen;
-        channels = current_device->outputs;
-    }
+	if (type == CHANNEL_TYPE_INPUT) {
+		num_channels = dev->inputslen;
+		channels = dev->inputs;
+	} else if (type == CHANNEL_TYPE_OUTPUT) {
+		num_channels = dev->outputslen;
+		channels = dev->outputs;
+	} else {
+		/* PLAYBACK: use output count as playback channel count */
+		num_channels = dev->outputslen;
+		channels = dev->outputs;
+	}
 
-    left = NULL;
-    for (i = 0; i < num_channels; ++i) {
-    const char *name = channels[i].name;
-    unsigned devflags = channels[i].flags;
-    unsigned chflags = 0;
+	left = NULL;
+	for (i = 0; i < num_channels; ++i) {
+		const char *name = channels[i].name;
+		unsigned devflags = channels[i].flags;
+		unsigned chflags = 0;
 
-    if (devflags & INPUT_HAS_48V)
-        chflags |= CHANNEL_FLAG_MIC;
-    if (devflags & INPUT_HAS_HIZ)
-        chflags |= CHANNEL_FLAG_INSTRUMENT;
-    if (devflags & INPUT_HAS_GAIN)
-        chflags |= CHANNEL_FLAG_ANALOG;
+		if (devflags & INPUT_HAS_48V)
+			chflags |= CHANNEL_FLAG_MIC;
+		if (devflags & INPUT_HAS_HIZ)
+			chflags |= CHANNEL_FLAG_INSTRUMENT;
+		if (devflags & INPUT_HAS_GAIN)
+			chflags |= CHANNEL_FLAG_ANALOG;
 
-    chan = g_object_new(channel_get_type(),
-        "mixer", self->osc,
-        "type", type,
-        "flags", chflags,
-        "id", i + 1,
-        "name", name,
-        "outputs-model", type == CHANNEL_TYPE_OUTPUT ? NULL : self->outputs_model,
-        (char *)0);
+		chan = g_object_new(channel_get_type(),
+							"mixer", self->osc,
+							"type", type,
+							"flags", chflags,
+							"id", i + 1,
+							"name", name,
+							"outputs-model", type == CHANNEL_TYPE_OUTPUT ? NULL : self->outputs_model,
+							(char *)0);
 
-        if (left) {
-            g_object_set(left, "right", chan, NULL);
-            left = NULL;
-        } else {
-            left = chan;
-        }
-        gtk_widget_show(GTK_WIDGET(chan));
-        gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(chan), false, false, 0);
-        switch (type) {
-        case CHANNEL_TYPE_INPUT:
-        case CHANNEL_TYPE_PLAYBACK:
-            g_ptr_array_add(self->inputs_array, chan);
-            break;
-        case CHANNEL_TYPE_OUTPUT:
-            gtk_list_store_append(self->outputs_store, &iter);
-            gtk_list_store_set(self->outputs_store, &iter, 0, chan, -1);
-            g_signal_connect(chan, "notify::visible", G_CALLBACK(on_output_visible_changed), self);
-            break;
-        }
-        g_object_bind_property(self->durec_recordview, "active", chan, "record-view", G_BINDING_DEFAULT);
-        sep = gtk_separator_new(GTK_ORIENTATION_VERTICAL);
-        gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(sep), false, false, 0);
-        g_object_bind_property(G_OBJECT(chan), "visible", G_OBJECT(sep), "visible", G_BINDING_DEFAULT);
-        gtk_widget_show(sep);
-        g_signal_connect(chan, "output-changed", G_CALLBACK(on_channel_output_changed), self);
-    }
+		if (left) {
+			g_object_set(left, "right", chan, NULL);
+			left = NULL;
+		} else {
+			left = chan;
+		}
+		gtk_widget_show(GTK_WIDGET(chan));
+		gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(chan), false, false, 0);
+		switch (type) {
+			case CHANNEL_TYPE_INPUT:
+			case CHANNEL_TYPE_PLAYBACK:
+				g_ptr_array_add(self->inputs_array, chan);
+				break;
+			case CHANNEL_TYPE_OUTPUT:
+				gtk_list_store_append(self->outputs_store, &iter);
+				gtk_list_store_set(self->outputs_store, &iter, 0, chan, -1);
+				g_signal_connect(chan, "notify::visible", G_CALLBACK(on_output_visible_changed), self);
+				break;
+		}
+		g_object_bind_property(self->durec_recordview, "active", chan, "record-view", G_BINDING_DEFAULT);
+		sep = gtk_separator_new(GTK_ORIENTATION_VERTICAL);
+		gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(sep), false, false, 0);
+		g_object_bind_property(G_OBJECT(chan), "visible", G_OBJECT(sep), "visible", G_BINDING_DEFAULT);
+		gtk_widget_show(sep);
+		g_signal_connect(chan, "output-changed", G_CALLBACK(on_channel_output_changed), self);
+	}
 }
 
 static gboolean
@@ -556,8 +676,8 @@ output_modify(GtkTreeModel *model, GtkTreeIter *iter, GValue *val, int col, gpoi
 	gtk_tree_model_get_value(child_model, &child_iter, 0, &child_val);
 	chan = g_value_get_object(&child_val);
 	switch (col) {
-	case 0: g_value_set_object(val, chan); break;
-	case 1: g_value_set_string(val, channel_get_name(chan)); break;
+		case 0: g_value_set_object(val, chan); break;
+		case 1: g_value_set_string(val, channel_get_name(chan)); break;
 	}
 }
 
@@ -568,6 +688,8 @@ oscmix_window_init(OSCMixWindow *self)
 
 	gtk_widget_init_template(GTK_WIDGET(self));
 	self->osc = mixer_new();
+	self->current_device = NULL;
+	self->device_timeout_source = 0;
 
 	settings = g_settings_new("oscmix");
 	g_settings_bind(settings, "send-host", self->send_host, "text", G_SETTINGS_BIND_DEFAULT);
@@ -623,15 +745,12 @@ oscmix_window_init(OSCMixWindow *self)
 	mixer_bind(self->osc, "/durec/file", G_TYPE_INT, self->durec_file, "active");
 	g_signal_connect(self->durec_file, "changed", G_CALLBACK(on_durec_file_changed), self);
 
-	self->inputs_array = g_ptr_array_new();
-	self->outputs_store = gtk_list_store_new(1, channel_get_type());
-	self->outputs_model = gtk_tree_model_filter_new(GTK_TREE_MODEL(self->outputs_store), NULL);
-	gtk_tree_model_filter_set_modify_func(GTK_TREE_MODEL_FILTER(self->outputs_model), 2, (GType[]){channel_get_type(), G_TYPE_STRING}, output_modify, NULL, NULL);
-	gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(self->outputs_model), output_visible, NULL, NULL);
-	gtk_combo_box_set_model(self->mainout, self->outputs_model);
-	setup_channels(self, CHANNEL_TYPE_OUTPUT, self->outputs);
-	setup_channels(self, CHANNEL_TYPE_INPUT, self->inputs);
-	setup_channels(self, CHANNEL_TYPE_PLAYBACK, self->playbacks);
+	/* Register /device handler - fires when oscmix identifies itself on /refresh */
+	mixer_connect(self->osc, "/device", on_device_osc, self);
+
+	/* Start timeout - if no /device arrives within the window, show offline dialog */
+	self->device_timeout_source = g_timeout_add_seconds(
+														DEVICE_DETECT_TIMEOUT_S, on_device_timeout, self);
 
 	g_signal_emit_by_name(self->send_host, "activate");
 	g_signal_emit_by_name(self->recv_host, "activate");
@@ -660,11 +779,11 @@ main(int argc, char *argv[])
 
 	app = gtk_application_new(NULL,
 #if GLIB_CHECK_VERSION(2, 74, 0)
-		G_APPLICATION_DEFAULT_FLAGS
+							  G_APPLICATION_DEFAULT_FLAGS
 #else
-		G_APPLICATION_FLAGS_NONE
+							  G_APPLICATION_FLAGS_NONE
 #endif
-	);
+							  );
 	g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
 	ret = g_application_run(G_APPLICATION(app), argc, argv);
 	g_object_unref(app);
