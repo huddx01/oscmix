@@ -1,0 +1,46 @@
+.Dd March 5, 2026
+.Dt ALSARAWIO 1
+.Os
+.Sh NAME
+.Nm alsarawio
+.Nd ALSA raw MIDI I/O
+.Sh SYNOPSIS
+.Nm
+.Ar device
+.Op Ar command...
+.Sh DESCRIPTION
+.Nm
+opens a raw ALSA MIDI subdevice and sets up file descriptors 6 and 7
+for reading and writing MIDI byte streams, then executes
+.Ar command .
+.Pp
+The
+.Ar device
+is specified in the form
+.Ar hw:card,device,subdevice
+or the short form
+.Ar card,device,subdevice .
+Use
+.Xr amidi 1
+with the
+.Fl l
+flag to list available raw MIDI devices.
+For RME Fireface devices, use the last subdevice listed for the unit.
+.Sh EXAMPLES
+List available raw MIDI devices:
+.Pp
+.Dl amidi -l
+.Pp
+Start
+.Xr oscmix 1
+using subdevice 3 of card 0:
+.Pp
+.Dl alsarawio hw:0,0,3 oscmix
+.Pp
+Short form equivalent:
+.Pp
+.Dl alsarawio 0,0,3 oscmix
+.Sh SEE ALSO
+.Xr alsaseqio 1 ,
+.Xr oscmix 1 ,
+.Xr amidi 1

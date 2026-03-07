@@ -1,0 +1,125 @@
+.Dd March 21, 2025
+.Dt ALSASEQIO 1
+.Os
+.Sh NAME
+.Nm alsaseqio
+.Nd ALSA sequencer I/O
+.Sh SYNOPSIS
+.Nm
+.Op Fl rws
+.Op Fl n Ar name
+.Op Fl f Ar rfd Ns Op , Ns Ar wfd
+.Op Fl p Ar client Ns Op : Ns Ar port
+.Op Ar command...
+.Sh DESCRIPTION
+.Nm
+is a bridge from MIDI byte stream(s) to an ALSA sequencer port.
+.Pp
+If
+.Ar command
+is specified,
+.Nm
+will set up pipes on
+.Ar rfd
+and/or
+.Ar wfd
+that can be used to read and/or write MIDI messages.
+Then, it will fork to the background and execute
+.Ar command
+in the foreground.
+.Pp
+Otherwise,
+.Nm
+will read MIDI messages from the sequencer port, writing them to
+.Ar wfd ,
+and read MIDI messages from
+.Ar rfd ,
+writing them to the sequencer port.
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl r
+Read from the ALSA sequencer port.
+.It Fl w
+Write to the ALSA sequencer port.
+.It Fl s
+Allow subscription to
+.Nm Ns 's port, even if a target port was specified with
+.Fl p .
+.It Fl n Ar name
+The ALSA sequencer client name and port name to use.
+Defaults to
+.Nm .
+.It Fl f Ar rfd Ns Op , Ns Ar wfd
+The file descriptors on which to read and/or write MIDI 1.0 byte
+streams.
+If only one file descriptor is given, then it is used for both
+reading and writing.
+If not specified, defaults to standard input (0) for reading and
+standard output (1) for writing.
+.Pp
+If
+.Ar command
+is specified, these file descriptors refer to the ends of the pipes
+on the command side.
+In
+.Fl r
+mode, MIDI messages can be read from
+.Ar rfd ,
+and in
+.Fl w
+mode, MIDI messages can be written to
+.Ar wfd .
+.Pp
+Otherwise, in
+.Fl r
+mode, MIDI messages read from the sequencer port are written to
+.Ar wfd ,
+and in
+.Fl w
+mode, MIDI messages read from
+.Ar rfd
+are written to the sequencer port.
+.It Fl p Ar client Ns Op : Ns Ar port
+The target ALSA sequencer port.
+The
+.Ar client
+can be specified by its number, its name, or a prefix of its name.
+The
+.Ar port
+is specified by its number, and can be omitted in which case 0 is
+used.
+If
+.Fl p
+is not specified, subscription will be enabled for
+.Nm Ns 's port, allowing other clients to connect.
+.El
+.Pp
+If neither
+.Fl r
+nor
+.Fl w
+is specified, the default is
+.Fl rw .
+.Sh EXAMPLES
+Hex dump any MIDI messages received:
+.Pp
+.Dl alsaseqio -r | od -t x1
+.Pp
+Play a C note for one second on a synthesizer named
+.Sq MODEL D :
+.Pp
+.Dl { printf '\ex90\ex3C\ex7F'; sleep 1; printf '\ex80\ex3C\ex7F'; } | alsaseqio -wp 'MODEL D'
+.Pp
+Start
+.Xr oscmix 1
+using port 3 of a Fireface UFX III:
+.Pp
+.Dl alsaseqio -p 'Fireface UFX III:3' -f 6,7 oscmix
+.Pp
+Bridge an ALSA sequencer port to a CoreMIDI port on a networked Mac:
+.Pp
+.Dl alsaseqio ssh mymac coremidiio
+.Sh SEE ALSO
+.Xr alsarawio 1 ,
+.Xr coremidiio 1 ,
+.Xr oscmix 1
