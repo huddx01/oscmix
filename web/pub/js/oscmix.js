@@ -1125,6 +1125,14 @@ class Channel {
 		if (type === Channel.OUTPUT) {
 			bridge.register(type, index, fragment);
 		}
+		// Hide Room EQ button and crossfeed select on devices without Room EQ.
+		// Must happen before the loop below strips all IDs from the fragment.
+		if (!(currentDevice?.hasRoomEq ?? true)) {
+			const roomeqBtn = fragment.getElementById('roomeq-show');
+			if (roomeqBtn) roomeqBtn.hidden = true;
+			const crossfeedLabel = fragment.querySelector('label:has(#crossfeed)');
+			if (crossfeedLabel) crossfeedLabel.hidden = true;
+		}
 		for (const node of fragment.querySelectorAll("[id]")) {
 			if (Channel.#elements.has(node.id)) {
 				const type = node.step && node.step < 1 ? ",f" : ",i";
@@ -1643,21 +1651,16 @@ function reinitializeUI() {
 }
 
 function applyDeviceFeatures() {
-	// Show/hide sections based on device capability flags
-	const hasDurec  = currentDevice?.hasDurec  ?? false;
-	const hasRoomEq = currentDevice?.hasRoomEq ?? false;
+	// Show/hide static sections based on device capability flags.
+	// Channel-level elements (roomeq-show, crossfeed) are handled
+	// directly in the Channel constructor while IDs are still present.
+	const hasDurec = currentDevice?.hasDurec ?? false;
 
-	// DURec section (details element containing durec-file select)
 	const durecSection = document.querySelector('details:has(#durec-file)');
 	if (durecSection) {
 		durecSection.hidden = !hasDurec;
 		const hr = durecSection.previousElementSibling;
 		if (hr?.tagName === 'HR') hr.hidden = !hasDurec;
-	}
-
-	// Room EQ buttons and crossfeed selects in channel strips
-	for (const el of document.querySelectorAll('[id="roomeq-show"], [id="crossfeed"]')) {
-		el.hidden = !hasRoomEq;
 	}
 }
 
