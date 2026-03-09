@@ -37,7 +37,7 @@ mkdir -p "${PKG}/DEBIAN"
 mkdir -p "${PKG}/usr/bin"
 mkdir -p "${PKG}/usr/share/oscmix"
 mkdir -p "${PKG}/usr/share/applications"
-mkdir -p "${PKG}/usr/share/icons/hicolor/scalable/apps"
+mkdir -p "${PKG}/usr/share/icons/hicolor/512x512/apps"
 mkdir -p "${PKG}/usr/share/man/man1"
 mkdir -p "${DOC_DIR}"
 
@@ -50,7 +50,8 @@ cp gtk/AppRun                   "${PKG}/usr/bin/oscmix-launcher"
 
 # - GTK resources
 cp gtk/gschemas.compiled        "${PKG}/usr/share/oscmix/"
-cp gtk/oscmix.svg               "${PKG}/usr/share/icons/hicolor/scalable/apps/"
+cp "doc/img/AppIcon/AppIcon-Dark-512x512@1x.png" \
+                        "${PKG}/usr/share/icons/hicolor/512x512/apps/oscmix.png"
 
 # - Man pages (gzip as required by Debian policy)
 for page in oscmix alsarawio alsaseqio; do
@@ -106,7 +107,7 @@ chmod 755 "${PKG}/usr/bin/alsaseqio"
 chmod 755 "${PKG}/usr/bin/oscmix-gtk"
 chmod 755 "${PKG}/usr/bin/oscmix-launcher"
 chmod 644 "${PKG}/usr/share/oscmix/gschemas.compiled"
-chmod 644 "${PKG}/usr/share/icons/hicolor/scalable/apps/oscmix.svg"
+chmod 644 "${PKG}/usr/share/icons/hicolor/512x512/apps/oscmix.png"
 chmod 644 "${PKG}/usr/share/applications/oscmix-gtk.desktop"
 chmod 644 "${PKG}"/usr/share/man/man1/*.gz
 chmod 644 "${DOC_DIR}/copyright"

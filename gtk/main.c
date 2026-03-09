@@ -7,14 +7,15 @@
 #include "../device.h"
 
 /* All known devices - must match oscmix.c */
-extern const struct device ffucxii;
+
 extern const struct device ff802;
-extern const struct device ffufxiii;
 extern const struct device ffucx;
+extern const struct device ffucxii;
 extern const struct device ffufxp;
 extern const struct device ffufxii;
+extern const struct device ffufxiii;
 static const struct device *devices[] = {
-	&ffucxii, &ff802, &ffufxiii, &ffucx, &ffufxp, &ffufxii
+	&ff802, &ffucx, &ffucxii, &ffufxp, &ffufxii, &ffufxiii
 };
 static const int devices_count = sizeof(devices) / sizeof(devices[0]);
 

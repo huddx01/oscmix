@@ -30,9 +30,9 @@ export GSETTINGS_SCHEMA_DIR="$SHARE_DIR"
 
 # Supported device name patterns (matched against amidi/aconnect output)
 SUPPORTED_DEVICES=(
-    "Fireface UCX II"
     "Fireface 802"
     "Fireface UCX"
+    "Fireface UCX II"
     "Fireface UFX+"
     "Fireface UFX II"
     "Fireface UFX III"
@@ -277,7 +277,7 @@ else
 fi
 
 # Give oscmix a moment to initialize
-sleep 0.8
+sleep 2.0
 
 # Verify our oscmix instance started by checking if it listens on the expected
 # recv port. This is reliable even when other instances are already running.
