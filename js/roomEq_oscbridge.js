@@ -1,4 +1,4 @@
-// ════════════════════════════════════════════════
+// ------------------------------------------------
 //  roomEq_oscbridge.js
 //
 //  Manages per-output-channel RoomEQ popup windows.
@@ -8,7 +8,7 @@
 //    import { RoomEQBridge } from './roomEq_oscbridge.js';
 //    const bridge = new RoomEQBridge(iface);
 //    bridge.register(type, index);   // call once per output channel
-// ════════════════════════════════════════════════
+// ------------------------------------------------
 
 // OSC addresses that belong to the RoomEQ subsystem for a given channel prefix.
 // These are registered as iface.methods so incoming OSC is forwarded to the popup.
@@ -71,14 +71,14 @@ export class RoomEQBridge {
     const entry = { popup: null, button: null };
     this.#channels.set(channelKey, entry);
 
-    // ── Wire up the "Room EQ" show button ──
+    // -- Wire up the "Room EQ" show button --
     const btn = fragment.getElementById('roomeq-show');
     if (btn) {
       entry.button = btn;
       btn.addEventListener('click', () => this.#openPopup(channelKey, prefix));
     }
 
-    // ── Register iface.methods for all roomeq params ──
+    // -- Register iface.methods for all roomeq params --
     // When oscmix receives an OSC update for this channel,
     // forward it to the popup (if open).
     for (const param of ROOMEQ_PARAMS) {
@@ -94,7 +94,7 @@ export class RoomEQBridge {
     }
   }
 
-  // ── Open or focus the popup for a channel ──
+  // -- Open or focus the popup for a channel --
   #openPopup(channelKey, prefix) {
     const entry = this.#channels.get(channelKey);
     if (!entry) return;
@@ -105,7 +105,7 @@ export class RoomEQBridge {
     }
 
     const url = `roomEq.html?channel=${encodeURIComponent(channelKey)}`;
-    const features = 'width=1150,height=520,resizable=yes,scrollbars=no';
+    const features = 'width=1150,height=560,resizable=yes,scrollbars=no';
     const popup = window.open(url, `roomEq_${channelKey}`, features);
     entry.popup = popup;
 
@@ -128,14 +128,14 @@ export class RoomEQBridge {
     }, 1000);
   }
 
-  // ── Forward a single OSC value to the popup ──
+  // -- Forward a single OSC value to the popup --
   #forwardToPopup(channelKey, addr, value) {
     const entry = this.#channels.get(channelKey);
     if (!entry?.popup || entry.popup.closed) return;
     entry.popup.postMessage({ type: 'ROOMEQ_OSC_RECV', addr, value }, '*');
   }
 
-  // ── Push all known roomeq state to a freshly opened popup ──
+  // -- Push all known roomeq state to a freshly opened popup --
   // Reads current values from the DOM inputs that the generic bind() keeps updated.
   #pushFullState(channelKey, prefix, popup) {
     for (const param of ROOMEQ_PARAMS) {
@@ -157,11 +157,11 @@ export class RoomEQBridge {
   }
 }
 
-// ════════════════════════════════════════════════
+// ------------------------------------------------
 //  Value cache helper
 //  Wraps an iface.methods handler to cache the last received value,
 //  so #pushFullState can replay it to a newly opened popup.
-// ════════════════════════════════════════════════
+// ------------------------------------------------
 export function withValueCache(handler) {
   const wrapped = (args) => {
     wrapped._cachedValue = args[0];

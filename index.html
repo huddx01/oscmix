@@ -129,14 +129,16 @@
 						<!--						<label id="fx">-->
 						<!--							<div class="knob-target"></div>-->
 						<!--						</label>-->
-						<label data-type="output">Crossfeed<select id="crossfeed">
+						<label data-type="output">Crossfeed
+							<select id="crossfeed">
 								<option>Off</option>
-								<option>1</option>
-								<option>2</option>
-								<option>3</option>
-								<option>4</option>
-								<option>5</option>
-							</select></label>
+								<option>crossfeed 1</option>
+								<option>crossfeed 2</option>
+								<option>crossfeed 3</option>
+								<option>crossfeed 4</option>
+								<option>crossfeed 5</option>
+							</select>
+						</label>
 						<label class="stereo-field">M/S Proc<span><input type="checkbox" id="msproc" /></span></label>
 						<label>Phase<span><input type="checkbox" id="phase" /></span></label>
 						<label data-type="output">Loopback<span><input type="checkbox" id="loopback" value="0" /></span></label>
@@ -289,7 +291,6 @@
 				</form>
 			</details>
 			<hr />
-		
 
 			<details open>
 				<summary>
@@ -397,66 +398,6 @@
 				</form>
 			</details>
 			<hr />
-
-
-			<!--			<details>
-			<summary>Reverb<input id="reverb-enabled" type="checkbox"></summary>
-			<fieldset>
-			<label>Type<select id="reverb-type">
-			<option>Small Room</option>
-			<option>Medium Room</option>
-			<option>Large Room</option>
-			<option>Walls</option>
-			<option>Shorty</option>
-			<option>Attack</option>
-			<option>Swagger</option>
-			<option>Old School</option>
-			<option>Echoistic</option>
-			<option>8plus9</option>
-			<option>Grand Wide</option>
-			<option>Thicker</option>
-			<option>Envelope</option>
-			<option>Gated</option>
-			<option>Space</option>
-			</select></label>
-			<label>Pre Delay<input id="reverb-predelay" type="number" min="0" max="999" step="1"></label>
-			<label>Low Cut<input id="reverb-lowcut" type="number" min="20" max="500" step="1"></label>
-			<label>Room Scale<input id="reverb-roomscale" type="number" min="0.5" max="3" step="0.01"></label>
-			<label>Attack<input id="reverb-attack" type="number" min="5" max="400" step="1"></label>
-			<label>Hold<input id="reverb-hold" type="number" min="5" max="400" step="1"></label>
-			<label>Release<input id="reverb-release" type="number" min="5" max="400" step="1"></label>
-			<label>High Cut<input id="reverb-highcut" type="number" min="2000" max="20000" step="100"></label>
-			<label>Time<input id="reverb-time" type="number" min="0.1" max="4.9" step="0.1"></label>
-			<label>High Damp<input id="reverb-highdamp" type="number" min="2000" max="20000" step="100"></label>
-			<label>Smooth<input id="reverb-smooth" type="number" min="0" max="100" step="1"></label>
-			<label>Volume<input id="reverb-volume" type="number" min="-65" max="6" step="0.5"></label>
-			<label>Width<input id="reverb-width" type="number" min="0" max="1" step="0.01"></label>
-			</fieldset>
-			</details>
-			<hr>
-			<details>
-			<summary>Echo<input id="echo-enabled" type="checkbox"></summary>
-			<fieldset>
-			<label>Type<select id="echo-type">
-			<option>Stereo Echo</option>
-			<option>Stereo Cross</option>
-			<option>Pong Echo</option>
-			</select></label>
-			<label>Delay<input id="echo-delay" type="number" min="0" max="2" step="0.01"></label>
-			<label>Feedback<input id="echo-feedback" type="number" min="0" max="100" step="1"></label>
-			<label>Width<input id="echo-width" type="number" min="0" max="1" step="0.01"></label>
-			<label>High Cut<select id="echo-highcut">
-			<option>Off</option>
-			<option>16 kHz</option>
-			<option>12 kHz</option>
-			<option>8 kHz</option>
-			<option>4 kHz</option>
-			<option>2 kHz</option>
-			</select></label>
-			<label>Volume<input id="echo-volume" type="number" min="-65" max="6" step="0.5"></label>
-			</fieldset>
-			</details>
-			<hr>-->
 
 			<details open>
 				<summary>Control Room</summary>
