@@ -1479,6 +1479,11 @@ function setupInterface() {
 	);
 	iface.bind("/hardware/lockkeys", ",i", document.getElementById("hardware-lockkeys"), "selectedIndex", "change");
 	iface.bind("/hardware/remapkeys", ",i", document.getElementById("hardware-remapkeys"), "checked", "change");
+	document.querySelectorAll("[id^='hardware-programkey']").forEach(function(sel) {
+		document.getElementById("programkey-options").querySelectorAll("option").forEach(function(opt) {
+			sel.appendChild(opt.cloneNode(true));
+		});
+	});
 	iface.bind(
 		"/hardware/programkey01",
 		",i",
