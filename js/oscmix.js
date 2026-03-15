@@ -20,7 +20,8 @@ let debugFlags = {
 	outgoing: false,
 	level: false,
 	arc: false,
-	other: false
+	other: false,
+	wasm: false
 };
 
 // Load debug flags from localStorage
@@ -57,13 +58,16 @@ function setupDebugListeners() {
 	}
 }
 
-updatePageTitle();
-
 let connectionStatus = {
 	connected: false,
 	oscActive: false,
 	deviceName: "Disconnected"
 };
+
+// Extracted MIDI device label (e.g. "Fireface 802 (12345678)"), null for WebSocket
+let midiPortLabel = null;
+
+updatePageTitle();
 
 /* Style Handling */
 const styleSelector = document.getElementById("ui-style-select");
@@ -218,7 +222,7 @@ class ConnectionMIDI extends AbortController {
 						const iov = new Uint8Array(memory, iovs[i], iovs[i + 1]);
 						stderr += text.decode(iov);
 					}
-					console.log(stderr);
+					if (debugFlags.wasm) console.debug("[WASM]", stderr.trimEnd());
 					new Uint32Array(memory, ret)[0] = length;
 					return 0;
 				},
@@ -306,7 +310,7 @@ class Interface {
 
 		for (let i = 0; i < currentDevice.outputNames.length; i++) {
 			this.methods.set(`/output/${i + 1}/volumecal`, (args) => {
-				console.log(`VolumeCal for output ${i + 1}: ${args[0]}`);
+				if (debugFlags.incoming && debugFlags.other) console.debug("[OSC IN]", `/output/${i + 1}/volumecal`, args[0]);
 			});
 		}
 	}
@@ -446,7 +450,7 @@ class Interface {
 			if ( (debugFlags.incoming && debugFlags.level && isLevel) ||
 				(debugFlags.incoming && debugFlags.arc && isArc) ||
 				(debugFlags.incoming && debugFlags.other && isOther) ) {
-				console.debug(addr, args);
+				console.debug("[OSC IN]", addr, args);
 			}
 			const method = this.methods.get(addr);
 			if (method) method(args);
@@ -457,7 +461,7 @@ class Interface {
 		if (!this.#connection) throw new Error("not connected");
 		if (types[0] != "," || types.length != 1 + args.length) throw new Error("invalid OSC type string");
 		if (debugFlags.outgoing) {
-			console.debug('SEND', addr, types, args);
+			console.debug("[OSC OUT]", addr, types, args);
 		}
 		const encoder = new OSCEncoder();
 		encoder.putString(addr);
@@ -482,7 +486,7 @@ class Interface {
 
 	bind(addr, types, obj, prop, eventType) {
 		this.methods.set(addr, withValueCache((args) => {
-			console.log(`OSC update for ${addr}:`, args);
+			if (debugFlags.incoming && debugFlags.other) console.debug("[OSC BIND]", addr, args);
 			const step = obj.step;
 			obj[prop] = step ? Math.round(args[0] / step) * step : args[0];
 			if (eventType) obj.dispatchEvent(new OSCEvent(eventType));
@@ -1120,7 +1124,7 @@ class Channel {
 
 		const playCheckbox = fragment.querySelector(".play-checkbox");
 		if (playCheckbox) {
-			iface.bind(prefix + "/play", ",i", playCheckbox, "checked", "change");
+			iface.bind(prefix + "/playchan", ",i", playCheckbox, "checked", "change");
 		}
 		if (type === Channel.OUTPUT) {
 			bridge.register(type, index, fragment);
@@ -1166,7 +1170,11 @@ class Channel {
 }
 
 function updatePageTitle() {
-	if (currentDevice) {
+	const label = midiPortLabel ?? (currentDevice ? currentDevice.deviceName : null);
+	if (midiPortLabel) {
+		const status = connectionStatus?.connected ? "connected" : "disconnected";
+		document.title = `oscmix - ${midiPortLabel} - ${status}`;
+	} else if (currentDevice) {
 		document.title = `oscmix - ${currentDevice.deviceName}`;
 	} else {
 		document.title = "oscmix - Generic";
@@ -1255,17 +1263,8 @@ function setupInterface() {
 	connectionType.dataset.value = connectionType.value;
 	connectionType.addEventListener("change", (event) => {
 		event.target.dataset.value = event.target.value;
-		if (midiAccess) {
-			midiPorts.input.replaceChildren();
-			midiPorts.output.replaceChildren();
-			midiPorts.input.disabled = true;
-			midiPorts.output.disabled = true;
-			midiAccess.removeEventListener("statechange", midiStateChanged);
-			midiAccess = null;
-			currentDevice = null;
-		}
-
-		if (event.target.value == "MIDI") {
+		// Only request MIDI access once on first switch to MIDI; connection state is managed by buttons only
+		if (event.target.value == "MIDI" && !midiAccess) {
 			navigator.requestMIDIAccess({ sysex: true }).then((access) => {
 				if (event.target.value != "MIDI") return;
 
@@ -1285,16 +1284,17 @@ function setupInterface() {
 					const inputPort = access.inputs.get(midiPorts.input.value);
 					const outputPort = access.outputs.get(midiPorts.output.value);
 					currentDevice = detectDevice(inputPort?.name) || detectDevice(outputPort?.name);
-					updatePageTitle();
+					// Extract device label with serial number from port name (handles Firefox duplicate format)
+					const rawName = (inputPort?.name || outputPort?.name || "").split(":")[0];
+					midiPortLabel = rawName.includes("(")
+						? (rawName.match(/^.+?\([^)]+\)/)?.[0]?.trim() ?? null)
+						: null;
 					if (currentDevice) {
 						console.log("Active device:", currentDevice.deviceName);
 						reinitializeUI();
-						updateConnectionStatus(
-							false,
-							false,
-							currentDevice.deviceName
-						);
+						updateConnectionStatus(false, false, currentDevice.deviceName);
 					}
+					updatePageTitle();
 				};
 
 				for (const [select, ports] of [
@@ -1311,7 +1311,12 @@ function setupInterface() {
 							lastMatchedId = port.id;
 						}
 					}
-					if (lastMatchedOption && !select.dataset.id) {
+					if (select.dataset.id) {
+						// Restore previously selected port if still available
+						const saved = Array.from(select.options).find(o => o.value === select.dataset.id);
+						if (saved) saved.selected = true;
+					} else if (lastMatchedOption) {
+						// First time: auto-select the best matching device port
 						lastMatchedOption.selected = true;
 						select.dataset.id = lastMatchedId;
 					}
@@ -1340,6 +1345,7 @@ function setupInterface() {
 		if (event.submitter.id == "connection-disconnect") {
 			icon.textContent = "";
 			updateConnectionStatus(false, false);
+			updatePageTitle();
 			return;
 		}
 		const elements = event.target.elements;
@@ -1364,18 +1370,21 @@ function setupInterface() {
 				icon.dataset.state = "failed";
 				connection = null;
 				updateConnectionStatus(false, false);
+				updatePageTitle();
 			},
 			{ once: true }
 		);
 
+		// Clear MIDI label when connecting via WebSocket
+		if (elements["connection-type"].value !== "MIDI") midiPortLabel = null;
 		connection.ready
 		.then(() => {
 			iface.connection = connection;
 			icon.textContent = elements["connection-type"].value;
 			icon.dataset.state = "connected";
-			updatePageTitle();
 			iface.send("/refresh", ",", []);
 			updateConnectionStatus(true, true, currentDevice.deviceName);
+			updatePageTitle();
 		})
 		.catch(console.error);
 	});
@@ -1461,7 +1470,7 @@ function setupInterface() {
 	iface.bind("/hardware/opticalout2", ",i", document.getElementById("hardware-opticalout2"), "selectedIndex", "change");
 	iface.bind("/hardware/spdifout", ",i", document.getElementById("hardware-spdifout"), "selectedIndex", "change");
 	iface.bind("/hardware/ccmix", ",i", document.getElementById("hardware-ccmix"), "selectedIndex", "change");
-	iface.bind("/hardware/ccmode", ",i", document.getElementById("hardware-ccmode"), "selectedIndex", "change");
+	iface.bind("/hardware/ccmode", ",i", document.getElementById("hardware-ccmode"), "checked", "change");
 	iface.bind(
 		"/hardware/interfacemode",
 		",i",
@@ -1520,24 +1529,41 @@ function setupInterface() {
 		"change"
 	);
 	iface.bind("/hardware/lcdcontrast", ",i", document.getElementById("hardware-lcdcontrast"), "value", "input");
+	{
+		const el = document.getElementById("hardware-lcdcontrast");
+		el.addEventListener("input", () => { el.title = el.value + " %"; });
+	}
 
 	iface.bind("/hardware/madiinput", ",i", document.getElementById("hardware-madiinput"), "selectedIndex", "change");
 	iface.bind("/hardware/madioutput", ",i", document.getElementById("hardware-madioutput"), "selectedIndex", "change");
 	iface.bind("/hardware/madiframe", ",i", document.getElementById("hardware-madiframe"), "selectedIndex", "change");
 	iface.bind("/hardware/madiformat", ",i", document.getElementById("hardware-madiformat"), "selectedIndex", "change");
 	iface.bind("/hardware/eqdrecord", ",i", document.getElementById("hardware-eqdrecord"), "checked", "change");
-
 	iface.bind("/hardware/dspvers", ",i", document.getElementById("hardware-dspvers"), "textContent");
-	iface.bind("/hardware/dspload", ",i", document.getElementById("hardware-dspload"), "textContent");
+	{
+		const dspMeter = document.getElementById("hardware-dspload-meter");
+		iface.methods.set("/hardware/dspload", (args) => {
+			dspMeter.value = args[0];
+			dspMeter.title = args[0] + " %";
+		});
+	}
 
 	iface.bind("/hardware/dspverload", ",i", document.getElementById("hardware-dspverload"), "textContent");
 	iface.bind("/hardware/dspavail", ",i", document.getElementById("hardware-dspavail"), "textContent");
 	iface.bind("/hardware/dspstatus", ",i", document.getElementById("hardware-dspstatus"), "textContent");
 
 	iface.bind("/durec/file", "i", document.getElementById("durec-file"), "value", "change");
-	iface.bind("/durec/record", ",i", document.getElementById("durec-record"), "checked", "change");
-	iface.bind("/durec/play", ",i", document.getElementById("durec-play"), "checked", "change");
-	iface.bind("/durec/stop", ",i", document.getElementById("durec-stop"), "checked", "change");
+	// Buttons don't support "checked" — use aria-pressed for OSC state feedback
+	for (const [addr, id] of [
+		["/durec/record", "durec-record"],
+		["/durec/play",   "durec-play"],
+		["/durec/stop",   "durec-stop"],
+	]) {
+		const btn = document.getElementById(id);
+		iface.methods.set(addr, (args) => {
+			btn.ariaPressed = args[0] ? "true" : "false";
+		});
+	}
 
 	/* allow scrolling on number and range inputs */
 	const wheel = (event) => {
@@ -1614,8 +1640,8 @@ function setupInterface() {
 						);
 					}
 				} else if (event.data.type === "OSC_COMMAND") {
-					if (debugFlags.incoming) {
-						console.debug('RECEIVE - ARC OSC_COMMAND: ', event.data);
+					if (debugFlags.incoming && debugFlags.arc) {
+						console.debug("[ARC IN]", event.data.command, event.data.args);
 					}
 					iface.send(event.data.command, ",i", event.data.args);
 				}

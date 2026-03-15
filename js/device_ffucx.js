@@ -8,7 +8,7 @@ const dig = (name) => ({ name, flags: [], gain: null, reflevel: null });
 
 export const device_ffucx = {
 	deviceName: 'Fireface UCX',
-	midiPortNames: ['Port 3'],
+	midiPortNames: ['Port 3', ':2'],
 	hasDurec:  false,
 	hasRoomEq: false,
 	hasHwKeys: false,
@@ -50,5 +50,5 @@ export const device_ffucx = {
 		return [];
 	},
 
-	hardware_standalonemidi: { names: ['Off', 'MIDI 1', 'MIDI 2', 'MADI O', 'MADI C'], type: 'enum' },
+	hardware_standalonemidi: { names: ['Off', 'MIDI 1', 'MIDI 2'], type: 'enum' },
 };

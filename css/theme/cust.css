@@ -7,11 +7,14 @@
 }
 
 * {
-	display: flex;
 	margin: 0;
+	font-family: sans-serif;
 }
 html, body {
 	height: 100%;
+}
+body {
+	display: flex;
 }
 summary {
 	font-weight: bold;
@@ -78,6 +81,7 @@ output {
 	padding: 4px;
 	margin: 0;
 }
+
 #connection-icon {
 	float: right;
 	font-weight: normal;

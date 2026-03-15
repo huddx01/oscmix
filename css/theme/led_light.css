@@ -43,6 +43,11 @@
 	--meter-yellow: #FFFF00;
 	--meter-green: #77DD77;
 	--meter-bg-color: #444444;
+    /*--meter-red: #ff3333;
+	--meter-orange: #ffAA00;
+	--meter-yellow: #FFFF00;
+	--meter-green: #33DD33;
+	--meter-bg-color: #444;*/
 
 	/* EQ-colors */
 	--eq-plot-bg: linear-gradient(to right, #6b0202c7, #004000b8, #000040bf);
@@ -86,10 +91,9 @@ html, body {
 summary {
 	font-weight: bold;
 	overflow: hidden;
-	display: flex;
+	/*display: flex;*/
     align-items: center;
     justify-content: space-between;
-
 }
 
 summary > input {
@@ -177,6 +181,7 @@ fieldset select {
 	color: var(--text-highlight-color);
 }
 
+
 .toggle-button.store-button:has(> .store-checkbox:checked) {
 	background-color: red;
 	color: var(--text-highlight-color);
@@ -206,33 +211,45 @@ hr {
   border-radius: 2px;
 }
 
+.label-legend {
+    font-style: italic;
+    font-weight: bold;
+}
+
 #sidebar {
 	background-color: var(--background-sidebar-color);
 	border-left: 1px solid var(--border-color);
 	overflow-y: auto;
-	padding: 6px;
+	padding: 8px; 
+	padding-right: 12px;
 	flex: 0 0 17em;
 }
 
-#sidebar > details > :not(:first-child) {
-	padding: 4px;
 
+#sidebar > details { /* > :not(:first-child)  */
+	padding: 0px;
+
+}
+
+#sidebar summary {
+    padding: 4px 0 4px 0;
 }
 
 #sidebar fieldset {
 	row-gap: 4px;
-	padding: 10px;
-	margin: 0;
+	padding: 4px;
+	margin: 4px;
 }
 
 #connection-icon {
 	float: right;
 	font-weight: normal;
 	font-size: smaller;
+	margin-right: 12px;
 }
 
 #connection-icon::after {
-	margin-left: 2px;
+	margin-left: 4px;
 }
 
 #connection-icon[data-state="connected"]::after {
@@ -243,12 +260,16 @@ hr {
 	content: "\274C";
 }
 
-/*label:has(#connection-type:not([data-value="MIDI"])) ~ .connection-midi {
+label:has(#connection-type:not([data-value="MIDI"])) ~ .connection-midi {
 	display: none;
-}*/
+}
 
 label:has(#connection-type:not([data-value="WebSocket"])) ~ .connection-websocket {
 	display: none;
+}
+
+#setup label {
+	border: none;
 }
 
 #channels {
@@ -256,6 +277,10 @@ label:has(#connection-type:not([data-value="WebSocket"])) ~ .connection-websocke
 	flex-direction: column;
 	flex-grow: 1;
 	overflow: auto;
+}
+
+#channels > div {
+	padding: 4px 4px 12px 4px; /* Avoid scrollbar overlap elements */
 }
 
 #channels > details {
@@ -407,6 +432,9 @@ label:has(#connection-type:not([data-value="WebSocket"])) ~ .connection-websocke
 	margin-left: -18px;
 	border: none;
 }
+
+
+
 
 input[type=range]:focus {
 	outline: none;
@@ -728,24 +756,24 @@ osc-knob::after {
 
 .meter-wrapper {
 	width: 10px;
-	border: 1px solid var(--border-color);
+	border: 2px solid #777777;
 	border-radius: 4px;
 	overflow: hidden;
 	margin: 2px 4px;
-	background: repeating-linear-gradient(to bottom,
-       #444 0px,
-       #444 1px,      /* Grosor de la separación negra */
+	background: repeating-linear-gradient(to top,
+       #444a 0px,
+       #444a 1px,      /* Grosor de la separación negra */
        transparent 1px,
        transparent 5px /* Tamaño del LED (total 6px de paso) */
     ),
     linear-gradient(to top,
 	    var(--meter-green) 0%,
-	    var(--meter-green) 65%,
+	    var(--meter-green) 63%,
 	    var(--meter-yellow) 65%,
-	    var(--meter-yellow) 83%,
-	    var(--meter-orange) 83%,	    
-	    var(--meter-orange) 89%,	    
-	    var(--meter-red) 89%,
+	    var(--meter-yellow) 77%,
+	    var(--meter-orange) 80%,	    
+	    var(--meter-orange) 87%,	    
+	    var(--meter-red) 90%,
 	    var(--meter-red) 100%
 	);
 	position: relative;
@@ -910,97 +938,7 @@ osc-knob::after {
 
 
 
-.custom-form {
-  border: none; /*3px solid #ddd;      /* Un marc més subtil */
-  border-radius: 8px;          /* Cantons arrodonits */
-  padding: 15px 20px;          /* Espai intern */
-  max-width: 350px;            /* Amplada del formulari */
-  background-color: #f9f9f9;   /* Un fons lleugerament gris */
-  display: flex;
-  flex-direction: column;      /* Apila les files una sota l'altra */
-}
 
-.form-row output {
-    display: flex;
-    padding: 2px;
-	border: 1px solid var(--border-color);
-	border-radius: 2px;
-    min-height: 1.1em;
-    font-size: 1rem;
-    width: 47%;
-    justify-content: flex-end;
-    align-items: center;
-}
-
-.form-row select {
-	border: 1px solid var(--border-color);
-	border-radius: 2px;
-	display: inline-block;
-    min-height: 1.1em;
-    width: 50%;
-}
-
-/* Alineació de les files */
-.form-row {
-  display: flex;
-  justify-content: space-between; 
-  align-items: center;            
-  margin-bottom: 3px;            
-  width: 100%;
-  cursor: pointer;
-}
-
-/* --- DISSENY DEL SWITCH --- */
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 36px;  /* Mida del switch */
-  height: 18px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-  padding: 3px;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #ccc;
-  transition: .3s;
-  border-radius: 24px;
-
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 14px;
-  width: 14px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  transition: .2s;
-  border-radius: 50%;
-}
-
-input:checked + .slider {
-  background-color: #5555DD;
-}
-
-input:checked + .slider:before {
-  transform: translateX(18px);
-}
-
-/* Estil bàsic per al select perquè combini */
-select {
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-}
 
 
 .led-btn {

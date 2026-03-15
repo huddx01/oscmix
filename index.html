@@ -24,19 +24,19 @@
 					</form>
 					<label id="pan">					
 						<div class="knob-target"></div>
-                    </label>
+					</label>
 					<div class="channel-mute">
 						<label class="toggle-button mute-button">M
-						    <input class="mute-checkbox" type="checkbox"/>
+							<input class="mute-checkbox" type="checkbox"/>
 						</label>
 						<label class="toggle-button solo-button">S
-						    <input class="solo-checkbox" type="checkbox"/>
+							<input class="solo-checkbox" type="checkbox"/>
 						</label>
 						<label class="toggle-button record-button">R
-						    <input class="record-checkbox" type="checkbox"/>
+							<input class="record-checkbox" type="checkbox"/>
 						</label>
 						<label class="toggle-button play-button">P
-						    <input class="play-checkbox" type="checkbox"/>
+							<input class="play-checkbox" type="checkbox"/>
 						</label>
 					</div>
 					<div id="channel-meter-value" class="channel-meter-value">
@@ -244,18 +244,20 @@
 						<summary>Auto Level<input id="autolevel" class="autolevel" type="checkbox" /></summary>
 						<fieldset>
 							<label>Max Gain
-							    <input id="autolevel/maxgain" type="number" min="0" max="18" step="0.5"/>
+								<input id="autolevel/maxgain" type="number" min="0" max="18" step="0.5"/>
 							</label>
 							<label>Headroom
-							    <input id="autolevel/headroom" type="number" min="3" max="12" step="0.5"/></label>
+								<input id="autolevel/headroom" type="number" min="3" max="12" step="0.5"/></label>
 							<label>Rise Time
-							    <input id="autolevel/risetime" type="number" min="0.1" max="9.9" step="0.1"/>
+								<input id="autolevel/risetime" type="number" min="0.1" max="9.9" step="0.1"/>
 							</label>
 						</fieldset>
 					</details>
 				</div>
 			</div>
 		</template>
+		
+		<!-- Channels -->
 		<div id="channels">
 			<details open><summary>Inputs</summary></details>
 			<div id="inputs" class="channel-strip"></div>
@@ -266,8 +268,10 @@
 			<details open><summary>Outputs</summary></details>
 			<div id="outputs" class="channel-strip"></div>
 		</div>
+		
+		<!-- Sidebar -->
 		<div id="sidebar">
-				<details open>
+			<details open>
 				<summary>Connection<span id="connection-icon"></span></summary>
 				<form id="connection">
 					<fieldset class="custom-form">
@@ -286,12 +290,12 @@
 						<label class="connection-websocket form-row">Server
 							<input id="connection-websocket-address" size="1" value="ws://localhost:8222" />
 						</label>
-					</fieldset>
-					<fieldset>
-						<button id="connection-connect">Connect</button>
-						<button id="connection-disconnect">Disconnect</button>
-						<button id="connection-refresh">Refresh</button>
-						<button id="connection-reinitialise">Reinitialise</button>
+						<div class="durec-controls">
+							<button id="connection-connect">Connect</button>
+							<button id="connection-disconnect">Disconnect</button>
+							<button id="connection-refresh">Refresh</button>
+							<button id="connection-reinitialise">Reinitialise</button>
+						</div>
 					</fieldset>
 				</form>
 			</details>
@@ -299,23 +303,35 @@
 
 			<details open>
 				<summary>
-					DSP Version: <span id="hardware-dspvers"></span> - Load: <span id="hardware-dspload"></span>%
+					Gloobal
 				</summary>
 				<form id="global">
-					<div class="controlroom-button-group">
-						<label class="toggle-button" title="Global Mute Enable">
-							M<input id="controlroom-muteenable" type="checkbox" />
-						</label>
-						<label class="toggle-button" title="Global Solo Enable">
-							S<input id="main-soloenable" type="checkbox" />
-						</label>
-						<label class="toggle-button" title="Global AdHoc Fadergroup">
-							F<input id="main-adhocfaderenable" type="checkbox" />
-						</label>
-					</div>
-					<fieldset>
-						<!--<label>DSP Load<output id="hardware-dspload"></output></label>-->
-						<!--<label>DSP Version<output id="hardware-dspvers"></output></label>	-->
+					<fieldset class="custom-form">
+							<label class="form-row">Mute
+								<div class="switch">
+									<input id="controlroom-muteenable" type="checkbox" />
+									<span class="slider"></span>
+								</div>
+							</label>
+							<label class="form-row">Solo
+								<div class="switch">
+									<input id="main-soloenable" type="checkbox" />
+									<span class="slider"></span>
+								</div>
+							</label>
+							<label class="form-row">Fadergroup
+								<div class="switch">
+									<input id="main-adhocfaderenable" type="checkbox" />
+									<span class="slider"></span>
+								</div>
+							</label>
+							<label class="form-row">DSP Load
+								<span class="dsp-load-wrapper">
+									<meter id="hardware-dspload-meter" min="0" max="100" low="70" high="90" optimum="0"></meter>
+									<!--<output id="hardware-dspload"></output>-->
+								</span>
+							</label>
+							<label class="form-row">DSP Version<output id="hardware-dspvers"></output></label>
 					</fieldset>
 				</form>
 			</details>
@@ -329,7 +345,7 @@
 				</summary>
 				<fieldset>
 					<label>Type
-                        <select id="reverb-type">
+						<select id="reverb-type">
 							<option>Small Room</option>
 							<option>Medium Room</option>
 							<option>Large Room</option>
@@ -371,7 +387,7 @@
 				</summary>
 				<fieldset>
 					<label>Type
-                        <select id="echo-type">
+						<select id="echo-type">
 							<option>Stereo Echo</option>
 							<option>Stereo Cross</option>
 							<option>Pong Echo</option>
@@ -380,7 +396,7 @@
 					<label>Feedback<input id="echo-feedback" type="number" min="0" max="100" step="1" /></label>
 					<label>Width<input id="echo-width" type="number" min="0" max="1" step="0.01" /></label>
 					<label>High Cut
-                        <select id="echo-highcut">
+						<select id="echo-highcut">
 							<option>Off</option>
 							<option>16 kHz</option>
 							<option>12 kHz</option>
@@ -397,24 +413,24 @@
 				<summary>Mixer View</summary>
 				<form id="view">
 					<fieldset class="custom-form">
-						<label class="form-row">Routing Mode
-							<select id="routing-mode" name="routingmode">
-								<option value="submix">Submix</option>
-								<option value="free">Free</option>
-							</select>
-						</label>
-						<label class="form-row">Level Meter FX
-							<div class="switch">
-								<input id="meter-fx" name="meterfx" type="checkbox" />
-								<span class="slider"></span>
-							</div>
-						</label>
-						<label class="form-row">Level Meter RMS
-							<div class="switch">
-								<input id="meter-rms" name="meterrms" type="checkbox" />
-								<span class="slider"></span>
-							</div>
-						</label>
+							<label class="form-row">Routing Mode
+								<select id="routing-mode" name="routingmode">
+									<option value="submix">Submix</option>
+									<option value="free">Free</option>
+								</select>
+							</label>
+							<label class="form-row">Level Meter FX
+								<div class="switch">
+									<input id="meter-fx" name="meterfx" type="checkbox" />
+									<span class="slider"></span>
+								</div>
+							</label>
+							<label class="form-row">Level Meter RMS
+								<div class="switch">
+									<input id="meter-rms" name="meterrms" type="checkbox" />
+									<span class="slider"></span>
+								</div>
+						</label> 
 					</fieldset>
 				</form>
 			</details>
@@ -463,6 +479,7 @@
 				</fieldset>
 			</details>
 			<hr />
+			
 			<details>
 				<summary>DURec</summary>
 				<fieldset class="custom-form">
@@ -471,11 +488,9 @@
 							<option value="-1">New Recording...</option>
 						</select>
 					</label>
-					<label>Samplerate: <output id="durec-samplerate">---</output></label>
-					<label>Channels: <output id="durec-channels">--</output></label>
-					<label class="form-row">Time:
-						<input type="range" id="durec-time" min="0" max="0" step="1" />
-					</label>
+					<label class="form-row">Samplerate: <output id="durec-samplerate">---</output>Hz.</label>
+					<label class="form-row">Channels: <output id="durec-channels">---</output></label>
+					<label class="form-row">Time:<input type="range" id="durec-time" min="0" max="0" step="1" /></label>
 					<output id="durec-time-display">00:00:00</output>
 					<div class="durec-controls">
 						<button id="durec-record">Record</button>
@@ -486,6 +501,7 @@
 				</fieldset>
 			</details>
 			<hr />
+			
 			<details open>
 				<summary>Hardware</summary>
 				<fieldset class="custom-form">
@@ -510,7 +526,7 @@
 							<option>MADI Coax.</option>
 						</select>
 					</label>
-					<label class="form-row">Sample Rate<output id="clock-samplerate"></output></label>
+					<label class="form-row">Sample Rate<output id="clock-samplerate">---</output>Hz</label>
 					<label class="form-row">Wck. Out
 						<div class="switch">
 							<input id="clock-wckout" type="checkbox" />
@@ -606,10 +622,10 @@
 						<output id="hardware-dspstatus"></output>
 					</label>
 					<label class="form-row">CC Mode
-						<select id="hardware-ccmode">
-							<option>Off</option>
-							<option>On</option>
-						</select>
+						<div class="switch">
+							<input id="hardware-ccmode" type="checkbox" />
+							<span class="slider"></span>
+						</div>
 					</label>
 					<label class="form-row">Interface Mode
 						<select id="hardware-interfacemode">
@@ -651,10 +667,11 @@
 				</fieldset>
 			</details>
 			<hr />
+			
 			<details>
 				<summary>Keys</summary>
 				<fieldset class="custom-form">
-					<label>Lock Keys
+					<label class="form-row">Lock Keys
 						<select id="hardware-lockkeys">
 							<option>Off</option>
 							<option>Keys</option>
@@ -667,22 +684,23 @@
 							<span class="slider"></span>
 						</div>
 					</label>
-					<label>MIC / GAIN
+					<label class="form-row">MIC / GAIN
 						<select id="hardware-programkey01"></select>
 					</label>
-					<label>REC / PLAY
+					<label class="form-row">REC / PLAY
 						<select id="hardware-programkey02"></select>
 					</label>
-					<label>CHAN / MIX
+					<label class="form-row">CHAN / MIX
 						<select id="hardware-programkey03"></select>
 					</label>
-					<label>SETUP / REV
+					<label class="form-row">SETUP / REV
 						<select id="hardware-programkey04"></select>
 					</label>
 				</fieldset>
 			</details>
-            <hr />
-            <details>
+			<hr />
+			
+			<details>
 				<summary>Setups</summary>
 				<form id="setup" title="Setup Slots">
 					<div class="controlroom-button-group">
@@ -708,12 +726,10 @@
 						</fieldset>
 					</div>
 					<div class="controlroom-button-group">
-						<label class="toggle-button" title="Store current state into selected setup slot on device">
-							Store<input id="store-button" type="checkbox" />
-						</label>
-						<label class="toggle-button" title="Load selected setup state from device (Doesn't work yet - needs to be implemented)">
-							Load<input id="load-button" type="checkbox" />
-						</label>
+						<fieldset>
+								<input id="store-button" type="button" value="Store" title="Store current state into selected setup slot on device" />
+								<input id="load-button" type="button" value="Load" title="Load selected setup state from device (Doesn't work yet - needs to be implemented)" />
+						</fieldset>
 					</div>
 					<!--
 					<div class="store-action">
@@ -722,6 +738,7 @@
 				</form>
 			</details>
 			<hr />
+			
 			<details>
 				<summary>ARC USB</summary>
 				<fieldset class="custom-form">
@@ -733,14 +750,12 @@
 			<hr />
 				<details>
 				<summary>UI Settings</summary>
-				<fieldset class="custom-form">
-					<label class="form-row" title="Shows Help for URL Parameters">Help:
-						<button class="help-button" id="url-help-button">Open</button>
-					</label>
-				</fieldset>
 				<form id="ui-settings">
-					<fieldset>
-						<label title="Select your preferred UI Theme">Theme:
+					<fieldset class="custom-form">
+						<label class="form-row" title="Shows Help for URL Parameters">Help:
+							<button class="help-button" id="url-help-button">Open</button>
+						</label>
+						<label class="form-row" title="Select your preferred UI Theme">Theme:
 							<select id="ui-style-select">
 								<option value="css/theme/tm_dark_hi.css">TM Dark (High Contrast)</option>
 								<option value="css/theme/tm_dark.css">TM Dark</option>
@@ -754,44 +769,76 @@
 				</form>
 			</details>
 			<hr />
+			
 			<div id="help-container"></div>
 			<details>
 				<summary>Debug</summary>
 				<form id="debug">
-					<fieldset>
-						<legend>Console Log</legend>
-						<label title="Logs incoming OSC Messages in Broser Console. For better Performance, disable if not needed.">
-							<input type="checkbox" id="debug-incoming"> Incoming OSC
+					<fieldset class="custom-form">
+						<label class="label-legend">Console Log</label>
+						<label class="form-row"  title="Logs incoming OSC Messages in Broser Console. For better Performance, disable if not needed.">
+							Incoming OSC
+							<div class="switch">
+								<input type="checkbox" id="debug-incoming" />
+								<span class="slider"></span>
+							</div>
 						</label>
-						<label title="Logs outgoing OSC Messages in Broser Console. For better Performance, disable if not needed.">
-							<input type="checkbox" id="debug-outgoing"> Outgoing OSC
+						<label class="form-row"  title="Logs outgoing OSC Messages in Broser Console. For better Performance, disable if not needed.">
+							Outgoing OSC
+							 <div class="switch">
+
+								<input type="checkbox" id="debug-outgoing"/>
+								<span class="slider"></span>
+							</div>
 						</label>
-						<label title="Logs other OSC Messages in Broser Console. For better Performance, disable if not needed.">
-							<input type="checkbox" id="debug-other"> Other OSC
+						<label class="form-row"  title="Logs other OSC Messages in Broser Console. For better Performance, disable if not needed.">
+							Other OSC
+							<div class="switch">
+								<input type="checkbox" id="debug-other" />
+								<span class="slider"></span>
+							</div>
 						</label>
-						<label title="Logs Level-Meter OSC Messages in Broser Console. Floods the Console! Eenable only if needed.">
-							<input type="checkbox" id="debug-level"> Levels
+						<label class="form-row"  title="Logs Level-Meter OSC Messages in Broser Console. Floods the Console! Eenable only if needed.">
+							Levels
+							<div class="switch">
+								<input type="checkbox" id="debug-level"> />
+								<span class="slider"></span>
+							</div>
 						</label>
-						<label title="Logs ARC USB related OSC Messages in Broser Console. For better Performance, disable if not needed.">
-							<input type="checkbox" id="debug-arc"> ARC messages
+						<label class="form-row"  title="Logs ARC USB related OSC Messages in Broser Console. For better Performance, disable if not needed.">
+							ARC messages
+							<div class="switch">
+								<input type="checkbox" id="debug-arc" />
+								<span class="slider"></span>
+							</div>
 						</label>
-					</fieldset>	
-						<hr />
-					<fieldset>
-						<legend>Register/Value</legend>
-						<label>Reg (0x...)
-							<input id="debug-register" />
-						</label>
-						<label>Val (0x...)
-							<input id="debug-value" />
-						</label>
-						<label>Send to Unit
-							<button id="debug-set-register">Fire!</button>
+						<label class="form-row" title="Logs WASM stderr output (e.g. setmixlevel). Can be very verbose.">
+							WASM
+							<div class="switch">
+								<input type="checkbox" id="debug-wasm" />
+								<span class="slider"></span>
+							</div>
 						</label>
 					</fieldset>
-				</form>
+					<hr  style="background: transparent;" />
+					<fieldset class="custom-form">
+						<label class="label-legend">Register/Value</label>
+						<label class="form-row" >Reg (0x...)
+							<input id="debug-register" />
+						</label>
+						<label class="form-row" >Val (0x...)
+							<input id="debug-value" />
+						</label>
+						<div>
+						<label class="form-row" >Send to Unit
+							<button id="debug-set-register">Fire!</button>
+						</label>
+						</div>
+					</fieldset>
+			</form>
 			</details>
 			<hr />
+			
 		</div>
 		<datalist id="volume-values">
 			<option value="6" label="6 dB"></option>

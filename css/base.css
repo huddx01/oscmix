@@ -60,16 +60,40 @@ summary > label.switch {
 }
 
 input:checked + .slider {
-	background-color: var(--switch-on-color, #5555DD);
+	background-color:  #5555dd;
 }
 
 input:checked + .slider::before {
 	transform: translateX(18px);
 }
 
+/* - DSP Load meter ------------------------------------------------------- */
+.dsp-load-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	width: 50%;
+}
+
+.dsp-load-wrapper meter {
+	flex: 1 1 0;
+	min-width: 0;
+	height: 1.2em;
+	display: block;
+}
+
+.dsp-load-wrapper output {
+	flex-shrink: 0;
+	width: 50%;
+	min-width: 1.5em;
+	text-align: right;
+}
+
 /* - Form layout ---------------------------------------------------------- */
 .custom-form {
-	border: none;
+	outline: none; /*2px solid #aaa;*/
+	background-color: none; /*#f9f9f9;*/
+	border: 0;
 	border-radius: 8px;
 	padding: 10px 15px;
 	display: flex;
@@ -85,17 +109,19 @@ input:checked + .slider::before {
 	cursor: pointer;
 }
 
+
 .form-row output {
-	display: flex;
-	padding: 2px;
-	border: 1px solid var(--border-color);
+    display: flex;
+    padding: 2px;
+	border: none; /*1px solid var(--border-color);*/
 	border-radius: 2px;
-	min-height: 1.1em;
-	width: 50%;
-	justify-content: flex-start;
-	align-items: center;
-	box-sizing: border-box;
+    min-height: 1.4em;
+    /*font-size: 1rem;*/
+    width: 50%;
+    justify-content: flex-end;
+    align-items: center;
 }
+
 
 .form-row select {
 	border: 1px solid var(--border-color);
@@ -105,11 +131,31 @@ input:checked + .slider::before {
 	width: 50%;
 }
 
+
+.form-row input[type="range"]{
+    display: flex;
+	width: 50%;
+}
+
+
+
+.form-row button{
+    display: flex;
+	width: 50%;
+	justify-content: center;
+}
+
+/* - DURec button active state -------------------------------------------- */
+button[aria-pressed="true"] {
+	outline: 2px solid currentColor;
+	font-weight: bold;
+}
+
 .form-row input[type="text"],
 .form-row input:not([type]) {
 	border: 1px solid var(--border-color);
 	border-radius: 2px;
-	min-height: 1.1em;
+	min-height: 1.2em;
 	width: 50%;
 	box-sizing: border-box;
 }

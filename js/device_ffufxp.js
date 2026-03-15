@@ -10,7 +10,7 @@ const dig = (name) => ({ name, flags: [], gain: null, reflevel: null });
 
 export const device_ffufxp = {
 	deviceName: 'Fireface UFX+',
-	midiPortNames: ['Port 4'],
+	midiPortNames: ['Port 4', ':3'],
 	hasDurec:  true,
 	hasRoomEq: true,
 	hasHwKeys: true,
