@@ -589,7 +589,7 @@ jobs:
           echo "" >> $GITHUB_OUTPUT
           echo "---" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
-          echo "### 🧪 oscmix-qt — Preliminary Preview Builds (Qt UI)" >> $GITHUB_OUTPUT
+          echo "### 🧪 oscmix-qt - Preliminary Preview Builds (Qt UI)" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "> **⚠️ DANGER: Extremely early preview. Do not use in production.**" >> $GITHUB_OUTPUT
           echo "> The Qt UI is at roughly 20% of planned functionality. Expect missing features, crashes, and breaking changes between builds. Strictly for interested testers." >> $GITHUB_OUTPUT
@@ -597,7 +597,7 @@ jobs:
           echo "Available as separate \`oscmixQt_*\` files below (AppImage / DMG)." >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "> **macOS users:** Ad-hoc signed — Gatekeeper will block on first launch." >> $GITHUB_OUTPUT
-          echo "> See [macOS Gatekeeper Workaround](https://github.com/huddx01/oscmix/wiki/macOS-Gatekeeper-Workaround) for instructions." >> $GITHUB_OUTPUT
+          echo "> See [macOS Gatekeeper Workaround - doc will come soon](https://github.com/huddx01/oscmix/wiki/macOS-Gatekeeper-Workaround) for instructions." >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "> **Source code:** Qt frontend sources will be made public once they reach a representable state." >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
