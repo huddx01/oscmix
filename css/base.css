@@ -159,3 +159,11 @@ button[aria-pressed="true"] {
 	width: 50%;
 	box-sizing: border-box;
 }
+
+/* Ad-hoc fader group - gold fader cap for grouped channels */
+.fader-group-member .channel-volume input[type="range"]::-webkit-slider-thumb {
+	background-image: url('../img/fader_gold.png');
+}
+.fader-group-member .channel-volume input[type="range"]::-moz-range-thumb {
+	background-image: url('../img/fader_gold.png');
+}

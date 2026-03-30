@@ -82,6 +82,137 @@ styleSelector.addEventListener("change", (e) => {
 	localStorage.setItem("selectedStyle", e.target.value);
 });
 
+/* Ad-hoc Fader Group */
+const FaderGroup = (() => {
+	// Map<channelKey, { entry: { setValue(db), get currentValue(), outerEl }, baseDb: number }>
+	// baseDb = value at the time the channel joined the group.
+	// Sync formula: targetDb = member.baseDb + (newDb - source.baseDb)
+	// This preserves relative offsets exactly, even after clamping.
+	const members = new Map();
+	let _toggle         = null;
+	// Map<channelKey, baseDb> loaded from localStorage before channel construction.
+	let _pendingRestore = new Map();
+
+	function deviceKey() {
+		return (currentDevice?.deviceName ?? 'unknown').replace(/[^a-zA-Z0-9]/g, '_');
+	}
+
+	function updateToggle() {
+		if (!_toggle) _toggle = document.getElementById('main-adhocfaderenable');
+		if (!_toggle) return;
+		const active = members.size > 0;
+		_toggle.checked = active;
+		document.body.classList.toggle('fader-group-active', active);
+	}
+
+	// Persist keys AND baseDb values so relative offsets survive a page reload.
+	// Storage format: [[key, baseDb], ...]
+	function persist() {
+		const data = [...members.entries()].map(([key, { baseDb }]) => [key, baseDb]);
+		localStorage.setItem('faderGroup_' + deviceKey(), JSON.stringify(data));
+	}
+
+	const api = {
+		get size() { return members.size; },
+
+		has(channelKey) { return members.has(channelKey); },
+
+		// Internal: add with an explicit baseDb (used by restore path).
+		_addWithBase(channelKey, entry, baseDb) {
+			members.set(channelKey, { entry, baseDb });
+			entry.outerEl.classList.add('fader-group-member');
+			updateToggle();
+		},
+
+		add(channelKey, entry) {
+			api._addWithBase(channelKey, entry, entry.currentValue);
+			persist();
+		},
+
+		remove(channelKey) {
+			const rec = members.get(channelKey);
+			if (rec) rec.entry.outerEl.classList.remove('fader-group-member');
+			members.delete(channelKey);
+			updateToggle();
+			persist();
+		},
+
+		toggle(channelKey, entry) {
+			if (members.has(channelKey)) api.remove(channelKey);
+			else api.add(channelKey, entry);
+		},
+
+		// Clear all group members.
+		// Pass save=true when triggered by the user (toggle off) to also wipe localStorage.
+		// Called without argument from reinitializeUI() to avoid clearing saved state.
+		clear(save = false) {
+			for (const [, { entry }] of members) {
+				entry.outerEl.classList.remove('fader-group-member');
+			}
+			members.clear();
+			_pendingRestore = new Map();
+			updateToggle();
+			if (save) persist();
+		},
+
+		// Offset-based sync: all members move relative to their base values.
+		// Only call this when the source channel IS a group member (checked by caller).
+		syncFrom(sourceKey, newDb) {
+			if (members.size < 2) return;
+			const source = members.get(sourceKey);
+			if (!source) return;
+			const offset = newDb - source.baseDb;
+			for (const [key, { entry, baseDb }] of members) {
+				if (key === sourceKey) continue;
+				const clamped = Math.min(6, Math.max(-65, baseDb + offset));
+				entry.setValue(clamped);
+			}
+		},
+
+		// Load saved keys + baseDb values into the pending-restore map.
+		// Must be called BEFORE channel construction so registerChannel() can match.
+		restore() {
+			const raw = localStorage.getItem('faderGroup_' + deviceKey());
+			if (!raw) { _pendingRestore = new Map(); return; }
+			try {
+				const parsed = JSON.parse(raw);
+				// Support both legacy format (array of keys) and current format ([[key, baseDb], ...]).
+				_pendingRestore = new Map(
+					Array.isArray(parsed[0])
+						? parsed                          // current: [[key, baseDb], ...]
+						: parsed.map(k => [k, null])      // legacy: [key, ...]
+				);
+			} catch (e) {
+				_pendingRestore = new Map();
+			}
+		},
+
+		// Called by each Channel constructor - silently restores membership if needed.
+		// Uses the stored baseDb so relative offsets survive a page reload.
+		registerChannel(channelKey, entry) {
+			if (!_pendingRestore.has(channelKey)) return;
+			const storedBase = _pendingRestore.get(channelKey);
+			// Use stored baseDb if available; fall back to current value otherwise.
+			const baseDb = storedBase !== null ? storedBase : entry.currentValue;
+			api._addWithBase(channelKey, entry, baseDb);
+			_pendingRestore.delete(channelKey);
+		},
+
+		// Wire the global toggle once at startup.
+		initToggle() {
+			_toggle = document.getElementById('main-adhocfaderenable');
+			if (!_toggle) return;
+			_toggle.addEventListener('change', () => {
+				// Turning off clears the group AND wipes localStorage (user intent).
+				// Turning on manually is a no-op - members are only added via shift+click.
+				if (!_toggle.checked) api.clear(true);
+			});
+		}
+	};
+
+	return api;
+})();
+
 /* OSC */
 class OSCDecoder {
 	constructor(buffer, offset = 0, length = buffer.byteLength) {
@@ -726,8 +857,13 @@ class Channel {
 	constructor(type, index, iface, left) {
 		const template = document.getElementById("channel-template");
 		const fragment = template.content.cloneNode(true);
-		const volumeRange = fragment.getElementById("volume-range");
+		const volumeRange  = fragment.getElementById("volume-range");
 		const volumeNumber = fragment.getElementById("volume-number");
+		const channelOuter = fragment.children[0];
+		const channelKey   = `${type}/${index + 1}`;
+		// Assigned in the appropriate type branch below; both start as no-ops.
+		let sendOutputVolume = (_db) => {};
+		let sendMixVolume    = (_db) => {};
 		const stereo = fragment.getElementById("stereo");
 		const name = fragment.getElementById("channel-name");
 		const view = document.forms.view.elements;
@@ -903,10 +1039,16 @@ class Channel {
 					}
 				});
 
+				sendOutputVolume = (db) => {
+					iface.send(prefix + "/volume", ",f", [db]);
+				};
+
 				volumeRange.oninput = volumeNumber.onchange = (event) => {
-					volumeRange.value = event.target.value;
-					volumeNumber.value = event.target.value;
-					iface.send(prefix + "/volume", ",f", [event.target.value]);
+					const newDb = parseFloat(event.target.value);
+					volumeRange.value = newDb;
+					volumeNumber.value = newDb;
+					sendOutputVolume(newDb);
+					if (FaderGroup.has(channelKey)) FaderGroup.syncFrom(channelKey, newDb);
 				};
 				iface.methods.set(prefix + "/volume", (args) => {
 					volumeRange.value = args[0];
@@ -931,13 +1073,20 @@ class Channel {
 				}
 			});
 
-			volumeRange.oninput = volumeNumber.onchange = (event) => {
-				volumeRange.value = volumeNumber.value = event.target.value;
-				this.volume[this.outputSelect.selectedIndex] = event.target.value;
+			sendMixVolume = (db) => {
 				iface.send(`/mix/${this.outputSelect.selectedIndex + 1}${prefix}`, ",fi", [
-					event.target.value,
+					db,
 					this.pan[this.outputSelect.selectedIndex]
 				]);
+			};
+
+			volumeRange.oninput = volumeNumber.onchange = (event) => {
+				const newDb = parseFloat(event.target.value);
+				volumeRange.value = newDb;
+				volumeNumber.value = newDb;
+				this.volume[this.outputSelect.selectedIndex] = newDb;
+				sendMixVolume(newDb);
+				if (FaderGroup.has(channelKey)) FaderGroup.syncFrom(channelKey, newDb);
 			};
 			this.volume = [];
 			this.pan = [];
@@ -964,6 +1113,23 @@ class Channel {
 				});
 			}
 		}
+		// Shift+click toggles fader group membership for this channel.
+		// preventDefault stops the range input from jumping on shift+click.
+		volumeRange.addEventListener("mousedown", (event) => {
+			if (!event.shiftKey) return;
+			event.preventDefault();
+			FaderGroup.toggle(channelKey, {
+				setValue(db) {
+					volumeRange.value = db;
+					volumeNumber.value = db;
+					if (type === Channel.OUTPUT) sendOutputVolume(db);
+					else sendMixVolume(db);
+				},
+				get currentValue() { return parseFloat(volumeRange.value); },
+				outerEl: channelOuter
+			});
+		});
+
 		volumeRange.addEventListener("dblclick", (event) => {
 			const target = event.target;
 			if (target.valueAsNumber === 0) {
@@ -1165,6 +1331,18 @@ class Channel {
 			}
 			node.removeAttribute("id");
 		}
+		// Register with FaderGroup so saved group membership is restored on connect.
+		FaderGroup.registerChannel(channelKey, {
+			setValue(db) {
+				volumeRange.value = db;
+				volumeNumber.value = db;
+				if (type === Channel.OUTPUT) sendOutputVolume(db);
+				else sendMixVolume(db);
+			},
+			get currentValue() { return parseFloat(volumeRange.value); },
+			outerEl: channelOuter
+		});
+
 		this.element = fragment;
 	}
 }
@@ -1388,6 +1566,9 @@ function setupInterface() {
 		})
 		.catch(console.error);
 	});
+
+	FaderGroup.initToggle();
+	FaderGroup.restore();  // must run before channels are constructed
 
 	/* make channels */
 	for (const [type, id] of [
@@ -1652,6 +1833,8 @@ function setupInterface() {
 }
 
 function reinitializeUI() {
+	FaderGroup.clear();
+	FaderGroup.restore();  // must run before channels are constructed
 	const inputsContainer = document.getElementById("inputs");
 	const outputsContainer = document.getElementById("outputs");
 	const playbacksContainer = document.getElementById("playbacks");
