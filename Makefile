@@ -31,6 +31,8 @@ AVAHI_LDLIBS?=$$(pkg-config --libs-only-l avahi-client) -lpthread
 BONJOUR?=$(OS-Darwin)
 BONJOUR_LDLIBS?=-lpthread
 
+USBSCAN_OBJ-$(OS-Linux)= usbscan.o
+
 MDNS_OBJ-$(AVAHI)=   mdns_avahi.o
 MDNS_OBJ-$(BONJOUR)= mdns_bonjour.o
 MDNS_CFLAGS-$(AVAHI)=   $(AVAHI_CFLAGS) -DHAVE_MDNS
@@ -84,6 +86,7 @@ OSCMIX_OBJ=\
 	socket.o\
 	sysex.o\
 	util.o\
+	$(USBSCAN_OBJ-y)\
 	$(MDNS_OBJ-y)\
 	$(DEVICES)
 
