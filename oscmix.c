@@ -1865,11 +1865,6 @@ handleregs(uint_least32_t *payload, size_t len)
 		reg = payload[i] >> 16 & 0x7fff;
 		val = (long)((payload[i] & 0xffff) ^ 0x8000) - 0x8000;
 
-		/* Debug: Print NAME range registers with their values */
-		if (reg >= 0x2800 && reg < 0x2C00) {
-			fprintf(stderr, "DEBUG handleregs: reg=0x%04X, val=0x%04X (%d)\n", reg, val & 0xFFFF, val);
-		}
-
 		ctx.param.in = ctx.param.out = -1;
 		ctx.reg = reg;  /* Store actual register number */
 		ctl = device->regtoctl(reg, &ctx.param);

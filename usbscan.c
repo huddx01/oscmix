@@ -15,14 +15,29 @@ struct usb_id {
 	const char *oscmix_id;
 };
 
-/* Known RME vid/pid pairs. Incomplete: only values verified by
- * contributors are listed; others default to the ALSA card-name scan.
- * Extend as real hardware lets us confirm each pair in CC-mode and
- * USB-mode. */
+/* Known RME vid/pid pairs in class-compliant (CC) mode.
+ *
+ * Sources:
+ *   UCX     — Vasco Santos, huddx01/oscmix#13 (lsusb in CC mode)
+ *   UCX II  — confirmed on local hardware (lsusb 2a39:3fd9)
+ *   802     — sjzstudio, RME Linux forum thread (lsusb in CC mode)
+ *   UFX III — Floodswood, michaelforney/oscmix#19 (USB descriptor dump)
+ *   UFX II  — laex333, michaelforney/oscmix#7 (lsusb in CC mode)
+ *   UFX+    — Sojuzstudio, michaelforney/oscmix#5 (lsusb; CC mode assumed)
+ *
+ * NOTE: UFX II and UFX+ share vid:pid 2a39:3fd1 — they cannot be
+ * distinguished by USB id alone. The ALSA card-name scan in main.c
+ * is the authoritative detection path; this table is only used as a
+ * hint to log "device present but driver not yet bound" during reconnect.
+ *
+ * UCX/802 enumerate under Microchip's VID (0424) in CC mode.
+ * UCX II, UFX+/II, UFX III enumerate under RME's own VID (2a39). */
 static const struct usb_id known[] = {
-	/* Vasco Santos reported this pair for a Fireface UCX via lsusb
-	 * in huddx01/oscmix issue #13. */
-	{ 0x0424, 0x3fb9, "ffucx" },
+	{ 0x0424, 0x3fb9, "ffucx"   },  /* Fireface UCX      */
+	{ 0x2a39, 0x3fd9, "ffucxii" },  /* Fireface UCX II   */
+	{ 0x0424, 0x3fdd, "ff802"   },  /* Fireface 802      */
+	{ 0x2a39, 0x3fde, "ffufxiii"},  /* Fireface UFX III  */
+	{ 0x2a39, 0x3fd1, "ffufxii" },  /* Fireface UFX II / UFX+ (shared pid) */
 };
 
 static int

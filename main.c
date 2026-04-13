@@ -126,10 +126,12 @@ openmidi(void)
 			}
 			if (dup2(midifd, 6) < 0 || dup2(midifd, 7) < 0) {
 				perror("dup2");
-				close(midifd);
+				if (midifd != 6 && midifd != 7)
+					close(midifd);
 				return -1;
 			}
-			close(midifd);
+			if (midifd != 6 && midifd != 7)
+				close(midifd);
 			return 0;
 		}
 		close(ctlfd);
