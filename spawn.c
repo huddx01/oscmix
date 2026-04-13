@@ -4,7 +4,7 @@
 #include "fatal.h"
 
 void
-spawn(const char *path, char *const argv[], int mode, int fd[2])
+spawn(const char *path, char *const argv[], int mode, int fd[2], int ctrlfd)
 {
 	pid_t pid;
 	int p[4], t[2];
@@ -42,6 +42,8 @@ spawn(const char *path, char *const argv[], int mode, int fd[2])
 		close(p[2]);
 		fd[0] = t[0];
 		fd[1] = t[1];
+		if (ctrlfd >= 0)
+			close(ctrlfd);
 	} else {
 		if (p[0] != -1 && p[0] != p[1]) {
 			if (dup2(p[0], p[1]) < 0)
@@ -52,6 +54,11 @@ spawn(const char *path, char *const argv[], int mode, int fd[2])
 			if (dup2(p[2], p[3]) < 0)
 				fatal("dup2:");
 			close(p[2]);
+		}
+		if (ctrlfd >= 0 && ctrlfd != 8) {
+			if (dup2(ctrlfd, 8) < 0)
+				fatal("dup2 ctrlfd:");
+			close(ctrlfd);
 		}
 		execvp(argv[0], argv);
 		fatal("exec %s:", argv[0]);

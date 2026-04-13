@@ -302,7 +302,7 @@ main(int argc, char *argv[])
 	char *recvaddr, *sendaddr;
 	struct itimerval it;
 	struct sigaction sa;
-	struct pollfd pfd[2];
+	struct pollfd pfd[3];
 	const char *port;
 	int mflag = 0, zflag = 0;
 
@@ -462,9 +462,17 @@ main(int argc, char *argv[])
 	if (setitimer(ITIMER_REAL, &it, NULL) != 0)
 		fatal("setitimer:");
 
+	/* Control pipe from coremidiio: fd 8 carries 0x00 (offline) / 0x01 (online)
+	 * signals for macOS hotplug.  Only active in wrapper mode. */
+	int ctrl_fd = -1;
+	if (!self_opened_midi && fcntl(8, F_GETFD) >= 0)
+		ctrl_fd = 8;
+
 	pfd[0].events = POLLIN;
 	pfd[1].fd = rfd;
 	pfd[1].events = POLLIN;
+	pfd[2].fd = ctrl_fd;  /* -1 → ignored by poll() */
+	pfd[2].events = POLLIN;
 
 	bool online = have_midi;
 	if (online) {
@@ -481,7 +489,7 @@ main(int argc, char *argv[])
 	int scan_tick = 0;
 
 	for (;;) {
-		if (poll(pfd, 2, -1) < 0 && errno != EINTR)
+		if (poll(pfd, 3, -1) < 0 && errno != EINTR)
 			fatal("poll:");
 
 		if (online && (pfd[0].revents & POLLIN ||
@@ -514,6 +522,25 @@ main(int argc, char *argv[])
 				ssize_t ret = read(rfd, buf, sizeof buf);
 				(void)ret;
 				oscmix_announce_offline();
+			}
+		}
+
+		/* Control signal from coremidiio: 0x00=offline, 0x01=online */
+		if (ctrl_fd >= 0 && (pfd[2].revents & POLLIN)) {
+			unsigned char sig;
+			if (read(ctrl_fd, &sig, 1) == 1) {
+				if (sig == 0x00 && online) {
+					fprintf(stderr, "oscmix: midi device disconnected\n");
+					pfd[0].fd = -1;
+					online = false;
+					oscmix_announce_offline();
+					scan_tick = 0;
+				} else if (sig == 0x01 && !online) {
+					fprintf(stderr, "oscmix: midi device (re)connected\n");
+					pfd[0].fd = 6;
+					online = true;
+					handleosc(refreshosc, sizeof refreshosc - 1);
+				}
 			}
 		}
 
