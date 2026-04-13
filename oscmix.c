@@ -2124,3 +2124,11 @@ oscmix_getdevinfo(struct oscmix_devinfo *out)
 	out->inputs  = device ? device->inputslen : 0;
 	out->outputs = device ? device->outputslen : 0;
 }
+
+void
+oscmix_announce_offline(void)
+{
+	oscsend("/device/id",   ",s", "");
+	oscsend("/device/name", ",s", "");
+	oscflush();
+}
