@@ -204,6 +204,8 @@ on_mainout_osc(GValue *arg, guint len, gpointer ptr)
 	if (len == 0)
 		return;
 	self = OSCMIX_WINDOW(ptr);
+	if (!self->outputs_model)
+		return;
 	g_value_init(&val, G_TYPE_INT);
 	if (!g_value_transform(&arg[0], &val))
 		return;
@@ -758,8 +760,8 @@ oscmix_window_init(OSCMixWindow *self)
 	 * because /device/id already drives the state machine. */
 	mixer_connect(self->osc, "/device/id", on_device_id, self);
 
-	g_signal_emit_by_name(self->send_host, "activate");
 	g_signal_emit_by_name(self->recv_host, "activate");
+	g_signal_emit_by_name(self->send_host, "activate");
 }
 
 static void
