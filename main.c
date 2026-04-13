@@ -488,7 +488,7 @@ main(int argc, char *argv[])
 		if (poll(pfd, 2, -1) < 0 && errno != EINTR)
 			fatal("poll:");
 
-		if (online && (pfd[0].revents & POLLIN)) {
+		if (online && (pfd[0].revents & (POLLIN | POLLHUP | POLLERR))) {
 			if (midiread(6) < 0) {
 				/* Device went away. Transition to scanning state:
 				 * close the midi fds, tell frontends, and have the
