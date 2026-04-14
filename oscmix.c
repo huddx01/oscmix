@@ -146,9 +146,8 @@ setreg(unsigned reg, unsigned val)
 	unsigned par;
 
 	val &= 0xffff;
-	if (dflag && reg != 0x3f00) fprintf(stderr, "setreg %.4X %.4X\n", reg, val);
-	// debug for webui
-	//if (reg != 0x3f00) fprintf(stderr, "WEBUI: setreg %.4X %.4X\n", reg, val);
+	if (dflag && reg != 0x3f00)
+		fprintf(stderr, "setreg %.4X %.4X\n", reg, val);
 	regval = (reg & 0x7fff) << 16 | val;
 	par = regval >> 16 ^ regval;
 	par ^= par >> 8;
@@ -612,7 +611,6 @@ setoutputloopback(struct context *ctx, struct oscmsg *msg)
 	unsigned char buf[4], sysexbuf[7 + 5];
 
 	val = oscgetint(msg);
-	fprintf(stderr, "setoutputloopback: val = %d, param.in = %d\n", val, ctx->param.in);
 	if (oscend(msg) != 0)
 		return;
 	putle32(buf, val << 7 | ctx->param.in);
@@ -1831,8 +1829,6 @@ oscsendenum(const char *addr, int val, const char *const names[], size_t namesle
 	if (val >= 0 && val < nameslen) {
 		oscsend(addr, ",is", val, names[val]);
 	} else {
-		fprintf(stderr, "unknown value for '%s': %d\n", addr, val);
-		fprintf(stderr, "nameslen=%zu\n", nameslen);
 		fprintf(stderr, "unexpected enum value %d\n", val);
 
 		oscsend(addr, ",i", val);

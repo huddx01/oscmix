@@ -35,6 +35,10 @@ static volatile sig_atomic_t timeout;
  * the fds were inherited from a wrapper (alsarawio / alsaseqio / coremidiio)
  * and we preserve the original fatal-on-error semantics. */
 static bool self_opened_midi;
+/* Set when the USB-present-but-ALSA-not-ready race has been logged, so we
+ * don't repeat it every second. Reset each time the device goes offline so
+ * the next fast-reconnect cycle logs again if the race recurs. */
+static bool logged_race;
 
 #ifdef __linux__
 /* Device name prefixes matched against snd_ctl_card_info.name.
@@ -74,37 +78,37 @@ openmidi(void)
 				continue;
 			if (ioctl(ctlfd, SNDRV_CTL_IOCTL_RAWMIDI_PREFER_SUBDEVICE, &(int){1}) != 0) {
 				perror("ioctl SNDRV_CTL_IOCTL_RAWMIDI_PREFER_SUBDEVICE");
-				close(ctlfd);
-				return -1;
+				break;  /* try next card; outer loop closes ctlfd */
 			}
 			snprintf(path, sizeof path, "/dev/snd/midiC%dD0", card);
 			midifd = open(path, O_RDWR | O_CLOEXEC);
 			close(ctlfd);
+			ctlfd = -1;  /* closed; prevent double-close by outer loop */
 			if (midifd < 0) {
 				fprintf(stderr, "open %s: %s\n", path, strerror(errno));
-				return -1;
+				break;
 			}
 			if (ioctl(midifd, (int)SNDRV_RAWMIDI_IOCTL_PVERSION, &ver) != 0) {
 				perror("ioctl SNDRV_RAWMIDI_IOCTL_PVERSION");
 				close(midifd);
-				return -1;
+				break;
 			}
 			if (SNDRV_PROTOCOL_INCOMPATIBLE(ver, SNDRV_RAWMIDI_VERSION)) {
 				fprintf(stderr, "incompatible rawmidi version\n");
 				close(midifd);
-				return -1;
+				break;
 			}
 			memset(&info, 0, sizeof info);
 			info.stream = SNDRV_RAWMIDI_STREAM_INPUT;
 			if (ioctl(midifd, (int)SNDRV_RAWMIDI_IOCTL_INFO, &info) != 0) {
 				perror("ioctl SNDRV_RAWMIDI_IOCTL_INFO");
 				close(midifd);
-				return -1;
+				break;
 			}
 			if (info.subdevice != 1) {
 				fprintf(stderr, "could not open subdevice 1\n");
 				close(midifd);
-				return -1;
+				break;
 			}
 			snprintf(midiport, sizeof midiport, "%s", (char *)info.subname);
 
@@ -116,25 +120,26 @@ openmidi(void)
 			if (ioctl(midifd, (int)SNDRV_RAWMIDI_IOCTL_PARAMS, &params) != 0) {
 				perror("ioctl SNDRV_RAWMIDI_IOCTL_PARAMS");
 				close(midifd);
-				return -1;
+				break;
 			}
 			params.stream = SNDRV_RAWMIDI_STREAM_OUTPUT;
 			if (ioctl(midifd, (int)SNDRV_RAWMIDI_IOCTL_PARAMS, &params) != 0) {
 				perror("ioctl SNDRV_RAWMIDI_IOCTL_PARAMS");
 				close(midifd);
-				return -1;
+				break;
 			}
 			if (dup2(midifd, 6) < 0 || dup2(midifd, 7) < 0) {
 				perror("dup2");
 				if (midifd != 6 && midifd != 7)
 					close(midifd);
-				return -1;
+				break;
 			}
 			if (midifd != 6 && midifd != 7)
 				close(midifd);
 			return 0;
 		}
-		close(ctlfd);
+		if (ctlfd >= 0)
+			close(ctlfd);
 	}
 	return -1;
 }
@@ -175,6 +180,20 @@ usage(int status)
 	exit(status);
 }
 
+/* SysEx reassembly buffer. Lifted out of midiread() so that the disconnect
+ * transitions in the poll loop can clear any partial data that was
+ * mid-stream when the device went away — otherwise stale bytes would be
+ * concatenated with fresh bytes on reconnect and parsed as one corrupt
+ * SysEx packet. */
+static unsigned char midibuf[8192];
+static unsigned char *midibufend = midibuf;
+
+static void
+midireset(void)
+{
+	midibufend = midibuf;
+}
+
 /* Returns 0 on success (including partial read), -1 if the midi device
  * went away (EIO / ENODEV / EBADF / ENXIO / unexpected EOF). Other errors
  * still call fatal() to preserve the previous behavior for truly
@@ -182,16 +201,17 @@ usage(int status)
 static int
 midiread(int fd)
 {
-	static unsigned char data[8192], *dataend = data;
 	unsigned char *datapos, *nextpos;
-	uint_least32_t payload[sizeof data / 4];
+	uint_least32_t payload[sizeof midibuf / 4];
 	ssize_t ret;
 
-	ret = read(fd, dataend, (data + sizeof data) - dataend);
+	ret = read(fd, midibufend, (midibuf + sizeof midibuf) - midibufend);
 	if (ret < 0) {
 		if (self_opened_midi && (errno == EIO || errno == ENODEV
-				|| errno == EBADF || errno == ENXIO))
+				|| errno == EBADF || errno == ENXIO)) {
+			midireset();
 			return -1;
+		}
 		fatal("read %d:", fd);
 	}
 	if (ret == 0) {
@@ -199,29 +219,29 @@ midiread(int fd)
 		 * the fd ourselves. Wrapper-inherited mode keeps the old
 		 * behavior of falling through (which would be a no-op read). */
 		if (self_opened_midi) {
-			dataend = data;
+			midireset();
 			return -1;
 		}
-		dataend = data;
+		midireset();
 		return 0;
 	}
-	dataend += ret;
-	datapos = data;
+	midibufend += ret;
+	datapos = midibuf;
 	for (;;) {
-		assert(datapos <= dataend);
-		datapos = memchr(datapos, 0xf0, dataend - datapos);
+		assert(datapos <= midibufend);
+		datapos = memchr(datapos, 0xf0, midibufend - datapos);
 		if (!datapos) {
-			dataend = data;
+			midireset();
 			break;
 		}
-		nextpos = memchr(datapos + 1, 0xf7, dataend - datapos - 1);
+		nextpos = memchr(datapos + 1, 0xf7, midibufend - datapos - 1);
 		if (!nextpos) {
-			if (dataend == data + sizeof data) {
+			if (midibufend == midibuf + sizeof midibuf) {
 				fprintf(stderr, "sysex packet too large; dropping\n");
-				dataend = data;
+				midireset();
 			} else {
-				memmove(data, datapos, dataend - datapos);
-				dataend -= datapos - data;
+				memmove(midibuf, datapos, midibufend - datapos);
+				midibufend -= datapos - midibuf;
 			}
 			break;
 		}
@@ -276,6 +296,21 @@ writeosc(const void *buf, size_t len)
 	ssize_t ret;
 
 	ret = write(wfd, buf, len);
+	if (ret < 0 && errno == ECONNREFUSED) {
+		/* On Linux, a connected UDP socket stores ICMP port
+		 * unreachable errors from previously-sent packets and
+		 * reports them on the next sendmsg(). The stored error
+		 * is cleared after it is reported, so retrying once is
+		 * sufficient: the previous packet is lost (nothing we
+		 * can do about that), but the current one needs to get
+		 * through. This matters at startup, when a frontend
+		 * like oscmix-gtk binds its recv socket slightly after
+		 * the backend has already sent its initial /device/id
+		 * bundle — without this retry, the backend's response
+		 * to the frontend's /refresh would hit the stored error
+		 * and the frontend would never leave its scanning page. */
+		ret = write(wfd, buf, len);
+	}
 	if (ret < 0) {
 		if (errno != ECONNREFUSED)
 			perror("write");
@@ -365,6 +400,16 @@ main(int argc, char *argv[])
 		}
 	}
 
+	/* Open OSC sockets before any potentially slow MIDI scan so that
+	 * frontends which start concurrently (e.g. oscmix-gtk launched right
+	 * after us) can send /refresh and have it buffered in the kernel
+	 * socket receive buffer rather than silently dropped. */
+	uint16_t recvport = sockaddrport(recvaddr);
+	uint16_t sendport = sockaddrport(sendaddr);
+
+	rfd = sockopen(recvaddr, 1);
+	wfd = sockopen(sendaddr, 0);
+
 	bool have_midi = (fcntl(6, F_GETFD) >= 0 && fcntl(7, F_GETFD) >= 0);
 
 	if (!have_midi) {
@@ -401,6 +446,7 @@ main(int argc, char *argv[])
 
 	rfd = sockopen(recvaddr, 1);
 	wfd = sockopen(sendaddr, 0);
+
 
 	bool initialized = false;
 	if (have_midi) {
@@ -502,9 +548,13 @@ main(int argc, char *argv[])
 				/* Device went away. Transition to scanning state:
 				 * close the midi fds, tell frontends, and have the
 				 * poll loop stop reading midi until openmidi()
-				 * succeeds again. */
+				 * succeeds again. midireset() is already called
+				 * inside midiread() on the error path, but we do
+				 * it again here to be explicit about the state
+				 * reset at transition time. */
 				fprintf(stderr, "oscmix: midi device disconnected; "
 						"entering scanning state\n");
+				midireset();
 #ifdef __linux__
 				close_midi();
 #endif
@@ -529,18 +579,27 @@ main(int argc, char *argv[])
 			}
 		}
 
-		/* Control signal from coremidiio: 0x00=offline, 0x01=online */
+		/* Control signal from coremidiio: 0x00=offline, 0x01=online.
+		 * On macOS hotplug, coremidiio keeps the pipe on fds 6/7 open
+		 * across the disconnect, so midiread() never sees an error —
+		 * we only find out via this control channel. The SysEx
+		 * reassembly buffer must be reset here too because any
+		 * partial packet in flight at disconnect time would otherwise
+		 * be concatenated with fresh bytes from the reconnected
+		 * device and parsed as one corrupt packet. */
 		if (ctrl_fd >= 0 && (pfd[2].revents & POLLIN)) {
 			unsigned char sig;
 			if (read(ctrl_fd, &sig, 1) == 1) {
 				if (sig == 0x00 && online) {
 					fprintf(stderr, "oscmix: midi device disconnected\n");
+					midireset();
 					pfd[0].fd = -1;
 					online = false;
 					oscmix_announce_offline();
 					scan_tick = 0;
 				} else if (sig == 0x01 && !online) {
 					fprintf(stderr, "oscmix: midi device (re)connected\n");
+					midireset();
 					pfd[0].fd = 6;
 					online = true;
 					handleosc(refreshosc, sizeof refreshosc - 1);
@@ -565,7 +624,6 @@ main(int argc, char *argv[])
 					 * treating the absence as fatal. */
 					const char *usb_id = NULL;
 					if (usbscan_find(&usb_id)) {
-						static bool logged_race;
 						if (!logged_race) {
 							fprintf(stderr, "oscmix: detected "
 								"RME device (%s) via USB but "
@@ -595,6 +653,7 @@ main(int argc, char *argv[])
 						"(re)connected\n");
 					pfd[0].fd = 6;
 					online = true;
+					logged_race = false;
 					handleosc(refreshosc,
 						sizeof refreshosc - 1);
 				}
