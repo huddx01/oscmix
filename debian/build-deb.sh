@@ -5,8 +5,8 @@
 # Version convention:
 #   Release:  0.0.1
 #   Alpha:    0.0.1~alpha1
-#   Custom:   0.0.1~custom202603051944 (default if no arg given)
-#   Nightly:  0.0.1~nightly20260305
+#   Custom:   0.0.1~custom202604051944 (default if no arg given)
+#   Nightly:  0.0.1~nightly20260405
 
 set -e
 
@@ -15,7 +15,7 @@ ARCH=$(dpkg --print-architecture)
 PKG="oscmix_${VERSION}_${ARCH}"
 DOC_DIR="${PKG}/usr/share/doc/oscmix"
 
-# - Color codes
+# Color codes
 GREEN="\033[0;32m"
 CYAN="\033[0;36m"
 BOLD="\033[1m"
@@ -23,42 +23,43 @@ RESET="\033[0m"
 
 printf "\n${GREEN}${BOLD}Building ${PKG}.deb ...${RESET}\n"
 
-# - Build C backend
+# Build C backend
 make oscmix
 make alsarawio
 make alsaseqio
 
-# - Build GTK UI (compiles oscmix-gtk + gschemas.compiled)
+# Build GTK UI
 make -C gtk
 
-# - Stage package tree
+# Stage package tree
 rm -rf "${PKG}"
 mkdir -p "${PKG}/DEBIAN"
 mkdir -p "${PKG}/usr/bin"
-mkdir -p "${PKG}/usr/share/oscmix"
+mkdir -p "${PKG}/usr/share/glib-2.0/schemas"
 mkdir -p "${PKG}/usr/share/applications"
 mkdir -p "${PKG}/usr/share/icons/hicolor/512x512/apps"
 mkdir -p "${PKG}/usr/share/man/man1"
 mkdir -p "${DOC_DIR}"
 
-# - Binaries
+# Binaries
 cp oscmix alsarawio alsaseqio   "${PKG}/usr/bin/"
 cp gtk/oscmix-gtk               "${PKG}/usr/bin/"
 
-# - Launcher (dual-mode AppRun: works in AppImage and as system binary)
+# Launcher (dual-mode AppRun: works in AppImage and as system binary)
 cp gtk/AppRun                   "${PKG}/usr/bin/oscmix-launcher"
 
-# - GTK resources
-cp gtk/gschemas.compiled        "${PKG}/usr/share/oscmix/"
+# GTK schema XML only postinst regenerates the system-wide gschemas.compiled
+cp gtk/oscmix.gschema.xml       "${PKG}/usr/share/glib-2.0/schemas/"
+
 cp "doc/img/AppIcon/AppIcon-Dark-512x512@1x.png" \
                         "${PKG}/usr/share/icons/hicolor/512x512/apps/oscmix.png"
 
-# - Man pages (gzip as required by Debian policy)
-for page in oscmix alsarawio alsaseqio; do
+# Man pages (gzip as required by Debian policy)
+for page in oscmix alsarawio alsaseqio coremidiio; do
     gzip -9 -c "doc/${page}.1" > "${PKG}/usr/share/man/man1/${page}.1.gz"
 done
 
-# - Desktop entry
+# Desktop entry
 cat > "${PKG}/usr/share/applications/oscmix-gtk.desktop" <<EOF
 [Desktop Entry]
 Name=oscmix
@@ -72,17 +73,17 @@ EOF
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# - Ensure we run from repo root so make finds all sources
+# Ensure we run from repo root so make finds all sources
 cd "${REPO_ROOT}"
 
-# - copyright file (read from debian/copyright, maintained separately)
+# copyright file (read from debian/copyright, maintained separately)
 if [ ! -f "${SCRIPT_DIR}/copyright" ]; then
     printf "Error: debian/copyright not found. Cannot build package.\n" >&2
     exit 1
 fi
 cp "${SCRIPT_DIR}/copyright" "${DOC_DIR}/copyright"
 
-# - changelog (generated from git log, gzip as required by Debian policy)
+# changelog (generated from git log, gzip as required by Debian policy)
 # Format: package (version) distro; urgency=low
 #   * commit message
 #  -- Maintainer <email>  date
@@ -99,21 +100,34 @@ generate_changelog() {
 }
 generate_changelog "$VERSION" | gzip -9 > "${DOC_DIR}/changelog.Debian.gz"
 
-# - Normalize permissions
-# (build machine umask may leave group-write bits on compiled outputs)
+# postinst: regenerate system-wide gschemas.compiled after install
+cat > "${PKG}/DEBIAN/postinst" <<EOF
+#!/bin/sh
+glib-compile-schemas /usr/share/glib-2.0/schemas/ || true
+EOF
+
+# postrm: regenerate system-wide gschemas.compiled after uninstall
+cat > "${PKG}/DEBIAN/postrm" <<EOF
+#!/bin/sh
+glib-compile-schemas /usr/share/glib-2.0/schemas/ || true
+EOF
+
+# Normalize permissions
+chmod 755 "${PKG}/DEBIAN/postinst"
+chmod 755 "${PKG}/DEBIAN/postrm"
 chmod 755 "${PKG}/usr/bin/oscmix"
 chmod 755 "${PKG}/usr/bin/alsarawio"
 chmod 755 "${PKG}/usr/bin/alsaseqio"
 chmod 755 "${PKG}/usr/bin/oscmix-gtk"
 chmod 755 "${PKG}/usr/bin/oscmix-launcher"
-chmod 644 "${PKG}/usr/share/oscmix/gschemas.compiled"
+chmod 644 "${PKG}/usr/share/glib-2.0/schemas/oscmix.gschema.xml"
 chmod 644 "${PKG}/usr/share/icons/hicolor/512x512/apps/oscmix.png"
 chmod 644 "${PKG}/usr/share/applications/oscmix-gtk.desktop"
 chmod 644 "${PKG}"/usr/share/man/man1/*.gz
 chmod 644 "${DOC_DIR}/copyright"
 chmod 644 "${DOC_DIR}/changelog.Debian.gz"
 
-# - DEBIAN/control (trailing newline required by Debian policy)
+# DEBIAN/control
 cat > "${PKG}/DEBIAN/control" <<EOF
 Package: oscmix
 Version: ${VERSION}
@@ -124,8 +138,8 @@ Depends: libgtk-3-0, libglib2.0-0, libasound2, zenity
 Maintainer: M. Augustyniak <meg33@sndtek.de>
 Homepage: https://github.com/huddx01/oscmix
 Description: OSC Mixer UI for RME Fireface devices in CC-Mode
- GTK frontend for oscmix, currently supported: RME Fireface 802, UCX,
- UCX II, UFX+, UFX II, UFX III.
+ GTK frontend for oscmix, currently supported:
+ RME Fireface 802, UCX, UCX II, UFX+, UFX II, UFX III.
  .
  oscmix implements an OSC bridge for RME Fireface devices running in
  class-compliant mode on Linux and macOS.
