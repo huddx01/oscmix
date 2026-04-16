@@ -58,7 +58,7 @@ static char midiport[80];
 static int
 openmidi(void)
 {
-	int card, ctlfd, midifd, ver, i;
+	int card, ctlfd, midifd, ver, i, target_subdev;
 	char path[64];
 	struct snd_ctl_card_info cardinfo;
 	struct snd_rawmidi_info info;
@@ -76,7 +76,25 @@ openmidi(void)
 		for (i = 0; midi_devices[i]; ++i) {
 			if (strncmp((char *)cardinfo.name, midi_devices[i], strlen(midi_devices[i])) != 0)
 				continue;
-			if (ioctl(ctlfd, SNDRV_CTL_IOCTL_RAWMIDI_PREFER_SUBDEVICE, &(int){1}) != 0) {
+			/* Query subdevice count on device 0 and target the
+			 * last one. RME devices expose the host control port
+			 * as the last MIDI subdevice — UCX II has 3 (target
+			 * 2), UFX III has 4 (target 3), 802 varies by mode.
+			 * Hardcoding subdevice 1 broke everything except UCX. */
+			memset(&info, 0, sizeof info);
+			info.device = 0;
+			info.subdevice = 0;
+			info.stream = SNDRV_RAWMIDI_STREAM_INPUT;
+			if (ioctl(ctlfd, SNDRV_CTL_IOCTL_RAWMIDI_INFO, &info) != 0) {
+				perror("ioctl SNDRV_CTL_IOCTL_RAWMIDI_INFO");
+				break;
+			}
+			if (info.subdevices_count == 0) {
+				fprintf(stderr, "no rawmidi subdevices on card %d\n", card);
+				break;
+			}
+			target_subdev = (int)info.subdevices_count - 1;
+			if (ioctl(ctlfd, SNDRV_CTL_IOCTL_RAWMIDI_PREFER_SUBDEVICE, &target_subdev) != 0) {
 				perror("ioctl SNDRV_CTL_IOCTL_RAWMIDI_PREFER_SUBDEVICE");
 				break;  /* try next card; outer loop closes ctlfd */
 			}
@@ -105,8 +123,9 @@ openmidi(void)
 				close(midifd);
 				break;
 			}
-			if (info.subdevice != 1) {
-				fprintf(stderr, "could not open subdevice 1\n");
+			if ((int)info.subdevice != target_subdev) {
+				fprintf(stderr, "could not open subdevice %d (got %u)\n",
+					target_subdev, info.subdevice);
 				close(midifd);
 				break;
 			}
@@ -255,7 +274,12 @@ midiread(int fd)
 static void
 oscread(int fd)
 {
-	unsigned char buf[8192];
+	/* One UDP datagram per read; any bytes beyond this are silently
+	 * dropped by the kernel. UFX III has 94 I/O channels and can send
+	 * large bundles, so size for the theoretical UDP payload maximum
+	 * rather than the previous 8 KB which was close to oscmix's own
+	 * send bundle size and could easily truncate. */
+	unsigned char buf[65536];
 	ssize_t ret;
 
 	ret = read(fd, buf, sizeof buf);
@@ -439,14 +463,6 @@ main(int argc, char *argv[])
 	/* Ignore SIGPIPE so that failed writes (e.g. to a multicast socket
 	 * with no active listeners) return EPIPE instead of killing the process. */
 	signal(SIGPIPE, SIG_IGN);
-
-	/* Parse ports before sockopen() modifies the address strings in-place. */
-	uint16_t recvport = sockaddrport(recvaddr);
-	uint16_t sendport = sockaddrport(sendaddr);
-
-	rfd = sockopen(recvaddr, 1);
-	wfd = sockopen(sendaddr, 0);
-
 
 	bool initialized = false;
 	if (have_midi) {
