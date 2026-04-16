@@ -428,7 +428,11 @@ main(int argc, char *argv[])
 		fcntl(ctrl[1], F_SETFD, FD_CLOEXEC);
 		g_ctrl_wfd = ctrl[1];
 		spawn(argv[0], argv, mode, fd, ctrl[0]);
-		/* ctrl[0] was closed inside spawn(); g_ctrl_wfd=ctrl[1] is ours. */
+		/* ctrl[0] was closed inside spawn(); g_ctrl_wfd=ctrl[1] is ours.
+		 * Note: do NOT touch CoreMIDI (MIDIGetSource etc.) before spawn.
+		 * spawn() forks, and any CoreMIDI use opens a Mach port
+		 * connection to midiserver that does not survive fork —
+		 * MIDIClientCreate below would then fail with OSStatus -304. */
 	}
 
 	err = MIDIClientCreate(name, notify, ctx, &client);
