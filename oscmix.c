@@ -146,9 +146,8 @@ setreg(unsigned reg, unsigned val)
 	unsigned par;
 
 	val &= 0xffff;
-	if (dflag && reg != 0x3f00) fprintf(stderr, "setreg %.4X %.4X\n", reg, val);
-	// debug for webui
-	//if (reg != 0x3f00) fprintf(stderr, "WEBUI: setreg %.4X %.4X\n", reg, val);
+	if (dflag && reg != 0x3f00)
+		fprintf(stderr, "setreg %.4X %.4X\n", reg, val);
 	regval = (reg & 0x7fff) << 16 | val;
 	par = regval >> 16 ^ regval;
 	par ^= par >> 8;
@@ -612,7 +611,6 @@ setoutputloopback(struct context *ctx, struct oscmsg *msg)
 	unsigned char buf[4], sysexbuf[7 + 5];
 
 	val = oscgetint(msg);
-	fprintf(stderr, "setoutputloopback: val = %d, param.in = %d\n", val, ctx->param.in);
 	if (oscend(msg) != 0)
 		return;
 	putle32(buf, val << 7 | ctx->param.in);
@@ -1723,8 +1721,8 @@ static const struct node roottree[] = {
 /* maps control number to indices into roottree */
 static unsigned char nodeindex[NUMCTLS][4];
 
-int
-handleosc(const unsigned char *buf, size_t len)
+static int
+handleoscmsg(const unsigned char *buf, size_t len)
 {
 	const struct node *node;
 	struct context ctx;
@@ -1732,8 +1730,6 @@ handleosc(const unsigned char *buf, size_t len)
 	const char *pattern;
 	char *end;
 
-	if (len % 4 != 0)
-		return -1;
 	msg.err = NULL;
 	msg.buf = (unsigned char *)buf;
 	msg.end = (unsigned char *)buf + len;
@@ -1773,6 +1769,46 @@ handleosc(const unsigned char *buf, size_t len)
 		node = node->tree;
 	}
 	return 0;
+}
+
+/* Dispatch a single OSC packet. Recurses for bundles (OSC 1.0 §3): a packet
+ * whose address string is "#bundle" is followed by an 8-byte time tag and
+ * then any number of size-prefixed sub-packets, each of which may itself be
+ * a bundle. Frontends like the web UI and external OSC clients routinely
+ * send bundles, and the UFX III's /refresh response produces large bundles —
+ * the previous single-message-only handler rejected all of them as
+ * "invalid osc address '#bundle'", which silently broke those frontends. */
+static int
+handleoscpacket(const unsigned char *buf, size_t len)
+{
+	if (len >= 8 && memcmp(buf, "#bundle\0", 8) == 0) {
+		const unsigned char *pos = buf + 16;  /* skip "#bundle\0" + timetag */
+		const unsigned char *end = buf + len;
+		if (len < 16)
+			return -1;
+		while (pos < end) {
+			uint32_t sublen;
+			if (end - pos < 4)
+				return -1;
+			sublen = (uint32_t)pos[0] << 24 | (uint32_t)pos[1] << 16
+				| (uint32_t)pos[2] << 8 | pos[3];
+			pos += 4;
+			if (sublen > (uint32_t)(end - pos) || (sublen & 3) != 0)
+				return -1;
+			handleoscpacket(pos, sublen);
+			pos += sublen;
+		}
+		return 0;
+	}
+	return handleoscmsg(buf, len);
+}
+
+int
+handleosc(const unsigned char *buf, size_t len)
+{
+	if (len % 4 != 0)
+		return -1;
+	return handleoscpacket(buf, len);
 }
 
 static unsigned char oscbuf[8192];
@@ -1831,8 +1867,6 @@ oscsendenum(const char *addr, int val, const char *const names[], size_t namesle
 	if (val >= 0 && val < nameslen) {
 		oscsend(addr, ",is", val, names[val]);
 	} else {
-		fprintf(stderr, "unknown value for '%s': %d\n", addr, val);
-		fprintf(stderr, "nameslen=%zu\n", nameslen);
 		fprintf(stderr, "unexpected enum value %d\n", val);
 
 		oscsend(addr, ",i", val);

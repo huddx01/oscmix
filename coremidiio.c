@@ -310,14 +310,16 @@ notify(const struct MIDINotification *n, void *info)
 		obj = ar->child;
 		epname(obj, name, sizeof name);
 		if ((g_mode & READ) && ar->childType == kMIDIObjectType_Source
-				&& ctx[0].ep == 0 && strcmp(name, g_src_name) == 0) {
+				&& ctx[0].ep == 0 && g_src_name[0] != '\0'
+				&& strcmp(name, g_src_name) == 0) {
 			ctx[0].ep = (MIDIEndpointRef)obj;
 			err = MIDIPortConnectSource(ctx[0].port, ctx[0].ep, NULL);
 			if (err)
 				fprintf(stderr, "coremidiio: MIDIPortConnectSource: %d\n", (int)err);
 		}
 		if ((g_mode & WRITE) && ar->childType == kMIDIObjectType_Destination
-				&& ctx[1].ep == 0 && strcmp(name, g_dst_name) == 0) {
+				&& ctx[1].ep == 0 && g_dst_name[0] != '\0'
+				&& strcmp(name, g_dst_name) == 0) {
 			ctx[1].ep = (MIDIEndpointRef)obj;
 		}
 		reader_ok = !(g_mode & READ) || ctx[0].ep != 0;
@@ -370,8 +372,18 @@ main(int argc, char *argv[])
 	int port[2], fd[2];
 	CFStringRef name;
 	int mode;
-	struct context ctx[2];
+	struct context ctx[2] = {0};
 	int ctrl[2];
+
+	/* ctx is passed to MIDIClientCreate as the notify callback's
+	 * info pointer. notify() reads ctx[0].ep and ctx[1].ep before
+	 * initreader()/initwriter() have populated them — if a hotplug
+	 * event fires during that window (or for WRITE-only / READ-only
+	 * modes where only one slot is initialized), uninitialized
+	 * endpoint values would be compared against the incoming object
+	 * and might randomly match, causing a spurious disconnect. Zero
+	 * initialization keeps the early-return path in notify() correct
+	 * until real endpoints are installed. */
 
 	port[0] = -1;
 	port[1] = -1;
@@ -416,7 +428,11 @@ main(int argc, char *argv[])
 		fcntl(ctrl[1], F_SETFD, FD_CLOEXEC);
 		g_ctrl_wfd = ctrl[1];
 		spawn(argv[0], argv, mode, fd, ctrl[0]);
-		/* ctrl[0] was closed inside spawn(); g_ctrl_wfd=ctrl[1] is ours. */
+		/* ctrl[0] was closed inside spawn(); g_ctrl_wfd=ctrl[1] is ours.
+		 * Note: do NOT touch CoreMIDI (MIDIGetSource etc.) before spawn.
+		 * spawn() forks, and any CoreMIDI use opens a Mach port
+		 * connection to midiserver that does not survive fork —
+		 * MIDIClientCreate below would then fail with OSStatus -304. */
 	}
 
 	err = MIDIClientCreate(name, notify, ctx, &client);
