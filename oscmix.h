@@ -22,9 +22,4 @@ struct oscmix_devinfo {
 
 void oscmix_getdevinfo(struct oscmix_devinfo *out);
 
-/* Broadcast empty /device/id + /device/name so frontends switch to
- * their scanning / disconnected state. Called by main() when the
- * midi fd read path fails with EIO/ENODEV. */
-void oscmix_announce_offline(void);
-
 #endif

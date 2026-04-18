@@ -1,5 +1,4 @@
 #define _DEFAULT_SOURCE
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <CoreFoundation/CoreFoundation.h>
@@ -14,17 +13,10 @@ struct context {
 	int fd;
 };
 
-/* Global state for hotplug reconnect */
-static bool g_connected;     /* true when MIDI endpoints are live */
-static int g_ctrl_wfd = -1;  /* write end of control pipe to oscmix; -1 if no child */
-static int g_mode;           /* READ / WRITE flags at startup */
-static char g_src_name[256]; /* display name of the source endpoint  */
-static char g_dst_name[256]; /* display name of the destination endpoint */
-
 static void
 usage(void)
 {
-	fprintf(stderr,
+	fprintf(stderr, 
 			"usage: coremidiio [-rw] [-f rfd,wfd] [-p port] [cmd...]\n "
 			"       coremidiio [-l] (list ports)\n"
 			"       coremidiio [-n virtPortname]\n"
@@ -102,9 +94,6 @@ midiread(const MIDIPacketList *list, void *info, void *src)
 static OSStatus
 midiwrite(struct context *ctx, MIDIPacketList *list)
 {
-	/* Drop outbound packets while the device is disconnected. */
-	if (!g_connected)
-		return noErr;
 	if (ctx->port)
 		return MIDISend(ctx->port, ctx->ep, list);
 	return MIDIReceived(ctx->ep, list);
@@ -277,59 +266,14 @@ initwriter(struct context *ctx, MIDIClientRef client, CFStringRef name, int inde
 static void
 notify(const struct MIDINotification *n, void *info)
 {
-	MIDIObjectAddRemoveNotification *ar;
 	struct context *ctx;
 	MIDIObjectRef obj;
-	OSStatus err;
-	char name[256];
-	unsigned char sig;
-	bool reader_ok, writer_ok;
 
 	ctx = info;
 	if (n->messageID == kMIDIMsgObjectRemoved) {
-		ar = (MIDIObjectAddRemoveNotification *)n;
-		obj = ar->child;
-		if (obj != ctx[0].ep && obj != ctx[1].ep)
-			return;
-		if (!g_connected)
-			return;  /* already handling a disconnect */
-		g_connected = false;
-		if ((g_mode & READ) && ctx[0].port && ctx[0].ep) {
-			MIDIPortDisconnectSource(ctx[0].port, ctx[0].ep);
-			ctx[0].ep = 0;
-		}
-		if (g_mode & WRITE)
-			ctx[1].ep = 0;
-		if (g_ctrl_wfd >= 0) {
-			sig = 0x00;
-			write(g_ctrl_wfd, &sig, 1);
-		}
-		fprintf(stderr, "coremidiio: device removed; waiting for reconnect\n");
-	} else if (n->messageID == kMIDIMsgObjectAdded && !g_connected) {
-		ar = (MIDIObjectAddRemoveNotification *)n;
-		obj = ar->child;
-		epname(obj, name, sizeof name);
-		if ((g_mode & READ) && ar->childType == kMIDIObjectType_Source
-				&& ctx[0].ep == 0 && strcmp(name, g_src_name) == 0) {
-			ctx[0].ep = (MIDIEndpointRef)obj;
-			err = MIDIPortConnectSource(ctx[0].port, ctx[0].ep, NULL);
-			if (err)
-				fprintf(stderr, "coremidiio: MIDIPortConnectSource: %d\n", (int)err);
-		}
-		if ((g_mode & WRITE) && ar->childType == kMIDIObjectType_Destination
-				&& ctx[1].ep == 0 && strcmp(name, g_dst_name) == 0) {
-			ctx[1].ep = (MIDIEndpointRef)obj;
-		}
-		reader_ok = !(g_mode & READ) || ctx[0].ep != 0;
-		writer_ok = !(g_mode & WRITE) || ctx[1].ep != 0;
-		if (reader_ok && writer_ok) {
-			g_connected = true;
-			if (g_ctrl_wfd >= 0) {
-				sig = 0x01;
-				write(g_ctrl_wfd, &sig, 1);
-			}
-			fprintf(stderr, "coremidiio: device reconnected\n");
-		}
+		obj = ((MIDIObjectAddRemoveNotification *)n)->child;
+		if (obj == ctx[0].ep || obj == ctx[1].ep)
+			CFRunLoopStop(CFRunLoopGetMain());
 	}
 }
 
@@ -371,7 +315,6 @@ main(int argc, char *argv[])
 	CFStringRef name;
 	int mode;
 	struct context ctx[2];
-	int ctrl[2];
 
 	port[0] = -1;
 	port[1] = -1;
@@ -406,32 +349,15 @@ main(int argc, char *argv[])
 
 	if (mode == 0)
 		mode = READ | WRITE;
-	g_mode = mode;
-
-	if (argc) {
-		/* Create control pipe: read end goes to fd 8 in oscmix,
-		 * write end stays here for disconnect/reconnect signals. */
-		if (pipe(ctrl) != 0)
-			fatal("pipe:");
-		fcntl(ctrl[1], F_SETFD, FD_CLOEXEC);
-		g_ctrl_wfd = ctrl[1];
-		spawn(argv[0], argv, mode, fd, ctrl[0]);
-		/* ctrl[0] was closed inside spawn(); g_ctrl_wfd=ctrl[1] is ours. */
-	}
+	if (argc)
+		spawn(argv[0], argv, mode, fd);
 
 	err = MIDIClientCreate(name, notify, ctx, &client);
 	if (err)
 		fatal("MIDIClientCreate: %d", err);
-	if (mode & READ) {
+	if (mode & READ)
 		initreader(&ctx[0], client, name, port[0], fd[1]);
-		if (port[0] != -1)
-			epname(ctx[0].ep, g_src_name, sizeof g_src_name);
-	}
-	if (mode & WRITE) {
+	if (mode & WRITE)
 		initwriter(&ctx[1], client, name, port[1], fd[0]);
-		if (port[1] != -1)
-			epname(ctx[1].ep, g_dst_name, sizeof g_dst_name);
-	}
-	g_connected = true;
 	CFRunLoopRun();
 }

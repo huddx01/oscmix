@@ -1865,6 +1865,11 @@ handleregs(uint_least32_t *payload, size_t len)
 		reg = payload[i] >> 16 & 0x7fff;
 		val = (long)((payload[i] & 0xffff) ^ 0x8000) - 0x8000;
 
+		/* Debug: Print NAME range registers with their values */
+		if (reg >= 0x2800 && reg < 0x2C00) {
+			fprintf(stderr, "DEBUG handleregs: reg=0x%04X, val=0x%04X (%d)\n", reg, val & 0xFFFF, val);
+		}
+
 		ctx.param.in = ctx.param.out = -1;
 		ctx.reg = reg;  /* Store actual register number */
 		ctl = device->regtoctl(reg, &ctx.param);
@@ -2118,12 +2123,4 @@ oscmix_getdevinfo(struct oscmix_devinfo *out)
 	out->flags   = device ? device->flags : 0;
 	out->inputs  = device ? device->inputslen : 0;
 	out->outputs = device ? device->outputslen : 0;
-}
-
-void
-oscmix_announce_offline(void)
-{
-	oscsend("/device/id",   ",s", "");
-	oscsend("/device/name", ",s", "");
-	oscflush();
 }
