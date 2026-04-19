@@ -1,4 +1,4 @@
-.Dd April 6, 2026
+.Dd April 19, 2026
 .Dt ALSASEQIO 1
 .Os
 .Sh NAME
@@ -6,125 +6,76 @@
 .Nd ALSA sequencer I/O bridge
 .Sh SYNOPSIS
 .Nm
-.Op Fl rws
 .Op Fl n Ar name
-.Op Fl f Ar rfd Ns Op , Ns Ar wfd
-.Op Fl p Ar client Ns Op : Ns Ar port
-.Op Ar command...
+.Ar client Ns : Ns Ar port
+.Ar command Op Ar arg ...
+.Nm
+.Fl n Ar name
+.Ar command Op Ar arg ...
 .Sh DESCRIPTION
 .Nm
-is a bridge from MIDI byte stream(s) to an ALSA sequencer port.
-.Pp
-If
+is a bridge between MIDI byte streams and an ALSA sequencer port.
+It sets up file descriptors for reading and writing MIDI messages and
+executes a
 .Ar command
-is specified,
-.Nm
-will set up pipes on
-.Ar rfd
-and/or
-.Ar wfd
-that can be used to read and/or write MIDI messages.
-Then, it will fork to the background and execute
-.Ar command
-in the foreground.
+with those file descriptors available for MIDI I/O.
 .Pp
-Otherwise,
 .Nm
-will read MIDI messages from the sequencer port, writing them to
-.Ar wfd ,
-and read MIDI messages from
-.Ar rfd ,
-writing them to the sequencer port.
+forks to the background and executes
+.Ar command
+in the foreground, with file descriptors 6 and 7 configured for
+MIDI input and output respectively.
+.Pp
+The
+.Ar command
+can read MIDI messages from file descriptor 6 and write MIDI messages
+to file descriptor 7.
 .Sh OPTIONS
 .Bl -tag -width Ds
-.It Fl r
-Read from the ALSA sequencer port.
-.It Fl w
-Write to the ALSA sequencer port.
-.It Fl s
-Allow subscription to
-.Nm Ns 's port, even if a target port was specified with
-.Fl p .
 .It Fl n Ar name
-The ALSA sequencer client name and port name to use.
-Defaults to
-.Nm .
-.It Fl f Ar rfd Ns Op , Ns Ar wfd
-The file descriptors on which to read and/or write MIDI 1.0 byte
-streams.
-If only one file descriptor is given, then it is used for both
-reading and writing.
-If not specified, defaults to standard input (0) for reading and
-standard output (1) for writing.
-.Pp
-If
-.Ar command
-is specified, these file descriptors refer to the ends of the pipes
-on the command side.
-In
-.Fl r
-mode, MIDI messages can be read from
-.Ar rfd ,
-and in
-.Fl w
-mode, MIDI messages can be written to
-.Ar wfd .
-.Pp
-Otherwise, in
-.Fl r
-mode, MIDI messages read from the sequencer port are written to
-.Ar wfd ,
-and in
-.Fl w
-mode, MIDI messages read from
-.Ar rfd
-are written to the sequencer port.
-.It Fl p Ar client Ns Op : Ns Ar port
-The target ALSA sequencer port.
-The
-.Ar client
-can be specified by its number, its name, or a prefix of its name.
-The
-.Ar port
-is specified by its number, and can be omitted in which case 0 is
-used.
-If
-.Fl p
-is not specified, subscription will be enabled for
-.Nm Ns 's port, allowing other clients to connect.
+Create a virtual ALSA sequencer port with the given name instead of
+connecting to an existing port.
+Other ALSA sequencer clients can connect to this port using
+.Xr aconnect 1 .
 .El
-.Pp
-If neither
-.Fl r
-nor
-.Fl w
-is specified, the default is
-.Fl rw .
+.Sh ARGUMENTS
+.Bl -tag -width Ds
+.It Ar client Ns : Ns Ar port
+The ALSA sequencer client and port number to connect to (e.g., 128:0).
+Omit when using
+.Fl n .
+.It Ar command
+The program to execute with MIDI I/O on file descriptors 6 and 7.
+.It Ar arg
+Optional arguments passed to
+.Ar command .
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width MIDIPORT
+.It Ev MIDIPORT
+Set to the name of the connected or created port before executing
+.Ar command .
+.El
 .Sh EXAMPLES
-Hex dump any MIDI messages received:
+Connect to ALSA sequencer port 128:0 and start oscmix:
 .Pp
-.Dl alsaseqio -r | od -t x1
+.Dl alsaseqio 128:0 oscmix
 .Pp
-Play a C note for one second on a synthesizer named
-.Sq MODEL D :
+Connect to a Fireface UFX III port 3 and start oscmix with multicast:
 .Pp
-.Dl { printf '\ex90\ex3C\ex7F'; sleep 1; printf '\ex80\ex3C\ex7F'; } | alsaseqio -wp 'MODEL D'
+.Dl alsaseqio 'Fireface UFX III:3' oscmix -m -z
 .Pp
-Start
-.Xr oscmix 1
-using port 3 of a Fireface UFX III:
+Create a virtual port named "Virtual RME" and start oscmix:
 .Pp
-.Dl alsaseqio -p 'Fireface UFX III:3' -f 6,7 oscmix
+.Dl alsaseqio -n \(dqVirtual RME\(dq oscmix -m -z
 .Pp
-Start
-.Xr oscmix 1
-with multicast output and mDNS registration:
+List available ALSA sequencer ports:
 .Pp
-.Dl alsaseqio 16:0 oscmix -m -z
+.Dl aconnect -l
 .Pp
-Bridge an ALSA sequencer port to a CoreMIDI port on a networked Mac:
+Connect another application to the virtual port:
 .Pp
-.Dl alsaseqio ssh mymac coremidiio
+.Dl aconnect 'Some MIDI App' alsaseqio
 .Sh AVAILABILITY
 .Nm
 is only available on
@@ -133,6 +84,7 @@ On macOS, use
 .Xr coremidiio 1
 instead.
 .Sh SEE ALSO
+.Xr aconnect 1 ,
 .Xr alsarawio 1 ,
 .Xr coremidiio 1 ,
 .Xr oscmix 1

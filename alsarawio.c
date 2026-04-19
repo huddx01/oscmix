@@ -12,7 +12,26 @@
 static void
 usage(void)
 {
-	fprintf(stderr, "usage: alsarawio cmd [arg...]\n");
+	fprintf(stderr, "usage: alsarawio CARD[,DEVICE[,SUBDEVICE]] COMMAND [ARGS...]\n\n");
+	fprintf(stderr, "ALSA Raw MIDI I/O wrapper\n\n");
+	fprintf(stderr, "Arguments:\n");
+	fprintf(stderr, "  CARD[,DEVICE[,SUBDEVICE]]  ALSA raw MIDI device\n");
+	fprintf(stderr, "                              CARD: sound card number (e.g., 0)\n");
+	fprintf(stderr, "                              DEVICE: MIDI device (default: 0)\n");
+	fprintf(stderr, "                              SUBDEVICE: subdevice (default: 0)\n");
+	fprintf(stderr, "  COMMAND                     Program to execute with MIDI I/O\n");
+	fprintf(stderr, "  ARGS                        Optional arguments for COMMAND\n\n");
+	fprintf(stderr, "Description:\n");
+	fprintf(stderr, "  Opens the specified ALSA raw MIDI device and executes COMMAND\n");
+	fprintf(stderr, "  with MIDI input/output on file descriptors 6 and 7.\n");
+	fprintf(stderr, "  The MIDIPORT environment variable is set to the subdevice name.\n\n");
+	fprintf(stderr, "Examples:\n");
+	fprintf(stderr, "  alsarawio 0 oscmix          # Card 0, device 0, subdevice 0\n");
+	fprintf(stderr, "  alsarawio 0,1 oscmix        # Card 0, device 1, subdevice 0\n");
+	fprintf(stderr, "  alsarawio 1,2,3 oscmix -m   # Card 1, device 2, subdevice 3\n\n");
+	fprintf(stderr, "To list available raw MIDI devices:\n");
+	fprintf(stderr, "  ls /dev/snd/midi*\n");
+	fprintf(stderr, "  cat /proc/asound/cards\n");
 	exit(1);
 }
 
