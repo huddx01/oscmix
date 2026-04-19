@@ -34,6 +34,7 @@ SUPPORTED_DEVICES=(
     "Fireface UCX"
     "Fireface UCX II"
     "Fireface UFX+"
+    "Fireface UFX"
     "Fireface UFX II"
     "Fireface UFX III"
 )

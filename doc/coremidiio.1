@@ -1,4 +1,4 @@
-.Dd April 6, 2026
+.Dd April 19, 2026
 .Dt COREMIDIIO 1
 .Os
 .Sh NAME
@@ -98,7 +98,7 @@ environment variable:
 .Pp
 .Dl MIDIPORT='Fireface 802 (12345678) Port 2' coremidiio -f 6,7 oscmix -m -z
 .Pp
-Bridge a CoreMIDI port to an ALSA sequencer port on a remote Linux host:
+Bridge a CoreMIDI port to an ALSA sequencer port on a remote Linux host via ssh:
 .Pp
 .Dl coremidiio ssh mylinux alsaseqio
 .Sh AVAILABILITY

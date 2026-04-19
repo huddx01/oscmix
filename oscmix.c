@@ -2025,14 +2025,15 @@ maptree(const struct node *tree, int i)
 int
 init(const char *port)
 {
-	extern const struct device ffucxii;
 	extern const struct device ff802;
-	extern const struct device ffufxiii;
 	extern const struct device ffucx;
-	extern const struct device ffufxp;
+	extern const struct device ffucxii;
+	extern const struct device ffufx;
 	extern const struct device ffufxii;
+	extern const struct device ffufxiii;
+	extern const struct device ffufxp;
 	static const struct device *devices[] = {
-		&ffucxii, &ff802, &ffufxiii, &ffucx, &ffufxp, &ffufxii
+		&ff802, &ffucx, &ffucxii, &ffufx, &ffufxii, &ffufxiii, &ffufxp
 	};
 	int i;
 	size_t namelen;
@@ -2051,10 +2052,6 @@ init(const char *port)
 		fprintf(stderr, "Unsupported Device: '%s'\n", port);
 		return -1;
 	}
-
-	/* Print port and detected device name */
-	fprintf(stderr, "Detected Device: %s (ID: %s)\n", device->name, device->id);
-	fprintf(stderr, "Using MIDI Port: %s\n", port);
 
 	/* Derive UID from the first parenthesized group in the port name.
 	 * Uses only the first '(' / ')' pair to handle formats like:
@@ -2076,6 +2073,10 @@ init(const char *port)
 		uidfromport(port, deviceuid, sizeof deviceuid);
 	}
 	}
+
+	fprintf(stderr, "Device Name: %s (ID: %s)\n", device->name, device->id);
+	fprintf(stderr, "Device UID:  %s\n", deviceuid);
+	fprintf(stderr, "MIDI Port:   %s\n", port);
 
 	memset(nodeindex, 0xFF, sizeof nodeindex);
 	maptree(roottree, 0);

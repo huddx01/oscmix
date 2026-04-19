@@ -23,11 +23,13 @@ OBJ=\
     resources.o\
     ../osc.o\
     ../device_ff802.o\
-    ../device_ffucxii.o\
-    ../device_ffufxiii.o\
     ../device_ffucx.o\
-    ../device_ffufxp.o\
-    ../device_ffufxii.o
+    ../device_ffucxii.o\
+    ../device_ffufx.o\
+    ../device_ffufxii.o\
+    ../device_ffufxiii.o\
+    ../device_ffufxp.o
+
 
 RES=\
 	oscmix.ui\

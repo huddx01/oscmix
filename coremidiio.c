@@ -1,7 +1,12 @@
 #define _DEFAULT_SOURCE
+#include <errno.h>
+#include <fcntl.h>
+#include <spawn.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreMIDI/MIDIServices.h>
 #include "arg.h"
@@ -24,11 +29,36 @@ static char g_dst_name[256]; /* display name of the destination endpoint */
 static void
 usage(void)
 {
-	fprintf(stderr,
-			"usage: coremidiio [-rw] [-f rfd,wfd] [-p port] [cmd...]\n "
-			"       coremidiio [-l] (list ports)\n"
-			"       coremidiio [-n virtPortname]\n"
-	);
+	fprintf(stderr, "usage: coremidiio [-rw] [-f RFD[,WFD]] [-p PORT] COMMAND [ARGS...]\n");
+	fprintf(stderr, "       coremidiio -l\n");
+	fprintf(stderr, "       coremidiio -n NAME COMMAND [ARGS...]\n\n");
+	fprintf(stderr, "CoreMIDI I/O bridge\n\n");
+	fprintf(stderr, "Options:\n");
+	fprintf(stderr, "  -r             Read from CoreMIDI port (receive MIDI input)\n");
+	fprintf(stderr, "  -w             Write to CoreMIDI port (send MIDI output)\n");
+	fprintf(stderr, "  -f RFD[,WFD]   File descriptors for MIDI I/O (default: 6,7)\n");
+	fprintf(stderr, "                 If only one is given, used for both read and write\n");
+	fprintf(stderr, "  -p PORT        CoreMIDI port number (use -l to list)\n");
+	fprintf(stderr, "  -n NAME        Create a virtual port with the given name\n");
+	fprintf(stderr, "  -l             List available CoreMIDI ports and exit\n\n");
+	fprintf(stderr, "Arguments:\n");
+	fprintf(stderr, "  COMMAND        Program to execute with MIDI I/O\n");
+	fprintf(stderr, "  ARGS           Optional arguments for COMMAND\n\n");
+	fprintf(stderr, "Description:\n");
+	fprintf(stderr, "  Connects to a CoreMIDI port (or creates a virtual port with -n)\n");
+	fprintf(stderr, "  and executes COMMAND with MIDI input/output on the specified\n");
+	fprintf(stderr, "  file descriptors (default: fd 6 for read, fd 7 for write).\n");
+	fprintf(stderr, "  The MIDIPORT environment variable is set automatically to the port name.\n\n");
+	fprintf(stderr, "Examples:\n");
+	fprintf(stderr, "  coremidiio -l                                          # List available MIDI ports\n");
+	fprintf(stderr, "  coremidiio -p 2 oscmix                                 # Connect to port 2\n");
+	fprintf(stderr, "  coremidiio -p 2 oscmix -m -z                           # With multicast and mDNS\n");
+	fprintf(stderr, "  coremidiio -n \"Fireface 802 (12345678) Port 2\" oscmix  # Create virtual port\n");
+	fprintf(stderr, "  coremidiio -r -p 2 cat > output.mid                    # Record MIDI to file\n\n");
+	fprintf(stderr, "File descriptor modes:\n");
+	fprintf(stderr, "  -r: Read from port, write MIDI to fd (default: 7)\n");
+	fprintf(stderr, "  -w: Read MIDI from fd (default: 6), write to port\n");
+	fprintf(stderr, "  -rw (default): Bidirectional MIDI on fds 6 and 7\n");
 	exit(1);
 }
 
@@ -47,6 +77,14 @@ epname(MIDIObjectRef obj, char *buf, size_t len)
 	CFStringGetBytes(name, range, kCFStringEncodingUTF8, 0, false, (uint8_t *)buf, len - 1, &used);
 	CFRelease(name);
 	buf[used] = '\0';
+}
+
+static void
+setportenv(MIDIEndpointRef ep)
+{
+	char name[256];
+	epname(ep, name, sizeof name);
+	setenv("MIDIPORT", name, 1);
 }
 
 static void
@@ -333,6 +371,20 @@ notify(const struct MIDINotification *n, void *info)
 	}
 }
 
+static int
+safefd(int fd, int min)
+{
+	int nfd;
+
+	if (fd >= min)
+		return fd;
+	nfd = fcntl(fd, F_DUPFD, min);
+	if (nfd < 0)
+		fatal("fcntl F_DUPFD:");
+	close(fd);
+	return nfd;
+}
+
 static void
 parseintpair(const char *arg, int num[static 2])
 {
@@ -368,6 +420,7 @@ main(int argc, char *argv[])
 	MIDIClientRef client;
 	OSStatus err;
 	int port[2], fd[2];
+	const char *vepname;
 	CFStringRef name;
 	int mode;
 	struct context ctx[2];
@@ -377,8 +430,10 @@ main(int argc, char *argv[])
 	port[1] = -1;
 	fd[0] = 0;
 	fd[1] = 1;
+	vepname = NULL;
 	name = CFSTR("coremidiio");
 	mode = 0;
+	memset(ctx, 0, sizeof ctx);
 	ARGBEGIN {
 	case 'l':
 		listports();
@@ -390,7 +445,8 @@ main(int argc, char *argv[])
 		mode |= WRITE;
 		break;
 	case 'n':
-		name = CFStringCreateWithCStringNoCopy(NULL, EARGF(usage()), kCFStringEncodingUTF8, kCFAllocatorNull);
+		vepname = EARGF(usage());
+		name = CFStringCreateWithCStringNoCopy(NULL, vepname, kCFStringEncodingUTF8, kCFAllocatorNull);
 		if (!name)
 			fatal("CFStringCreateWithCStringNoCopy failed");
 		break;
@@ -406,17 +462,64 @@ main(int argc, char *argv[])
 
 	if (mode == 0)
 		mode = READ | WRITE;
-	g_mode = mode;
+
+	/* set MIDIPORT env var */
+	if (port[0] != -1 || port[1] != -1) {
+		int index = (mode & READ) ? port[0] : port[1];
+		if (index != -1) {
+			MIDIEndpointRef ep;
+			ep = (mode & READ) ? MIDIGetSource(index) : MIDIGetDestination(index);
+			if (ep)
+				setportenv(ep);
+		}
+	} else if (vepname) {
+		setenv("MIDIPORT", vepname, 1);
+	}
 
 	if (argc) {
-		/* Create control pipe: read end goes to fd 8 in oscmix,
-		 * write end stays here for disconnect/reconnect signals. */
-		if (pipe(ctrl) != 0)
-			fatal("pipe:");
-		fcntl(ctrl[1], F_SETFD, FD_CLOEXEC);
-		g_ctrl_wfd = ctrl[1];
-		spawn(argv[0], argv, mode, fd, ctrl[0]);
-		/* ctrl[0] was closed inside spawn(); g_ctrl_wfd=ctrl[1] is ours. */
+		extern char **environ;
+		posix_spawn_file_actions_t actions;
+		posix_spawnattr_t attr;
+		pid_t pid;
+		int rp[2], wp[2], serr, minfd;
+
+		/* ensure pipe fds don't collide with target fds */
+		minfd = (fd[0] > fd[1] ? fd[0] : fd[1]) + 1;
+		posix_spawn_file_actions_init(&actions);
+		posix_spawnattr_init(&attr);
+		posix_spawnattr_setflags(&attr, POSIX_SPAWN_CLOEXEC_DEFAULT);
+		posix_spawn_file_actions_addinherit_np(&actions, STDIN_FILENO);
+		posix_spawn_file_actions_addinherit_np(&actions, STDOUT_FILENO);
+		posix_spawn_file_actions_addinherit_np(&actions, STDERR_FILENO);
+		if (mode & READ) {
+			if (pipe(rp) != 0)
+				fatal("pipe:");
+			rp[0] = safefd(rp[0], minfd);
+			rp[1] = safefd(rp[1], minfd);
+			posix_spawn_file_actions_adddup2(&actions, rp[0], fd[0]);
+		}
+		if (mode & WRITE) {
+			if (pipe(wp) != 0)
+				fatal("pipe:");
+			wp[0] = safefd(wp[0], minfd);
+			wp[1] = safefd(wp[1], minfd);
+			posix_spawn_file_actions_adddup2(&actions, wp[1], fd[1]);
+		}
+		serr = posix_spawnp(&pid, argv[0], &actions, &attr, argv, environ);
+		posix_spawnattr_destroy(&attr);
+		posix_spawn_file_actions_destroy(&actions);
+		if (serr) {
+			errno = serr;
+			fatal("exec %s:", argv[0]);
+		}
+		if (mode & READ) {
+			close(rp[0]);
+			fd[1] = rp[1];
+		}
+		if (mode & WRITE) {
+			close(wp[1]);
+			fd[0] = wp[0];
+		}
 	}
 
 	err = MIDIClientCreate(name, notify, ctx, &client);
