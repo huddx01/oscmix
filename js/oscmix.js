@@ -2,14 +2,16 @@
 
 import { Knob } from "./knob.js";
 import { device_ff802 } from "./device_ff802.js";
-import { device_ffucxii } from "./device_ffucxii.js";
-import { device_ffufxiii } from "./device_ffufxiii.js";
 import { device_ffucx } from "./device_ffucx.js";
-import { device_ffufxp } from "./device_ffufxp.js";
+import { device_ffucxii } from "./device_ffucxii.js";
+import { device_ffufx } from "./device_ffufx.js";
 import { device_ffufxii } from "./device_ffufxii.js";
+import { device_ffufxiii } from "./device_ffufxiii.js";
+import { device_ffufxp } from "./device_ffufxp.js";
+
 import { RoomEQBridge, withValueCache } from './roomEq_oscbridge.js';
 
-const devices = [device_ff802, device_ffucxii, device_ffufxiii, device_ffucx, device_ffufxp, device_ffufxii];
+const devices = [device_ff802, device_ffucx, device_ffucxii, device_ffufx, device_ffufxii, device_ffufxiii, device_ffufxp];
 let currentDevice = device_ffufxiii;
 
 let arcControlWindow = null;
