@@ -16,11 +16,36 @@ struct context {
 static void
 usage(void)
 {
-	fprintf(stderr, 
-			"usage: coremidiio [-rw] [-f rfd,wfd] [-p port] [cmd...]\n "
-			"       coremidiio [-l] (list ports)\n"
-			"       coremidiio [-n virtPortname]\n"
-	);
+	fprintf(stderr, "usage: coremidiio [-rw] [-f RFD[,WFD]] [-p PORT] COMMAND [ARGS...]\n");
+	fprintf(stderr, "       coremidiio -l\n");
+	fprintf(stderr, "       coremidiio -n NAME COMMAND [ARGS...]\n\n");
+	fprintf(stderr, "CoreMIDI I/O bridge\n\n");
+	fprintf(stderr, "Options:\n");
+	fprintf(stderr, "  -r             Read from CoreMIDI port (receive MIDI input)\n");
+	fprintf(stderr, "  -w             Write to CoreMIDI port (send MIDI output)\n");
+	fprintf(stderr, "  -f RFD[,WFD]   File descriptors for MIDI I/O (default: 6,7)\n");
+	fprintf(stderr, "                 If only one is given, used for both read and write\n");
+	fprintf(stderr, "  -p PORT        CoreMIDI port number (use -l to list)\n");
+	fprintf(stderr, "  -n NAME        Create a virtual port with the given name\n");
+	fprintf(stderr, "  -l             List available CoreMIDI ports and exit\n\n");
+	fprintf(stderr, "Arguments:\n");
+	fprintf(stderr, "  COMMAND        Program to execute with MIDI I/O\n");
+	fprintf(stderr, "  ARGS           Optional arguments for COMMAND\n\n");
+	fprintf(stderr, "Description:\n");
+	fprintf(stderr, "  Connects to a CoreMIDI port (or creates a virtual port with -n)\n");
+	fprintf(stderr, "  and executes COMMAND with MIDI input/output on the specified\n");
+	fprintf(stderr, "  file descriptors (default: fd 6 for read, fd 7 for write).\n");
+	fprintf(stderr, "  The MIDIPORT environment variable is set to the port name.\n\n");
+	fprintf(stderr, "Examples:\n");
+	fprintf(stderr, "  coremidiio -l                                          # List available MIDI ports\n");
+	fprintf(stderr, "  coremidiio -p 2 oscmix                                 # Connect to port 2\n");
+	fprintf(stderr, "  coremidiio -p 2 oscmix -m -z                           # With multicast and mDNS\n");
+	fprintf(stderr, "  coremidiio -n \"Fireface 802 (12345678) Port 2\" oscmix  # Create virtual port\n");
+	fprintf(stderr, "  coremidiio -r -p 2 cat > output.mid                    # Record MIDI to file\n\n");
+	fprintf(stderr, "File descriptor modes:\n");
+	fprintf(stderr, "  -r: Read from port, write MIDI to fd (default: 7)\n");
+	fprintf(stderr, "  -w: Read MIDI from fd (default: 6), write to port\n");
+	fprintf(stderr, "  -rw (default): Bidirectional MIDI on fds 6 and 7\n");
 	exit(1);
 }
 

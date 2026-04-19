@@ -34,8 +34,8 @@ usage(void)
 	fprintf(stderr, "  The MIDIPORT environment variable is set to the port name.\n\n");
 	fprintf(stderr, "Examples:\n");
 	fprintf(stderr, "  alsaseqio 128:0 oscmix\n");
-	fprintf(stderr, "  alsaseqio 14:1 oscmix --verbose\n");
-	fprintf(stderr, "  alsaseqio -n \"Virtual RME\" oscmix -m -z\n\n");
+	fprintf(stderr, "  alsaseqio 14:1 oscmix -d\n");
+	fprintf(stderr, "  alsaseqio -n \"Fireface 802 (12345678) Port 2\" oscmix -d\n\n");
 	fprintf(stderr, "To list available MIDI ports:\n");
 	fprintf(stderr, "  aconnect -l\n");
 	exit(1);

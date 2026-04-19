@@ -1,4 +1,4 @@
-.Dd April 6, 2026
+.Dd April 19, 2026
 .Dt OSCMIX 1
 .Os
 .Sh NAME
@@ -153,7 +153,7 @@ Start
 .Nm
 on Linux using alsaseqio with a Fireface UFX III:
 .Pp
-.Dl alsaseqio 16:0 oscmix
+.Dl alsaseqio 16:3 oscmix
 .Pp
 Start
 .Nm
@@ -163,7 +163,7 @@ on Linux using alsarawio:
 .Pp
 Start with multicast output on a custom port and mDNS registration:
 .Pp
-.Dl alsaseqio 16:0 oscmix -m 8233 -z
+.Dl alsaseqio 16:3 oscmix -m 8233 -z
 .Pp
 Start
 .Nm

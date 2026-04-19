@@ -61,13 +61,13 @@ Connect to ALSA sequencer port 128:0 and start oscmix:
 .Pp
 .Dl alsaseqio 128:0 oscmix
 .Pp
-Connect to a Fireface UFX III port 3 and start oscmix with multicast:
+Connect to a Fireface UFX III port 4 and start oscmix with multicast:
 .Pp
-.Dl alsaseqio 'Fireface UFX III:3' oscmix -m -z
+.Dl alsaseqio 'Fireface UFX III:4' oscmix
 .Pp
-Create a virtual port named "Virtual RME" and start oscmix:
+Create a virtual port named "Fireface 802 (12345678) Port 2" and start oscmix in debug mode:
 .Pp
-.Dl alsaseqio -n \(dqVirtual RME\(dq oscmix -m -z
+.Dl alsaseqio -n \(dqFireface 802 (12345678) Port 2\(dq oscmix -d
 .Pp
 List available ALSA sequencer ports:
 .Pp

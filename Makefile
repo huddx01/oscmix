@@ -22,7 +22,6 @@ ALSA_LDLIBS?=$$(pkg-config --libs-only-l alsa)
 COREMIDI?=$(OS-Darwin)
 COREMIDI_LDLIBS?=-framework CoreMIDI -framework CoreFoundation
 
-# mDNS/DNS-SD: Avahi on Linux, Bonjour (built-in) on macOS
 AVAHI?=$(OS-Linux)
 AVAHI_CFLAGS?=$$(pkg-config --cflags avahi-client)
 AVAHI_LDFLAGS?=$$(pkg-config --libs-only-L --libs-only-other avahi-client)
@@ -71,11 +70,11 @@ web:
 
 DEVICES=\
 	device_ff802.o\
-	device_ffucxii.o\
-	device_ffufxiii.o\
 	device_ffucx.o\
-	device_ffufxp.o\
-	device_ffufxii.o
+	device_ffucxii.o\
+	device_ffufxii.o\
+	device_ffufxiii.o\
+	device_ffufxp.o
 
 OSCMIX_OBJ=\
 	main.o\
