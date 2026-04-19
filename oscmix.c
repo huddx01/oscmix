@@ -2033,11 +2033,12 @@ init(const char *port)
 	extern const struct device ff802;
 	extern const struct device ffucx;
 	extern const struct device ffucxii;
+	extern const struct device ffufx;
 	extern const struct device ffufxii;
 	extern const struct device ffufxiii;
 	extern const struct device ffufxp;
 	static const struct device *devices[] = {
-		&ff802, &ffucx, &ffucxii, &ffufxii , &ffufxiii, &ffufxp
+		&ff802, &ffucx, &ffucxii, &ffufx, &ffufxii, &ffufxiii, &ffufxp
 	};
 	int i;
 	size_t namelen;

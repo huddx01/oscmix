@@ -139,7 +139,7 @@ Maintainer: M. Augustyniak <meg33@sndtek.de>
 Homepage: https://github.com/huddx01/oscmix
 Description: OSC Mixer UI for RME Fireface devices in CC-Mode
  GTK frontend for oscmix, currently supported:
- RME Fireface 802, UCX, UCX II, UFX+, UFX II, UFX III.
+ RME Fireface 802, UCX, UCX II, UFX, UFX II, UFX III, UFX+.
  .
  oscmix implements an OSC bridge for RME Fireface devices running in
  class-compliant mode on Linux and macOS.
