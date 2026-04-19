@@ -1,6 +1,11 @@
 #define _DEFAULT_SOURCE
+#include <errno.h>
+#include <fcntl.h>
+#include <spawn.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreMIDI/MIDIServices.h>
 #include "arg.h"
@@ -35,7 +40,7 @@ usage(void)
 	fprintf(stderr, "  Connects to a CoreMIDI port (or creates a virtual port with -n)\n");
 	fprintf(stderr, "  and executes COMMAND with MIDI input/output on the specified\n");
 	fprintf(stderr, "  file descriptors (default: fd 6 for read, fd 7 for write).\n");
-	fprintf(stderr, "  The MIDIPORT environment variable is set to the port name.\n\n");
+	fprintf(stderr, "  The MIDIPORT environment variable is set automatically to the port name.\n\n");
 	fprintf(stderr, "Examples:\n");
 	fprintf(stderr, "  coremidiio -l                                          # List available MIDI ports\n");
 	fprintf(stderr, "  coremidiio -p 2 oscmix                                 # Connect to port 2\n");
@@ -64,6 +69,14 @@ epname(MIDIObjectRef obj, char *buf, size_t len)
 	CFStringGetBytes(name, range, kCFStringEncodingUTF8, 0, false, (uint8_t *)buf, len - 1, &used);
 	CFRelease(name);
 	buf[used] = '\0';
+}
+
+static void
+setportenv(MIDIEndpointRef ep)
+{
+	char name[256];
+	epname(ep, name, sizeof name);
+	setenv("MIDIPORT", name, 1);
 }
 
 static void
@@ -302,6 +315,20 @@ notify(const struct MIDINotification *n, void *info)
 	}
 }
 
+static int
+safefd(int fd, int min)
+{
+	int nfd;
+
+	if (fd >= min)
+		return fd;
+	nfd = fcntl(fd, F_DUPFD, min);
+	if (nfd < 0)
+		fatal("fcntl F_DUPFD:");
+	close(fd);
+	return nfd;
+}
+
 static void
 parseintpair(const char *arg, int num[static 2])
 {
@@ -337,6 +364,7 @@ main(int argc, char *argv[])
 	MIDIClientRef client;
 	OSStatus err;
 	int port[2], fd[2];
+	const char *vepname;
 	CFStringRef name;
 	int mode;
 	struct context ctx[2];
@@ -345,8 +373,10 @@ main(int argc, char *argv[])
 	port[1] = -1;
 	fd[0] = 0;
 	fd[1] = 1;
+	vepname = NULL;
 	name = CFSTR("coremidiio");
 	mode = 0;
+	memset(ctx, 0, sizeof ctx);
 	ARGBEGIN {
 	case 'l':
 		listports();
@@ -358,7 +388,8 @@ main(int argc, char *argv[])
 		mode |= WRITE;
 		break;
 	case 'n':
-		name = CFStringCreateWithCStringNoCopy(NULL, EARGF(usage()), kCFStringEncodingUTF8, kCFAllocatorNull);
+		vepname = EARGF(usage());
+		name = CFStringCreateWithCStringNoCopy(NULL, vepname, kCFStringEncodingUTF8, kCFAllocatorNull);
 		if (!name)
 			fatal("CFStringCreateWithCStringNoCopy failed");
 		break;
@@ -374,8 +405,65 @@ main(int argc, char *argv[])
 
 	if (mode == 0)
 		mode = READ | WRITE;
-	if (argc)
-		spawn(argv[0], argv, mode, fd);
+
+	/* set MIDIPORT env var */
+	if (port[0] != -1 || port[1] != -1) {
+		int index = (mode & READ) ? port[0] : port[1];
+		if (index != -1) {
+			MIDIEndpointRef ep;
+			ep = (mode & READ) ? MIDIGetSource(index) : MIDIGetDestination(index);
+			if (ep)
+				setportenv(ep);
+		}
+	} else if (vepname) {
+		setenv("MIDIPORT", vepname, 1);
+	}
+
+	if (argc) {
+		extern char **environ;
+		posix_spawn_file_actions_t actions;
+		posix_spawnattr_t attr;
+		pid_t pid;
+		int rp[2], wp[2], serr, minfd;
+
+		/* ensure pipe fds don't collide with target fds */
+		minfd = (fd[0] > fd[1] ? fd[0] : fd[1]) + 1;
+		posix_spawn_file_actions_init(&actions);
+		posix_spawnattr_init(&attr);
+		posix_spawnattr_setflags(&attr, POSIX_SPAWN_CLOEXEC_DEFAULT);
+		posix_spawn_file_actions_addinherit_np(&actions, STDIN_FILENO);
+		posix_spawn_file_actions_addinherit_np(&actions, STDOUT_FILENO);
+		posix_spawn_file_actions_addinherit_np(&actions, STDERR_FILENO);
+		if (mode & READ) {
+			if (pipe(rp) != 0)
+				fatal("pipe:");
+			rp[0] = safefd(rp[0], minfd);
+			rp[1] = safefd(rp[1], minfd);
+			posix_spawn_file_actions_adddup2(&actions, rp[0], fd[0]);
+		}
+		if (mode & WRITE) {
+			if (pipe(wp) != 0)
+				fatal("pipe:");
+			wp[0] = safefd(wp[0], minfd);
+			wp[1] = safefd(wp[1], minfd);
+			posix_spawn_file_actions_adddup2(&actions, wp[1], fd[1]);
+		}
+		serr = posix_spawnp(&pid, argv[0], &actions, &attr, argv, environ);
+		posix_spawnattr_destroy(&attr);
+		posix_spawn_file_actions_destroy(&actions);
+		if (serr) {
+			errno = serr;
+			fatal("exec %s:", argv[0]);
+		}
+		if (mode & READ) {
+			close(rp[0]);
+			fd[1] = rp[1];
+		}
+		if (mode & WRITE) {
+			close(wp[1]);
+			fd[0] = wp[0];
+		}
+	}
 
 	err = MIDIClientCreate(name, notify, ctx, &client);
 	if (err)
