@@ -634,7 +634,7 @@ input[type=range]:focus {
 	width: 20px;
 	-webkit-appearance: slider-vertical;
 	appearance: vertical;
-	writing-mode: bt-lr;
+	writing-mode: vertical-lr;
 }
 
 /* Knob Styling */
