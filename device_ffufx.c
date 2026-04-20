@@ -13,9 +13,9 @@
  *   playback channels: 0x4000 + out*0x40 + 0x20 + pb_idx
  */
 
-static const char *const reflevel_input[] = {"+4dBu", "Lo Gain"};
-static const char *const reflevel_output[] = {"+4dBu", "+13dBu", "+19dBu"};
-static const char *const reflevel_output_xlr[] = {"+4dBu", "+13dBu", "+19dBu", "+24dBu"};
+static const char *const reflevel_input[] = {"-10dBV", "+4dBu", "Lo Gain"};
+static const char *const reflevel_output[] = {"-10dBV", "+4dBu", "Hi Gain"};
+static const char *const reflevel_output_xlr[] = {"-10dBV", "+4dBu", "Hi Gain", "+24dBu"};
 static const char *const reflevel_phones[] = {"Low", "High"};
 
 static const struct channelinfo inputs[] = {

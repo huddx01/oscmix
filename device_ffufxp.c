@@ -7,9 +7,10 @@
 #define LEN(a) (sizeof (a) / sizeof *(a))
 
 static const char *const reflevel_input[] = {"+4dBu", "Lo Gain"};
-static const char *const reflevel_output[] = {"+4dBu", "+13dBu", "+19dBu"};
-static const char *const reflevel_output_xlr[] = {"+4dBu", "+13dBu", "+19dBu", "+24dBu"};
+static const char *const reflevel_output[] = {"-10dBV", "+4dBu", "Hi Gain"};
+static const char *const reflevel_output_xlr[] = {"-10dBV", "+4dBu", "Hi Gain", "+24dBu"};
 static const char *const reflevel_phones[] = {"Low", "High"};
+
 
 #define MIX_IN_BASE  0x4000
 #define MIX_PB_BASE  0x5780

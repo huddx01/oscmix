@@ -1,8 +1,8 @@
 // device_ffufxp.js
 
-const RL_INPUT = ['+13dBu', '+19dBu'];
-const RL_OUTPUT_XLR = ['+4dBu', '+13dBu', '+19dBu', '+24dBu'];
-const RL_OUTPUT = ['+4dBu', '+13dBu', '+19dBu'];
+const RL_INPUT = ['+4dBu', 'Lo Gain'];
+const RL_OUTPUT = ['-10dBV', '+4dBu', 'Hi Gain'];
+const RL_OUTPUT_XLR = ['-10dBV', '+4dBu', 'Hi Gain', '+24dBu'];
 const RL_PHONES = ['Low', 'High'];
 
 // Helper for plain digital channels with no gain or reflevel
