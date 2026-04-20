@@ -11,7 +11,18 @@ import { device_ffufxp } from "./device_ffufxp.js";
 
 import { RoomEQBridge, withValueCache } from './roomEq_oscbridge.js';
 
-const devices = [device_ff802, device_ffucx, device_ffucxii, device_ffufx, device_ffufxii, device_ffufxiii, device_ffufxp];
+// Order matters here: specific/longer device names MUST come before their prefixes
+// (e.g., UFX+ before UFX, UCXII before UCX, UFXIII before UFXII before UFX)
+const devices = [
+	device_ff802,
+	device_ffucxii,
+	device_ffucx,
+	device_ffufxiii,
+	device_ffufxii,
+	device_ffufxp,
+	device_ffufx
+];
+
 let currentDevice = device_ffufxiii;
 
 let arcControlWindow = null;
@@ -394,13 +405,6 @@ class ConnectionMIDI extends AbortController {
 										   instance.exports.handlesysex(sysex.byteOffset, sysex.byteLength, jsdata);
 									   } catch (e) {
 										   console.error("Error processing sysex:", e);
-										   const unsupportedCodes = ["2304", "2305"];
-										   if (
-											   currentDevice.deviceName === "Fireface 802" &&
-											   unsupportedCodes.some((code) => e.message.includes(code))
-											   ) {
-												   console.warn("Skipping unsupported sysex message");
-											   }
 									   }
 								   },
 								   { signal: this.signal }
