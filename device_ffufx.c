@@ -101,6 +101,7 @@ static enum control regtoctl(int reg, struct param *p) {
 		case 0x0007: return (flags & INPUT_HAS_GAIN) ? INPUT_GAIN : -1;
 		case 0x0008: return (flags & INPUT_HAS_REFLEVEL) ? INPUT_REFLEVEL : ((flags & INPUT_HAS_48V) ? INPUT_48V : -1);
 		case 0x0009: return (flags & INPUT_HAS_HIZ) ? INPUT_HIZ : -1;
+		case 0x000A: return INPUT_AUTOSET;
 
 		case 0x1E00: return OUTPUT_VOLUME;
 		case 0x1E01: return OUTPUT_PAN;
@@ -219,7 +220,7 @@ ctltoreg(enum control ctl, const struct param *p)
 			reg = 0x08; goto channel;
 		case INPUT_HIZ:               if (!(flags & INPUT_HAS_HIZ)) break;
 			reg = 0x09; goto channel;
-
+		case INPUT_AUTOSET:           reg = 0x0A; goto channel;
 		case OUTPUT_VOLUME:           reg = 0x00; goto channel;
 		case OUTPUT_PAN:              reg = 0x01; goto channel;
 		case OUTPUT_MUTE:             reg = 0x02; goto channel;
