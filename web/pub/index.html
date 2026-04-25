@@ -775,49 +775,53 @@
 				<summary>Debug</summary>
 				<form id="debug">
 					<fieldset class="custom-form">
-						<label class="label-legend">Console Log</label>
+							<label class="form-row"  title="General OSC Log switch. Affects all below OSC related switches in Broser Console. For better Performance, disable if not needed.">
+							OSC Log (general)
+							<div class="switch">
+								<input type="checkbox" id="debug-other" />
+								<span class="slider"></span>
+							</div>
+						</label>
 						<label class="form-row"  title="Logs incoming OSC Messages in Broser Console. For better Performance, disable if not needed.">
-							Incoming OSC
+							OSC Incoming
 							<div class="switch">
 								<input type="checkbox" id="debug-incoming" />
 								<span class="slider"></span>
 							</div>
 						</label>
 						<label class="form-row"  title="Logs outgoing OSC Messages in Broser Console. For better Performance, disable if not needed.">
-							Outgoing OSC
+							OSC Outgoing
 							 <div class="switch">
-
 								<input type="checkbox" id="debug-outgoing"/>
 								<span class="slider"></span>
 							</div>
 						</label>
-						<label class="form-row"  title="Logs other OSC Messages in Broser Console. For better Performance, disable if not needed.">
-							Other OSC
-							<div class="switch">
-								<input type="checkbox" id="debug-other" />
-								<span class="slider"></span>
-							</div>
-						</label>
-						<label class="form-row"  title="Logs Level-Meter OSC Messages in Broser Console. Floods the Console! Eenable only if needed.">
-							Levels
+						<label class="form-row"  title="Logs Level-Meter OSC Messages in Broser Console. Floods the Console! Enable only if needed.">
+							OSC Levels
 							<div class="switch">
 								<input type="checkbox" id="debug-level"> />
 								<span class="slider"></span>
 							</div>
 						</label>
 						<label class="form-row"  title="Logs ARC USB related OSC Messages in Broser Console. For better Performance, disable if not needed.">
-							ARC messages
+							OSC ARC Messages
 							<div class="switch">
 								<input type="checkbox" id="debug-arc" />
 								<span class="slider"></span>
 							</div>
 						</label>
-						<label class="form-row" title="Logs WASM stderr output (e.g. setmixlevel). Can be very verbose.">
-							WASM
-							<div class="switch">
-								<input type="checkbox" id="debug-wasm" />
-								<span class="slider"></span>
-							</div>
+					</fieldset>
+					<hr />
+					<fieldset class="custom-form">
+						<label class="form-row" title="Debug log sent directly from oscmix(.wasm). Sends /debug ,i N to oscmix. 0=off 1=mix events 2=register detail 3=verbose (every setreg) 4=Full (Flood warning!)">
+							WASM Log
+							<select id="debug-wasm-level">
+								<option value="d0">L0 – Off</option>
+								<option value="d1">L1 – Mix Events</option>
+								<option value="d2">L2 – Reg Details</option>
+								<option value="d3">L3 – More Verbose</option>
+								<option value="d4">L4 – Full ⚠️</option>
+							</select>
 						</label>
 					</fieldset>
 					<hr  style="background: transparent;" />
@@ -838,8 +842,8 @@
 			</form>
 			</details>
 			<hr />
-			
 		</div>
+		<!--
 		<datalist id="volume-values">
 			<option value="6" label="6 dB"></option>
 			<option value="0" label="0 dB"></option>
@@ -847,6 +851,7 @@
 			<option value="-18" label="-18 dB"></option>
 			<option value="-42" label="-42 dB"></option>
 		</datalist>
+		-->
 		<datalist id="programkey-options">
 				<option>Default</option>
 				<option>Load Setup 1</option>

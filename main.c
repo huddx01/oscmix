@@ -29,7 +29,7 @@ static void
 usage(int status)
 {
 	fprintf(stderr, "usage: oscmix [-dhlmz] [-p port] [-r addr] [-s addr]\n");
-	fprintf(stderr, "  -d        enable debug output\n");
+	fprintf(stderr, "  -d N      debug level 0-4 (0=off, also settable via OSC: /debug ,i N)\n");
 	fprintf(stderr, "  -h        show this help\n");
 	fprintf(stderr, "  -l        disable level metering\n");
 	fprintf(stderr, "  -m [port] send to multicast address (udp!224.0.0.1!port, default port: 8222)\n");
@@ -39,13 +39,15 @@ usage(int status)
 	fprintf(stderr, "  -z        register OSC service via mDNS/DNS-SD\n");
 	fprintf(stderr, "\nexamples (Linux):\n");
 	fprintf(stderr, "  alsarawio 0,0,3 oscmix\n");
-	fprintf(stderr, "  alsaseqio 16:0 oscmix\n");
-	fprintf(stderr, "  alsaseqio 16:0 oscmix -r udp!0.0.0.0!7222 -s udp!192.168.1.100!8222\n");
+	fprintf(stderr, "  alsaseqio 16:0 oscmix -d1 \n");
+	fprintf(stderr, "  alsaseqio 16:0 oscmix -r udp!0.0.0.0!7222 -s udp!127.0.0.1!8222\n");
 	fprintf(stderr, "  alsaseqio 16:0 oscmix -m 8233 -z\n");
 	fprintf(stderr, "\nexamples (macOS):\n");
 	fprintf(stderr, "  coremidiio -f 6,7 -p 2 oscmix\n");
 	fprintf(stderr, "  coremidiio -f 6,7 -p 2 oscmix -m -z\n");
-	fprintf(stderr, "  MIDIPORT='Fireface 802 (12345678) Port 2' coremidiio -f 6,7 oscmix -m -z\n");
+	fprintf(stderr, "  coremidiio -f 6,7 -p 2 oscmix -r udp!0.0.0.0!7222 -s udp!127.0.0.1!8222\n");
+	fprintf(stderr, "\nlegacy, but still works (see man coremidiio) (macOS):\n");
+	fprintf(stderr, "  MIDIPORT='Fireface 802 (12345678) Port 2' coremidiio -f 6,7 -p 2 oscmix -m -z\n");
 	exit(status);
 }
 
@@ -156,9 +158,11 @@ main(int argc, char *argv[])
 	port = NULL;
 
 	ARGBEGIN {
-	case 'd':
-		dflag = 1;
+	case 'd': {
+		int lev = atoi(EARGF(usage(1)));
+		dflag = lev < 0 ? 0 : lev > DFLAG_MAX ? DFLAG_MAX : lev;
 		break;
+	}
 	case 'h':
 		usage(0);
 		break;

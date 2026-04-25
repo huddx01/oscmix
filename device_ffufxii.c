@@ -139,8 +139,7 @@ regtoctl(int reg, struct param *p)
 		case 0x0002: return INPUT_STEREO;
 		case 0x0003: return INPUT_RECORD;
 		case 0x0004: return INPUT_PLAYCHAN;
-		// TODO: Add Width Handling in all units, device.h  and oscmix.c (INPUT_WIDTH)
-		case 0x0005: return UNKNOWN;
+		case 0x0005: return INPUT_WIDTH; //TODO: verify
 		case 0x0006: return INPUT_MSPROC;
 		case 0x0007: return INPUT_PHASE;
 		case 0x0008: return INPUT_GAIN;
@@ -158,7 +157,7 @@ regtoctl(int reg, struct param *p)
 		case 0x05A7: return OUTPUT_PHASE;
 		case 0x05A8: return OUTPUT_REFLEVEL;
 		case 0x05A9: return OUTPUT_CROSSFEED;
-		case 0x05AA: return UNKNOWN;
+		//case 0x05AA: return OUTPUT_WIDTH; //TODO: clear verify
 		case 0x05AB: return OUTPUT_VOLUMECAL;
 
 		case 0x000C: return LOWCUT;
@@ -287,8 +286,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case INPUT_STEREO:      reg = 0x02; goto channel;
 		case INPUT_RECORD:      reg = 0x03; goto channel;
 		case INPUT_PLAYCHAN:    reg = 0x04; goto channel;
-		// TODO: Add Width Handling in all units, device.h  and oscmix.c (INPUT_WIDTH)
-		//case INPUT_WIDTH:       reg = 0x05; goto channel;
+		case INPUT_WIDTH:       reg = 0x05; goto channel; //TODO: verify
 		case INPUT_MSPROC:      reg = 0x06; goto channel;
 		case INPUT_PHASE:       reg = 0x07; goto channel;
 		case INPUT_GAIN:        if (!(flags & INPUT_HAS_GAIN)) break;
@@ -313,7 +311,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case OUTPUT_REFLEVEL:    if (!(flags & OUTPUT_HAS_REFLEVEL)) break;
 			reg = 0x08; goto channel;
 		case OUTPUT_CROSSFEED:   reg = 0x09; goto channel;
-		// register 0x0A is unknown.
+		//case OUTPUT_WIDTH:       reg = 0x0A; goto channel; //TODO: unclear verify
 		case OUTPUT_VOLUMECAL:   reg = 0x0B; goto channel;
 
 		case LOWCUT:             reg = 0x0C; goto channel;

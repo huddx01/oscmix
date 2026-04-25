@@ -165,7 +165,7 @@ regtoctl(int reg, struct param *p)
 		case 0x0003: return INPUT_RECORD;
 		case 0x0004: return UNKNOWN;
 		case 0x0005: return INPUT_PLAYCHAN;
-		//case 0x0006: return INPUT_WIDTH;
+		case 0x0006: return INPUT_WIDTH;
 		case 0x0007: return INPUT_MSPROC;
 		case 0x0008: return INPUT_PHASE;
 		case 0x0009: return INPUT_GAIN;
@@ -179,7 +179,7 @@ regtoctl(int reg, struct param *p)
 		case 0x11A3: return OUTPUT_FXRETURN;
 		case 0x11A4: return OUTPUT_STEREO;
 		case 0x11A5: return OUTPUT_RECORD;
-		case 0x11A6: return UNKNOWN;
+		case 0x11A6: return OUTPUT_WIDTH;
 		case 0x11A7: return OUTPUT_PLAYCHAN;
 		case 0x11A8: return OUTPUT_PHASE;
 		case 0x11A9: return OUTPUT_REFLEVEL;
@@ -314,7 +314,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case INPUT_STEREO:      reg = 0x02; goto channel;
 		case INPUT_RECORD:      reg = 0x03; goto channel;
 		case INPUT_PLAYCHAN:    reg = 0x05; goto channel;
-		//case INPUT_WIDTH:       reg = 0x06; goto channel;
+		case INPUT_WIDTH:       reg = 0x06; goto channel;
 		case INPUT_MSPROC:      reg = 0x07; goto channel;
 		case INPUT_PHASE:       reg = 0x08; goto channel;
 		case INPUT_GAIN:        if (!(flags & INPUT_HAS_GAIN)) break;
@@ -333,6 +333,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case OUTPUT_FXRETURN:    reg = 0x03; goto channel;
 		case OUTPUT_STEREO:      reg = 0x04; goto channel;
 		case OUTPUT_RECORD:      reg = 0x05; goto channel;
+		case OUTPUT_WIDTH:       reg = 0x06; goto channel;
 		case OUTPUT_PLAYCHAN:    reg = 0x07; goto channel;
 		case OUTPUT_PHASE:       reg = 0x08; goto channel;
 		case OUTPUT_REFLEVEL:    if (!(flags & OUTPUT_HAS_REFLEVEL)) break;

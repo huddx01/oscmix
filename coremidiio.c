@@ -46,7 +46,8 @@ usage(void)
 	fprintf(stderr, "  coremidiio -p 2 oscmix                                 # Connect to port 2\n");
 	fprintf(stderr, "  coremidiio -p 2 oscmix -m -z                           # With multicast and mDNS\n");
 	fprintf(stderr, "  coremidiio -n \"Fireface 802 (12345678) Port 2\" oscmix  # Create virtual port\n");
-	fprintf(stderr, "  coremidiio -r -p 2 cat > output.mid                    # Record MIDI to file\n\n");
+	fprintf(stderr, "  coremidiio -r -p 2 cat > output.mid                    # Record MIDI to file\n");
+	fprintf(stderr, "  coremidiio -p 2 ssh usr@mylinux alsaseqio              # Bridge CoreMIDI port to ALSA sequencer port via ssh to Linux host\n\n");
 	fprintf(stderr, "File descriptor modes:\n");
 	fprintf(stderr, "  -r: Read from port, write MIDI to fd (default: 7)\n");
 	fprintf(stderr, "  -w: Read MIDI from fd (default: 6), write to port\n");

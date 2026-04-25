@@ -186,6 +186,25 @@ static enum control regtoctl(int reg, struct param *p) {
 		case 0x3F01: return HARDWARE_DSPSTATUS;
 		case 0x3F02: return HARDWARE_DSPAVAIL;
 
+		// TODO: investigate these regs - so its just a stub for now
+/*		case 0x3580: return DUREC_STATUS;
+		case 0x3581: return DUREC_TIME;
+		case 0x3582: return UNKNOWN;
+		case 0x3583: return DUREC_USBLOAD;
+		case 0x3584: return DUREC_TOTALSPACE;
+		case 0x3585: return DUREC_FREESPACE;
+		case 0x3586: return DUREC_NUMFILES;
+		case 0x3587: return DUREC_FILE;
+		case 0x3588: return DUREC_NEXT;
+		case 0x3589: return DUREC_RECORDTIME;
+		case 0x358A: return DUREC_INDEX;
+		case 0x358B: return DUREC_NAME0;
+		case 0x358C: return DUREC_NAME1;
+		case 0x358D: return DUREC_NAME2;
+		case 0x358E: return DUREC_NAME3;
+		case 0x358F: return DUREC_INFO;
+		case 0x3590: return DUREC_LENGTH;
+*/
 		case 0x3F9E: return SETUP_ARCLEDS;
 
 		default:     return UNKNOWN;
@@ -330,6 +349,13 @@ ctltoreg(enum control ctl, const struct param *p)
 		case HARDWARE_DSPAVAIL:       return 0x3F02;
 
 		case SETUP_STORE:             return 0x3F97;
+			
+		case DUREC_CONTROL:           return 0x3F9A;
+		case DUREC_DELETE:            return 0x3F9B;
+		case DUREC_FILE:              return 0x3F9C;
+		case DUREC_SEEK:              return 0x3F9D;
+		case DUREC_PLAYMODE:          return 0x3FA0;
+
 
 		case REFRESH:                 return 0x3F99;
 		default:                      break;

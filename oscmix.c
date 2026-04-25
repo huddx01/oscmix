@@ -146,9 +146,8 @@ setreg(unsigned reg, unsigned val)
 	unsigned par;
 
 	val &= 0xffff;
-	if (dflag && reg != 0x3f00) fprintf(stderr, "setreg %.4X %.4X\n", reg, val);
-	// debug for webui
-	//if (reg != 0x3f00) fprintf(stderr, "WEBUI: setreg %.4X %.4X\n", reg, val);
+	if (dflag >= 3 && (reg != 0x3f00 || dflag >= 4))
+		fprintf(stderr, "[DEBUG L%d] setreg [%.4X]=%.4X\n", dflag, reg, val);
 	regval = (reg & 0x7fff) << 16 | val;
 	par = regval >> 16 ^ regval;
 	par ^= par >> 8;
@@ -166,8 +165,9 @@ static void
 setval(struct context *ctx, int val)
 {
 	int reg;
-
 	reg = device->ctltoreg(ctx->node->ctl, &ctx->param);
+	if (dflag >= 2)
+		fprintf(stderr, "[DEBUG L%d] setval: reg=0x%04X val=0x%04X\n", dflag, reg, val);
 	if (reg != -1)
 		setreg(reg, val);
 }
@@ -295,12 +295,8 @@ setmixlevel(const struct input *in, const struct output *out, float level)
 
 		val = channel_bit | val_bits;
 
-		if (dflag)
-			fprintf(stderr, "setmixlevel [V2] in=%d out=%d reg=0x%04X"
-					" ch=%s db=%.1f val_bits=0x%03X full=0x%04lX\n",
-					p.in, p.out, reg,
-					channel_bit ? "R" : "L",
-					db, val_bits, val);
+		if (dflag >= 3)
+			fprintf(stderr, "[DEBUG L%d] setmixlevel [V2] in=%d out=%d reg=0x%04X ch=%s db=%.1f val_bits=0x%03X full=0x%04lX\n" ,dflag, p.in, p.out, reg, channel_bit ? "R" : "L", db, val_bits, val);
 	} else {
 		/* UCX II / FF802 format: signed linear amplitude */
 		val = lroundf(level * 0x8000);
@@ -309,9 +305,8 @@ setmixlevel(const struct input *in, const struct output *out, float level)
 		if (val > 0x4000)
 			val = (val >> 3) - 0x8000;
 
-		if (dflag)
-			fprintf(stderr, "setmixlevel [V1] in=%d out=%d reg=0x%X val=0x%lX (level=%.3f)\n",
-					p.in, p.out, reg, val, level);
+		if (dflag >= 3)
+			fprintf(stderr, "[DEBUG L%d] setmixlevel [V1] in=%d out=%d reg=0x%X val=0x%lX (level=%.3f)\n", dflag, p.in, p.out, reg, val, level);
 	}
 
 	setreg(reg, val);
@@ -337,9 +332,8 @@ setmixpan(const struct input *in, const struct output *out, int pan)
 	 * R100=100=0x64, center=0, L100=-100=0x9C */
 	val = 0x4000 | (pan & 0xFF);
 
-	if (dflag)
-		fprintf(stderr, "setmixpan [V2] in=%d out=%d reg=0x%04X pan=%d val=0x%04lX\n",
-				p.in, p.out, reg, pan, val);
+	if (dflag >= 3)
+		fprintf(stderr, "[DEBUG L%d] setmixpan [V2] in=%d out=%d reg=0x%04X pan=%d val=0x%04lX\n", dflag, p.in, p.out, reg, pan, val);
 
 	setreg(reg, val);
 }
@@ -553,9 +547,8 @@ newname(struct context *ctx, int val)
 
 	/* Validate offset (should be 0-10 for 6 registers = 12 bytes) */
 	if (off < 0 || off > 10) {
-		if (dflag)
-			fprintf(stderr, "newname: invalid offset %d (reg=0x%X, basereg=0x%X)\n",
-					off, ctx->reg, basereg);
+		if (dflag >= 2)
+			fprintf(stderr, "[DEBUG L%d] newname: invalid offset %d (reg=0x%X, basereg=0x%X)\n", dflag, off, ctx->reg, basereg);
 		return;
 	}
 
@@ -612,7 +605,8 @@ setoutputloopback(struct context *ctx, struct oscmsg *msg)
 	unsigned char buf[4], sysexbuf[7 + 5];
 
 	val = oscgetint(msg);
-	fprintf(stderr, "setoutputloopback: val = %d, param.in = %d\n", val, ctx->param.in);
+	if (dflag >= 2)
+		fprintf(stderr, "[DEBUG L%d] setoutputloopback: val = %d, param.in = %d\n", dflag, val, ctx->param.in);
 	if (oscend(msg) != 0)
 		return;
 	putle32(buf, val << 7 | ctx->param.in);
@@ -701,16 +695,16 @@ setpan(const struct output *out, const struct input *in, int pan)
 	p.out = out - outputs;
 	reg = device->ctltoreg(MIX, &p);
 	if (reg == -1) {
-		if (dflag)
-			fprintf(stderr, "setpan in=%d out=%d pan=%d -> no MIX reg\n",
-					p.in, p.out, pan);
+		if (dflag >= 2)
+			fprintf(stderr, "[DEBUG L%d] setpan: in=%d out=%d pan=%d -> no MIX reg\n",
+					dflag, p.in, p.out, pan);
 		return;
 	}
 	val = (pan & 0x7fff) | 0x8000;
 
-	if (dflag)
-		fprintf(stderr, "setpan in=%d out=%d reg=0x%04X pan=%d val=0x%04X\n",
-				p.in, p.out, reg, pan, (unsigned)val & 0xffff);
+	if (dflag >= 2)
+		fprintf(stderr, "[DEBUG L%d] setpan: in=%d out=%d reg=0x%04X pan=%d val=0x%04X\n",
+				dflag, p.in, p.out, reg, pan, (unsigned)val & 0xffff);
 
 	setreg(reg, val);
 }
@@ -903,9 +897,9 @@ setmix(struct context *ctx, struct oscmsg *msg)
 	}
 	if (oscend(msg) != 0)
 		return;
-	if (dflag)
-		fprintf(stderr, "setmix: out=%lu(%s) in=%lu(%s) vol=%.1fdB pan=%d width=%d\n",
-				(unsigned long)(out - outputs) + 1, out->name,
+	if (dflag >= 1)
+		fprintf(stderr, "[DEBUG L%d] setmix: out=%lu(%s) in=%lu(%s) vol=%.1fdB pan=%d width=%d\n",
+				dflag, (unsigned long)(out - outputs) + 1, out->name,
 				(unsigned long)(in - inputs) + 1, in->name,
 				level.vol > 0 ? 20.f * log10f(level.vol) : -INFINITY,
 				level.pan, level.width);
@@ -950,9 +944,9 @@ newmix(struct context *ctx, int val)
 		if (level.vol > 2)
 			level.vol = 2;
 	}
-	if (dflag)
-		fprintf(stderr, "newmix: out=%d(%s) in=%d(%s) %s=%d -> vol=%.1fdB pan=%d\n",
-				ctx->param.out + 1, out->name,
+	if (dflag >= 1)
+		fprintf(stderr, "[DEBUG L%d] newmix: out=%d(%s) in=%d(%s) %s=%d -> vol=%.1fdB pan=%d\n",
+				dflag, ctx->param.out + 1, out->name,
 				ctx->param.in + 1, in->name,
 				ispan ? "pan" : "vol", val,
 				level.vol > 0 ? 20.f * log10f(level.vol) : -INFINITY,
@@ -995,33 +989,6 @@ newsamplerate(struct context *ctx, int val)
 		oscsend(ctx->addr, ",i", rate);
 }
 
-// see register in maptree (line 1483) why this is commented out...
-/*
- static void
- setregs(struct context *ctx, struct oscmsg *msg)
- {
- int reg, val;
-
- while (*msg->type) {
- if (*msg->type != 'i') {
- msg->err = "expected integer for register";
- break;
- }
- reg = oscgetint(msg);
- if (msg->err) break;
-
- if (*msg->type != 'i') {
- msg->err = "expected integer for value";
- break;
- }
- val = oscgetint(msg);
- if (msg->err) break;
-
- setreg(reg, val);
- }
- oscend(msg);
- }
- */
 static void
 newmeter(struct context *ctx, int val)
 {
@@ -1057,12 +1024,20 @@ newdurecstatus(struct context *ctx, int val)
 	if (status != durec.status) {
 		durec.status = status;
 		oscsendenum("/durec/status", status, names, LEN(names));
+		if (dflag >= 3)
+			fprintf(stderr, "[DEBUG L%d] newdurecstatus: status=%d names=%s\n",
+					dflag, status, names[status]);
 	}
 	position = (val >> 8) * 100 / 65;
 	if (position != durec.position) {
 		durec.position = position;
 		oscsend("/durec/position", ",i", position);
+		if (dflag >= 3)
+			fprintf(stderr, "[DEBUG L%d] newdurecstatus: position=%d\n",
+					dflag, position);
 	}
+
+
 }
 
 static void
@@ -1258,12 +1233,23 @@ setdurecstop(struct context *ctx, struct oscmsg *msg)
 {
 	if (oscend(msg) != 0)
 		return;
+	setval(ctx, 0x8121);
+}
+
+static void
+setdurecstoprecord(struct context *ctx, struct oscmsg *msg)
+{
+	if (oscend(msg) != 0)
+		return;
 	setval(ctx, 0x8120);
 }
 
 static void
 setdurecplay(struct context *ctx, struct oscmsg *msg)
 {
+	if (dflag >= 3)
+		fprintf(stderr, "[DEBUG L%d] setdurecplay: ctx=%p msg=%p\n",
+				dflag, (void *)ctx, (void *)msg);
 	if (oscend(msg) != 0)
 		return;
 	setval(ctx, 0x8123);
@@ -1310,7 +1296,9 @@ setsetuparcleds(struct context *ctx, struct oscmsg *msg)
 	setval(ctx, val);
 }
 
-/* djb2 hash of s, formatted as "Device Name (XXXXXXXX)" into buf. */
+// djb2 hash of s, formatted as "Device Name (XXXXXXXX)" into buf.
+// gets called if for whatever reason no serial could be dtermined,
+// a unique-id is needed by clients to separte multimple devices of same id.
 static void
 uidfromport(const char *port, char *buf, size_t bufsz)
 {
@@ -1320,6 +1308,21 @@ uidfromport(const char *port, char *buf, size_t bufsz)
 	while (*p)
 		h = h * 33 ^ *p++;
 	snprintf(buf, bufsz, "%s (%08X)", device->name, h);
+}
+
+static void
+setdebug(struct context *ctx, struct oscmsg *msg)
+{
+	int dlvl;
+
+	(void)ctx;
+	dlvl = oscgetint(msg);
+	if (oscend(msg) != 0)
+		return;
+	if (dlvl < 0) dlvl = 0;
+	if (dlvl > DFLAG_MAX) dlvl = DFLAG_MAX;
+	dflag = dlvl;
+	fprintf(stderr, "[DEBUG] is now: [DEBUG L%d]\n", dflag);
 }
 
 static void
@@ -1335,12 +1338,12 @@ setrefresh(struct context *ctx, struct oscmsg *msg)
 	oscsend("/device/id",   ",s", device->id);
 	oscsend("/device/name", ",s", device->name);
 	oscsend("/device/uid",  ",s", deviceuid);
-
 	oscsend("/device/flags", ",i", device->flags);
 	oscsend("/device/inputs", ",i", device->inputslen);
 	oscsend("/device/outputs", ",i", device->outputslen);
 
 	/* Send per-channel info so clients can configure their UI */
+	// TODO: Rethink - it might make sense to send the default channel names
 	for (i = 0; i < device->inputslen; ++i) {
 		const struct channelinfo *ch = &device->inputs[i];
 		snprintf(addr, sizeof addr, "/input/%d/flags", i + 1);
@@ -1504,6 +1507,7 @@ static const struct node roottree[] = {
 		{"record", INPUT_RECORD, .set=setbool, .new=newbool},
 		{"name", NAME, .set=setname, .new=newname},
 		{"playchan", INPUT_PLAYCHAN, .set=setint, .new=newint, .min=1, .max=60},
+		{"width", INPUT_WIDTH, .set=setint, .new=newint, .min=-100, .max=100},
 		{"msproc", INPUT_MSPROC, .set=setbool, .new=newbool},
 		{"phase", INPUT_PHASE, .set=setbool, .new=newbool},
 		{"gain", INPUT_GAIN, .set=setinputgain, .new=newinputgain},
@@ -1524,6 +1528,7 @@ static const struct node roottree[] = {
 		{"fx", OUTPUT_FXRETURN, .set=setfixed, .new=newfixed, .scale=0.1, .min=-65.0, .max=0.0},
 		{"stereo", OUTPUT_STEREO, .set=setbool, .new=newoutputstereo},
 		{"record", OUTPUT_RECORD, .set=setbool, .new=newbool},
+		{"width", OUTPUT_WIDTH, .set=setint, .new=newint, .min=-100, .max=100},
 		{"name", NAME, .set=setname, .new=newname},
 		{"playchan", OUTPUT_PLAYCHAN, .set=setint, .new=newint},
 		{"phase", OUTPUT_PHASE, .set=setbool, .new=newbool},
@@ -1688,10 +1693,11 @@ static const struct node roottree[] = {
 		{0},
 	}},
 	{"durec", .tree=(const struct node[]){
-		{"play", .set=setdurecplay},
-		{"stop", .set=setdurecstop},
-		{"record", .set=setdurecrecord},
-		{"delete", .set=setdurecdelete},
+		{"play", DUREC_CONTROL, .set=setdurecplay},
+		{"stop", DUREC_CONTROL, .set=setdurecstop},
+		{"record", DUREC_CONTROL, .set=setdurecrecord},
+		{"stoprecord", DUREC_CONTROL, .set=setdurecstoprecord},
+		{"delete", DUREC_DELETE, .set=setdurecdelete},
 		{"file", DUREC_FILE, .set=setdurecfile, .new=newdurecfile},
 		{NULL, DUREC_STATUS, .new=newdurecstatus},
 		{NULL, DUREC_TIME, .new=newdurectime},
@@ -1710,12 +1716,7 @@ static const struct node roottree[] = {
 		{NULL, DUREC_LENGTH, .new=newdureclength},
 		{0},
 	}},
-
-	// {"register", -1, .set=setregs},	// generates stack overflow inside maptree() because node->ctl will be -1
-	// correct - michaelforney removed this in https://github.com/michaelforney/oscmix/commit/42372e8decf30ead9e4d0134b3f05c7efa7b2aad
-	// I reimplemented this to be able to set regs/vals from webui for debugging/testing purposes.
-	// But its not really necessary -> commented out the function in (line 836)
-
+	{"debug", .set=setdebug},
 	{"refresh", REFRESH, .set=setrefresh},
 	{0},
 };
@@ -1866,25 +1867,22 @@ handleregs(uint_least32_t *payload, size_t len)
 		val = (long)((payload[i] & 0xffff) ^ 0x8000) - 0x8000;
 
 		/* Debug: Print NAME range registers with their values */
-		if (reg >= 0x2800 && reg < 0x2C00) {
-			fprintf(stderr, "DEBUG handleregs: reg=0x%04X, val=0x%04X (%d)\n", reg, val & 0xFFFF, val);
-		}
+		//if (reg >= 0x2800 && reg < 0x2C00) {
+		//	fprintf(stderr, "DEBUG handleregs: reg=0x%04X, val=0x%04X (%d)\n", reg, val & 0xFFFF, val);
+		//}
 
 		ctx.param.in = ctx.param.out = -1;
 		ctx.reg = reg;  /* Store actual register number */
 		ctl = device->regtoctl(reg, &ctx.param);
 		if (ctl == -1) {
-			if (dflag)
-				fprintf(stderr, "[%.4X]=%.4X\n", reg, val & 0xFFFFU);
+			if (dflag >= 4)
+				fprintf(stderr, "[DEBUG L%d] handleregs: ctl=-1 for [%.4X]=%.4X\n", dflag, reg, val & 0xFFFFU);
 			continue;
 		}
 		if (ctl == UNKNOWN)
 			continue;
 		assert(ctl < LEN(nodeindex));
 		assert(nodeindex[ctl][0] != 0xFF);
-
-		if (dflag)
-			fprintf(stderr, "handleregs verbose %.4X %.4X\n", reg, val);
 
 		ctx.addrpos = addr;
 		tree = roottree;
@@ -1903,6 +1901,17 @@ handleregs(uint_least32_t *payload, size_t len)
 			}
 			tree = node->tree;
 		}
+		if (dflag >= 2 &&
+			ctl != HARDWARE_DSPVERLOAD &&
+			ctl != HARDWARE_DSPAVAIL &&
+			ctl != HARDWARE_DSPSTATUS &&
+			ctl != HARDWARE_ARCDELTA &&
+			ctl != HARDWARE_ARCBUTTONS){
+				fprintf(stderr,  "[DEBUG L%d] handleregs: [%.4X]=%.4X  addr=%s  param.in=%d param.out=%d control=%u \n", dflag,	reg, val & 0xFFFFU, addr, ctx.param.in, ctx.param.out, ctx.node->ctl);
+		}
+		//if (dflag >= 4 && reg <= 0x4000 ){
+		//		fprintf(stderr, "[DEBUG L%d] handleregs: [%.4X]=%.4X  addr=%s  param.in=%d param.out=%d control=%u \n", dflag, reg, val & 0xFFFFU, addr, ctx.param.in, ctx.param.out, ctx.node->ctl);
+		//}
 	}
 }
 
@@ -2062,7 +2071,7 @@ init(const char *port)
 	 * Uses only the first '(' / ')' pair to handle formats like:
 	 *   "Fireface UCX II (12345678):Fireface UCX II (12345678) Port 2"
 	 *   "Fireface UCX II (12345678) 16:1"
-	 * Falls back to a deterministic djb2 hash when no serial is present. */
+	 * Falls back to a deterministic djb2 hash (uidfromport) when no serial is present. */
 	{
 	const char *open  = strchr(port, '(');
 	const char *close = open ? strchr(open, ')') : NULL;
@@ -2078,7 +2087,6 @@ init(const char *port)
 		uidfromport(port, deviceuid, sizeof deviceuid);
 	}
 	}
-
 	fprintf(stderr, "Device Name: %s (ID: %s)\n", device->name, device->id);
 	fprintf(stderr, "Device UID:  %s\n", deviceuid);
 	fprintf(stderr, "MIDI Port:   %s\n", port);
