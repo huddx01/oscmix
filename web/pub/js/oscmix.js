@@ -524,11 +524,12 @@ class Interface {
 			iface.send("/durec/play", ",", []);
 		});
 		document.getElementById("durec-record").addEventListener("click", () => {
-			iface.send("/durec/record", ",i", [1]);
+			iface.send("/durec/record", ",", []);
 		});
 
 		document.getElementById("durec-stop").addEventListener("click", () => {
-			iface.send("/durec/stop", ",i", [1]);
+			iface.send("/durec/stop", ",", []);
+			iface.send("/durec/stoprecord", ",", []);
 		});
 
 		document.getElementById("durec-delete").addEventListener("click", () => {
