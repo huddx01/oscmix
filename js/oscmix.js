@@ -37,7 +37,7 @@ let debugFlags = {
 	wasm: false
 };
 
-// Load debug flags from localStorage
+
 function loadDebugFlags() {
 	const saved = localStorage.getItem('debugFlags');
 	if (saved) {
@@ -46,19 +46,22 @@ function loadDebugFlags() {
 			debugFlags = { ...debugFlags, ...parsed };
 		} catch (e) {}
 	}
-	// Apply to checkboxes
+
 	for (const key in debugFlags) {
 		const cb = document.getElementById(`debug-${key}`);
 		if (cb) cb.checked = debugFlags[key];
 	}
+
+	const wasmLevel = parseInt(localStorage.getItem('debugWasmLevel') ?? '0', 10);
+	debugFlags.wasm = wasmLevel > 0;
+	const wasmLevelSelect = document.getElementById('debug-wasm-level');
+	if (wasmLevelSelect) wasmLevelSelect.value = 'd' + wasmLevel;
 }
 
-// Save debug flags to localStorage
 function saveDebugFlags() {
 	localStorage.setItem('debugFlags', JSON.stringify(debugFlags));
 }
 
-// Setup debug flag listeners
 function setupDebugListeners() {
 	for (const key in debugFlags) {
 		const cb = document.getElementById(`debug-${key}`);
@@ -68,6 +71,16 @@ function setupDebugListeners() {
 				saveDebugFlags();
 			});
 		}
+	}
+
+	const wasmLevelSelect = document.getElementById('debug-wasm-level');
+	if (wasmLevelSelect) {
+		wasmLevelSelect.addEventListener('change', (e) => {
+			const level = parseInt(e.target.value.replace('d', ''), 10);
+			debugFlags.wasm = level > 0;
+			localStorage.setItem('debugWasmLevel', level);
+			try { iface.send('/debug', ',i', [level]); } catch (_) {}
+		});
 	}
 }
 
@@ -335,6 +348,7 @@ class ConnectionMIDI extends AbortController {
 	constructor(input, output) {
 		super();
 		let instance;
+		let stderrBuf = "";
 		const imports = {
 			env: {
 				writeosc: function (buf, len) {
@@ -359,14 +373,22 @@ class ConnectionMIDI extends AbortController {
 					const text = new TextDecoder();
 					const memory = instance.exports.memory.buffer;
 					const iovs = new Uint32Array(memory, iovsPtr, 2 * iovsLen);
-					let stderr = "";
 					let length = 0;
 					for (let i = 0; i < iovs.length; i += 2) {
 						length += iovs[i + 1];
-						const iov = new Uint8Array(memory, iovs[i], iovs[i + 1]);
-						stderr += text.decode(iov);
+						stderrBuf += text.decode(new Uint8Array(memory, iovs[i], iovs[i + 1]));
 					}
-					if (debugFlags.wasm) console.debug("[WASM]", stderr.trimEnd());
+					if (debugFlags.wasm) {
+						let nl;
+						while ((nl = stderrBuf.indexOf('\n')) !== -1) {
+							console.debug("[WASM]", stderrBuf.slice(0, nl));
+							stderrBuf = stderrBuf.slice(nl + 1);
+						}
+					} else {
+						// discard complete lines even when logging is off
+						const last = stderrBuf.lastIndexOf('\n');
+						if (last !== -1) stderrBuf = stderrBuf.slice(last + 1);
+					}
 					new Uint32Array(memory, ret)[0] = length;
 					return 0;
 				},
