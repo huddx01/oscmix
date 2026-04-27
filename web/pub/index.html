@@ -1,19 +1,18 @@
 <!doctype html>
 <html lang="en">
 	<head>
+		<meta charset="UTF-8" />
 		<title>oscmix Generic</title>
-        
+		<link rel="icon" href="img/favicon.png" type="image/x-icon">
 		<link rel="preload" href="css/theme/tm_dark_hi.css" as="style" />
 		<link rel="stylesheet" href="css/theme/tm_dark_hi.css" />
 		<link rel="stylesheet" href="css/base.css" />
 
 		<link rel="preload" href="css/help.css" as="style" />
 		<link rel="stylesheet" href="css/help.css" media="print" onload="this.media='all'" />
-        <link rel="stylesheet" href="css/knob.css" />
-        
+		<link rel="stylesheet" href="css/knob.css" />
+
 		<link rel="modulepreload" href="js/oscmix.js" />
-		<link rel="modulepreload" href="js/param.js" />
-		<link rel="modulepreload" href="js/help.js" />
 	</head>
 	<body>
 		<template id="channel-template">
@@ -55,7 +54,7 @@
 						max="6"
 						step="0.1"
 						value="-65"
-						list="volume-values" />
+						/>
 						<div class="channel-panel-buttons">
 							<label class="toggle-button"
 								>S<input type="checkbox" class="channel-show-settings"
@@ -103,18 +102,11 @@
 						<label data-flags="gain">Gain
 							<div class="knob-target"></div>
 						</label>
-						<!--							<label data-flags="eq/band1gain">bg1-->
-						<!--								<div class="knob-target"></div>-->
-						<!--							</label>-->
 						<label data-flags="autoset">Autoset
 							<span>
 								<input type="checkbox" id="autoset" />
 							</span>
 						</label>
-						<!---->
-						<!--							<label data-flags="fx">FX-->
-						<!--								<div class="knob-target"></div>-->
-						<!--							</label>-->
 						<label>FX
 							<div class="fx-control">
 								<input
@@ -127,9 +119,6 @@
 								<input type="number" id="fx" min="-65" max="0" step="0.5" value="-65" />
 							</div>
 						</label>
-						<!--						<label id="fx">-->
-						<!--							<div class="knob-target"></div>-->
-						<!--						</label>-->
 						<label data-type="output">Crossfeed
 							<select id="crossfeed">
 								<option>Off</option>
@@ -184,22 +173,6 @@
 							<input id="eq/band1q" type="number" min="0.4" max="9.9" step="0.1" />
 							<input id="eq/band2q" type="number" min="0.4" max="9.9" step="0.1" />
 							<input id="eq/band3q" type="number" min="0.4" max="9.9" step="0.1" />
-							<!--
-							<label data-flags="eq/band1gain">bg1
-							<div class="knob-target"></div>
-							</label>
-							<osc-knob id="eq/band1gain" min="-20" max="20" step="0.5" value="0" unit="dB" size="40" position="bottom-right"></osc-knob>
-							<osc-knob id="eq/band2gain" min="-20" max="20" step="0.5" value="0" unit="dB" size="40"  position="bottom-right"></osc-knob>
-							<osc-knob id="eq/band3gain" min="-20" max="20" step="0.5" value="0" unit="dB" size="40" position="bottom-right"></osc-knob>
-							<div>Freq.</div>
-							<osc-knob id="eq/band1freq" min="20" max="20000" step="1" value="1000" unit="Hz" size="40"></osc-knob>
-							<osc-knob id="eq/band2freq" min="20" max="20000" step="1" value="1000" unit="Hz" size="40"></osc-knob>
-							<osc-knob id="eq/band3freq" min="20" max="20000" step="1" value="1000" unit="Hz" size="40"></osc-knob>
-							<div>Q</div>
-							<osc-knob id="eq/band1q" min="0.4" max="9.9" step="0.1" value="1.0" size="40"></osc-knob>
-							<osc-knob id="eq/band2q" min="0.4" max="9.9" step="0.1" value="1.0" size="40"></osc-knob>
-							<osc-knob id="eq/band3q" min="0.4" max="9.9" step="0.1" value="1.0" size="40"></osc-knob>
-							-->
 						</div>
 					</details>
 					<details open>
@@ -303,7 +276,7 @@
 
 			<details open>
 				<summary>
-					Gloobal
+					Global
 				</summary>
 				<form id="global">
 					<fieldset class="custom-form">
@@ -328,7 +301,6 @@
 							<label class="form-row">DSP Load
 								<span class="dsp-load-wrapper">
 									<meter id="hardware-dspload-meter" min="0" max="100" low="70" high="90" optimum="0"></meter>
-									<!--<output id="hardware-dspload"></output>-->
 								</span>
 							</label>
 							<label class="form-row">DSP Version<output id="hardware-dspvers"></output></label>
@@ -493,10 +465,11 @@
 					<label class="form-row">Time:<input type="range" id="durec-time" min="0" max="0" step="1" /></label>
 					<output id="durec-time-display">00:00:00</output>
 					<div class="durec-controls">
-						<button id="durec-play">▶❚❚</button>
-						<button id="durec-stop"> ■ </button>
-						<button id="durec-record"> ● </button>
-						<button id="durec-delete"> ✖ </button>
+						<button id="durec-play">Play Pause</button>
+						<button id="durec-stop">Stop</button>
+						<button id="durec-record">Rec</button>
+						<button id="durec-stoprecord">Rec Stop</button>
+						<button id="durec-delete">Del</button>
 					</div>
 				</fieldset>
 			</details>
@@ -731,10 +704,6 @@
 								<input id="load-button" type="button" value="Load" title="Load selected setup state from device (Doesn't work yet - needs to be implemented)" />
 						</fieldset>
 					</div>
-					<!--
-					<div class="store-action">
-					<button type="button" id="store-button" class="toggle-button">Store</button>
-					</div>-->
 				</form>
 			</details>
 			<hr />
@@ -763,6 +732,7 @@
 								<option value="css/theme/led_light.css">LED Light</option>
 								<option value="css/theme/default.css">Minimal</option>
 								<option value="css/theme/cust.css">Custom</option>
+							    <option value="css/theme/test.css">Test</option>
 							</select>
 						</label>
 					</fieldset>
@@ -799,7 +769,7 @@
 						<label class="form-row"  title="Logs Level-Meter OSC Messages in Broser Console. Floods the Console! Enable only if needed.">
 							OSC Levels
 							<div class="switch">
-								<input type="checkbox" id="debug-level"> />
+								<input type="checkbox" id="debug-level" />
 								<span class="slider"></span>
 							</div>
 						</label>
@@ -816,11 +786,11 @@
 						<label class="form-row" title="Debug log sent directly from oscmix(.wasm). Sends /debug ,i N to oscmix. 0=off 1=mix events 2=register detail 3=verbose (every setreg) 4=Full (Flood warning!)">
 							WASM Log
 							<select id="debug-wasm-level">
-								<option value="d0">L0 – Off</option>
-								<option value="d1">L1 – Mix Events</option>
-								<option value="d2">L2 – Reg Details</option>
-								<option value="d3">L3 – More Verbose</option>
-								<option value="d4">L4 – Full ⚠️</option>
+								<option value="d0">L0 - Off</option>
+								<option value="d1">L1 - Mix Events</option>
+								<option value="d2">L2 - Reg Details</option>
+								<option value="d3">L3 - More Verbose</option>
+								<option value="d4">L4 - Full (!)</option>
 							</select>
 						</label>
 					</fieldset>
@@ -843,15 +813,6 @@
 			</details>
 			<hr />
 		</div>
-		<!--
-		<datalist id="volume-values">
-			<option value="6" label="6 dB"></option>
-			<option value="0" label="0 dB"></option>
-			<option value="-6" label="-6 dB"></option>
-			<option value="-18" label="-18 dB"></option>
-			<option value="-42" label="-42 dB"></option>
-		</datalist>
-		-->
 		<datalist id="programkey-options">
 				<option>Default</option>
 				<option>Load Setup 1</option>
@@ -898,9 +859,9 @@
 				}
 			});
 		</script>
-		<script type="module" src="js/oscmix.js" defer></script>
+		<script type="module" src="js/oscmix.js"></script>
 		<script src="js/param.js" defer></script>
 		<script src="js/help.js" defer></script>
-		<script type="module" src="js/knob.js" defer></script>
+		<script type="module" src="js/knob.js"></script>
 	</body>
 </html>
