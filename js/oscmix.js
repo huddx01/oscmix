@@ -529,6 +529,9 @@ class Interface {
 
 		document.getElementById("durec-stop").addEventListener("click", () => {
 			iface.send("/durec/stop", ",", []);
+	
+		});
+		document.getElementById("durec-stoprecord").addEventListener("click", () => {
 			iface.send("/durec/stoprecord", ",", []);
 		});
 
@@ -874,7 +877,7 @@ class Channel {
 	]);
 
 	static submixChanged() {
-		event = new SubmixEvent("change");
+		const event = new SubmixEvent("change");
 		const selects = document.querySelectorAll("select.channel-volume-output");
 		const index = document.forms.view.elements.submix.value;
 		for (const select of selects) {
@@ -915,8 +918,6 @@ class Channel {
 				resetValue: gainMin,
 				sendDuringDrag: true,
 				sendInterval: 150,
-				borderColor: "#000000ab",
-				valueColor: "#ffcc00"
 			});
 
 			gainTarget.innerHTML = "";
@@ -944,10 +945,9 @@ class Channel {
 				size: 25,
 				step: 1,
 				resetValue: 0,
+				bipolar: true,
 				sendDuringDrag: true,
 				sendInterval: 150,
-				borderColor: "#000000ab",
-				valueColor: "orange"
 			});
 			panTarget.innerHTML = "";
 			panTarget.appendChild(panKnob.element);
@@ -1302,16 +1302,6 @@ class Channel {
 			iface.bind(prefix + "/solo", ",i", soloCheckbox, "checked", "change");
 		}
 
-		const muteEnable = document.getElementById("controlroom-muteenable");
-		muteEnable.addEventListener("change", () => {
-			document.body.classList.toggle("global-mute-enabled", muteEnable.checked);
-		});
-
-		const soloEnable = document.getElementById("main-soloenable");
-		soloEnable.addEventListener("change", () => {
-			document.body.classList.toggle("global-solo-enabled", soloEnable.checked);
-		});
-
 		const recordCheckbox = fragment.querySelector(".record-checkbox");
 		if (recordCheckbox) {
 			iface.bind(prefix + "/record", ",i", recordCheckbox, "checked", "change");
@@ -1404,22 +1394,6 @@ function updateConnectionStatus(connected, oscActive, deviceName) {
 			"*"
 		);
 	}
-}
-
-function handleStatusRequests() {
-	window.addEventListener("message", (event) => {
-		if (event.data.type === "REQUEST_STATUS_UPDATE") {
-			if (arcControlWindow && !arcControlWindow.closed) {
-				arcControlWindow.postMessage(
-					{
-						type: "CONNECTION_STATUS",
-						...connectionStatus
-					},
-					"*"
-				);
-			}
-		}
-	});
 }
 
 const iface = new Interface();
@@ -1619,6 +1593,15 @@ function setupInterface() {
 	document.forms.view.elements.submix.value = 0;
 	Channel.submixChanged();
 
+	const muteEnable = document.getElementById("controlroom-muteenable");
+	muteEnable.addEventListener("change", () => {
+		document.body.classList.toggle("global-mute-enabled", muteEnable.checked);
+	});
+	const soloEnable = document.getElementById("main-soloenable");
+	soloEnable.addEventListener("change", () => {
+		document.body.classList.toggle("global-solo-enabled", soloEnable.checked);
+	});
+
 	iface.bind("/reverb", ",i", document.getElementById("reverb-enabled"), "checked", "change");
 	const reverbType = document.getElementById("reverb-type");
 	const reverbRoomScale = document.getElementById("reverb-roomscale");
@@ -1768,6 +1751,7 @@ function setupInterface() {
 		["/durec/record", "durec-record"],
 		["/durec/play",   "durec-play"],
 		["/durec/stop",   "durec-stop"],
+		["/durec/stoprecord", "durec-stoprecord"],
 	]) {
 		const btn = document.getElementById(id);
 		iface.methods.set(addr, (args) => {
@@ -1835,30 +1819,23 @@ function setupInterface() {
 			arcControlWindow.focus();
 		} else {
 			arcControlWindow = window.open("arc.html", "ARC Control", "width=800,height=600");
-
-			window.addEventListener("message", (event) => {
-				if (event.origin !== window.location.origin) return;
-
-				if (event.data.type === "REQUEST_STATUS_UPDATE") {
-					if (arcControlWindow && !arcControlWindow.closed) {
-						arcControlWindow.postMessage(
-							{
-								type: "CONNECTION_STATUS",
-								...connectionStatus
-							},
-							"*"
-						);
-					}
-				} else if (event.data.type === "OSC_COMMAND") {
-					if (debugFlags.incoming && debugFlags.arc) {
-						console.debug("[ARC IN]", event.data.command, event.data.args);
-					}
-					iface.send(event.data.command, ",i", event.data.args);
-				}
-			});
 		}
 	});
-	handleStatusRequests();
+	window.addEventListener("message", (event) => {
+		if (event.origin !== window.location.origin) return;
+		if (event.data.type === "REQUEST_STATUS_UPDATE") {
+			if (arcControlWindow && !arcControlWindow.closed) {
+				arcControlWindow.postMessage({ type: "CONNECTION_STATUS", ...connectionStatus }, "*");
+			}
+		} else if (event.data.type === "OSC_COMMAND") {
+			if (debugFlags.incoming && debugFlags.arc) {
+				console.debug("[ARC IN]", event.data.command, event.data.args);
+			}
+			iface.send(event.data.command, ",i", event.data.args);
+		}
+	});
+	populateDeviceSpecificOptions();
+	applyDeviceFeatures();
 }
 
 function reinitializeUI() {
@@ -1942,19 +1919,12 @@ function populateDeviceSpecificOptions() {
 			opt.value = index;
 			standaloneMidiSelect.appendChild(opt);
 		});
-		if (currentDevice.hardware_standalonemidi.type === "bool") {
-			iface.bind("/hardware/standalonemidi", ",i", standaloneMidiSelect, "selectedIndex", "change");
-		} else {
-			iface.bind("/hardware/standalonemidi", ",i", standaloneMidiSelect, "selectedIndex", "change");
-		}
+		iface.bind("/hardware/standalonemidi", ",i", standaloneMidiSelect, "selectedIndex", "change");
 	}
 }
 
 document.addEventListener("DOMContentLoaded", () => {
 	setupInterface();
-	iface.initDurec();
-	setTimeout(populateDeviceSpecificOptions, 100);
-	applyDeviceFeatures();
 	loadDebugFlags();
 	setupDebugListeners();
 });

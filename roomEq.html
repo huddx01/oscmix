@@ -16,6 +16,11 @@
   <div class="toolbar">
     <div class="toolbar-left">
       <button class="bypass-btn state-on" id="bypassBtn" onclick="toggleBypass()">On</button>
+      <div id="stereoControls" class="stereo-controls" hidden>
+        <button id="sideLBtn" class="side-btn side-l active" onclick="setSide('L')">LEFT</button>
+        <button id="linkBtn"  class="link-btn"              onclick="toggleLink()">&#x1F517;</button>
+        <button id="sideRBtn" class="side-btn side-r"       onclick="setSide('R')">RIGHT</button>
+      </div>
       <div class="extra-knobs" id="extraKnobContainer"></div>
     </div>
     <div class="toolbar-right">
@@ -36,6 +41,6 @@
   </div>
 </div>
 <div class="tooltip" id="tooltip"></div>
-<script src="js/roomEq.js" defer></script>
+<script type="module" src="js/roomEq.js"></script>
 </body>
 </html>
