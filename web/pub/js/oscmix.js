@@ -1314,8 +1314,10 @@ class Channel {
 		if (type === Channel.OUTPUT) {
 			bridge.register(type, index, fragment);
 		}
-		// Hide Room EQ button and crossfeed select on devices without Room EQ.
-		// Must happen before the loop below strips all IDs from the fragment.
+		const crossfeedSelect = type === Channel.OUTPUT ? fragment.getElementById('crossfeed') : null;
+		const updateCrossfeedActive = crossfeedSelect ? () => {
+			crossfeedSelect.classList.toggle('is-active', crossfeedSelect.selectedIndex > 0);
+		} : null;
 		if (!(currentDevice?.hasRoomEq ?? true)) {
 			const roomeqBtn = fragment.getElementById('roomeq-show');
 			if (roomeqBtn) roomeqBtn.hidden = true;
@@ -1350,7 +1352,16 @@ class Channel {
 			}
 			node.removeAttribute("id");
 		}
-		// Register with FaderGroup so saved group membership is restored on connect.
+		if (crossfeedSelect && updateCrossfeedActive) {
+			const cfAddr = prefix + "/crossfeed";
+			const existing = iface.methods.get(cfAddr);
+			iface.methods.set(cfAddr, (args) => {
+				if (existing) existing(args);
+				updateCrossfeedActive();
+			});
+			crossfeedSelect.addEventListener('change', updateCrossfeedActive);
+			updateCrossfeedActive();
+		}
 		FaderGroup.registerChannel(channelKey, {
 			setValue(db) {
 				volumeRange.value = db;

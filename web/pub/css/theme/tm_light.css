@@ -521,7 +521,10 @@ input[type=range]:focus {
 }
 
 .channel:has(~ .channel-panel-eq :is(.eq, .lowcut):checked) .channel-show-eq-label,
-.channel:has(~ .channel-panel-dynamics :is(.dynamics, .autolevel):checked) .channel-show-dynamics-label {
+.channel:has(~ .channel-panel-dynamics :is(.dynamics, .autolevel):checked) .channel-show-dynamics-label,
+.channel:has(~ .channel-panel-settings :is(.loopback, .hi-z, .phantom):checked) .channel-show-settings-label,
+.channel:has(~ .channel-panel-settings :is(.roomeq, .crossfeed).is-active) .channel-show-settings-label,
+.roomeq.is-active {
 	box-shadow: inset 0 0 0.5em selecteditem;
 }
 

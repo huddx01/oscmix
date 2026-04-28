@@ -45,10 +45,16 @@ export class RoomEQBridge {
       const isFreq   = addr.endsWith('freq');
       const isBypass = /\/roomeq$/.test(addr);
       try {
-        if (isType || isFreq || isBypass) {
-          this.#iface.send(addr, ',i', [Math.round(value)]);
-        } else {
-          this.#iface.send(addr, ',f', [value]);
+        const sentValue = (isType || isFreq || isBypass) ? Math.round(value) : value;
+        this.#iface.send(addr, (isType || isFreq || isBypass) ? ',i' : ',f', [sentValue]);
+
+        const method = this.#iface.methods.get(addr);
+        if (method) method._cachedValue = sentValue;
+
+        if (isBypass) {
+          const channelKey = addr.slice(1, addr.lastIndexOf('/'));
+          const entry = this.#channels.get(channelKey);
+          if (entry?.button) entry.button.classList.toggle('is-active', !!sentValue);
         }
       } catch (err) {
         console.warn('[RoomEQBridge] send failed:', addr, err);
@@ -65,8 +71,6 @@ export class RoomEQBridge {
     const channelKey = `${type}/${index + 1}`;
     const prefix     = `/${channelKey}`;
 
-    // Keep reference to stereo checkbox so we can check at popup-open time.
-    // The element stays in the DOM (only its id attribute is stripped later).
     const stereoInput = fragment.getElementById('stereo');
 
     const entry = { popup: null, button: null, stereoInput };
@@ -81,10 +85,16 @@ export class RoomEQBridge {
     for (const param of ROOMEQ_PARAMS) {
       const addr     = `${prefix}/${param}`;
       const existing = this.#iface.methods.get(addr);
-      this.#iface.methods.set(addr, (args) => {
+      const isBypass = param === 'roomeq';
+      const wrapped = (args) => {
+        wrapped._cachedValue = args[0];
         if (existing) existing(args);
+        if (isBypass && entry.button) {
+          entry.button.classList.toggle('is-active', !!args[0]);
+        }
         this.#forwardToPopup(channelKey, addr, args[0]);
-      });
+      };
+      this.#iface.methods.set(addr, wrapped);
     }
   }
 
@@ -108,7 +118,7 @@ export class RoomEQBridge {
     const popup  = window.open(url, `roomEq_${channelKey}`, 'width=1190,height=700,resizable=yes,scrollbars=no');
     entry.popup  = popup;
 
-    // Share the same popup with the right channel so OSC is forwarded there too
+
     if (rightEntry) rightEntry.popup = popup;
 
     if (!popup) {
