@@ -644,19 +644,24 @@ function deletePreset() {
 presetSelect.addEventListener('change', () => {
 	const n=presetSelect.value;
 	if(!n||!presets[n]) return;
-	presets[n].forEach((src,i) => Object.assign(activeBands()[i],src));
+	const sides = linked ? (isStereo ? ['L','R'] : ['L']) : [activeSide];
+	for (const side of sides) {
+		presets[n].forEach((src,i) => Object.assign(state[side].bands[i],src));
+	}
 	FULL_CHOICE_BANDS.forEach(i => {
 		const s=document.getElementById(`ftype-${i}`); if(s) s.value=activeBands()[i].type;
 	});
 	syncKnobsFromBands();
 	drawEQ();
+	notifyOSC_allBands(sides);
 });
 
 // ------------------------------------------------
 //  RESET / BYPASS
 // ------------------------------------------------
 function resetEQ() {
-	for (const side of (isStereo ? ['L','R'] : ['L'])) {
+	const sides = isStereo ? ['L','R'] : ['L'];
+	for (const side of sides) {
 		state[side].bands.forEach((b,i) => {b.gain=DEFAULT_GAIN;b.freq=DEFAULT_FREQS[i];b.q=DEFAULT_Q;b.type='Bell';});
 		state[side].delay=0.00; state[side].volCal=0.00;
 	}
@@ -666,6 +671,7 @@ function resetEQ() {
 	syncKnobsFromBands();
 	syncExtraKnobs();
 	drawEQ();
+	notifyOSC_all(sides);
 }
 
 function updateBypassBtn() {
@@ -795,6 +801,7 @@ function importJSON(event) {
 			syncKnobsFromBands();
 			syncExtraKnobs();
 			drawEQ();
+			notifyOSC_all([activeSide]);
 		} catch(err){alert('File Read Error: '+err.message);}
 	};
 	reader.readAsText(file);
@@ -906,11 +913,14 @@ function importTmreq(event) {
 				channels.push({name:tagName,text:inner.slice(start,end+close.length)});
 			}
 			if (channels.length===0){alert('No channels found in .tmreq file.');return;}
+			let appliedSides;
 			if (channels.length===1){
 				applyTmreqData(parseTmreqChannel(channels[0].text), activeSide);
+				appliedSides = [activeSide];
 			} else if (channels.length>=2 && isStereo) {
 				applyTmreqData(parseTmreqChannel(channels[0].text), 'L');
 				applyTmreqData(parseTmreqChannel(channels[1].text), 'R');
+				appliedSides = ['L','R'];
 			} else {
 				const names=channels.map(ch=>ch.name);
 				const choice=prompt(`Found ${names.length} channels:\n${names.map((n,i)=>`  ${i+1}. ${n}`).join('\n')}\n\nEnter channel number to import:`);
@@ -918,11 +928,14 @@ function importTmreq(event) {
 				const idx=parseInt(choice)-1;
 				if (isNaN(idx)||idx<0||idx>=channels.length){alert('Invalid selection.');return;}
 				applyTmreqData(parseTmreqChannel(channels[idx].text), activeSide);
+				appliedSides = [activeSide];
 			}
 			FULL_CHOICE_BANDS.forEach(i=>{const s=document.getElementById(`ftype-${i}`);if(s) s.value=activeBands()[i].type;});
 			syncKnobsFromBands();
 			syncExtraKnobs();
 			drawEQ();
+			notifyOSC_allBands(appliedSides);
+			notifyOSC_allExtras(appliedSides);
 		} catch(err){alert('File Read Error: '+err.message);}
 	};
 	reader.readAsText(file);
@@ -976,11 +989,32 @@ function notifyOSC_extra(key, side) {
 }
 
 function notifyOSC_bypass() {
-	// Bypass is shared — send to both channels if stereo
 	for (const side of (isStereo ? ['L','R'] : ['L'])) {
 		const addr=oscAddr('roomeq', side);
 		if (addr) oscSend(addr, bypassed?0:1);
 	}
+}
+
+function notifyOSC_allBands(sides) {
+	for (let i=0; i<N; i++) {
+		notifyOSC_band(i, 'gain', sides);
+		notifyOSC_band(i, 'freq', sides);
+		notifyOSC_band(i, 'q',    sides);
+		if (FULL_CHOICE_BANDS.has(i)) notifyOSC_band(i, 'type', sides);
+	}
+}
+
+function notifyOSC_allExtras(sides) {
+	for (const side of sides) {
+		notifyOSC_extra('delay',  side);
+		notifyOSC_extra('volCal', side);
+	}
+}
+
+function notifyOSC_all(sides) {
+	notifyOSC_allBands(sides);
+	notifyOSC_allExtras(sides);
+	notifyOSC_bypass();
 }
 
 canvas.addEventListener('wheel', e => {
@@ -989,7 +1023,6 @@ canvas.addEventListener('wheel', e => {
 	if (hit>=0) notifyOSC_band(hit,'q', linked ? ['L','R'] : [activeSide]);
 },{passive:true,capture:true});
 
-// Inbound OSC from opener
 window.addEventListener('message', e => {
 	if (!e.data||e.data.type!=='ROOMEQ_OSC_RECV') return;
 	const {addr,value}=e.data;
