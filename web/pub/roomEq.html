@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Room EQ</title>
+<link rel="stylesheet" href="css/button.css">
 <link rel="stylesheet" href="css/roomEq.css">
 </head>
 <body>
@@ -15,11 +16,11 @@
   <div class="bands" id="bandsContainer"></div>
   <div class="toolbar">
     <div class="toolbar-left">
-      <button class="bypass-btn state-on" id="bypassBtn" onclick="toggleBypass()">On</button>
+      <span id="bypassBtnSlot"></span>
       <div id="stereoControls" class="stereo-controls" hidden>
-        <button id="sideLBtn" class="side-btn side-l active" onclick="setSide('L')">LEFT</button>
-        <button id="linkBtn"  class="link-btn"              onclick="toggleLink()">&#x1F517;</button>
-        <button id="sideRBtn" class="side-btn side-r"       onclick="setSide('R')">RIGHT</button>
+        <span id="sideLBtnSlot"></span>
+        <span id="linkBtnSlot"></span>
+        <span id="sideRBtnSlot"></span>
       </div>
       <div class="extra-knobs" id="extraKnobContainer"></div>
     </div>

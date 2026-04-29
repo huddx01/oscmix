@@ -169,7 +169,6 @@ regtoctl(int reg, struct param *p)
 		case 0x11A3: return OUTPUT_FXRETURN;
 		case 0x11A4: return OUTPUT_STEREO;
 		case 0x11A5: return OUTPUT_RECORD;
-		case 0x11A6: return OUTPUT_WIDTH; //TODO: verify
 		case 0x11A7: return OUTPUT_PLAYCHAN;
 		case 0x11A8: return OUTPUT_PHASE;
 		case 0x11A9: return OUTPUT_REFLEVEL;
@@ -325,7 +324,6 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case OUTPUT_FXRETURN:    reg = 0x03; goto channel;
 		case OUTPUT_STEREO:      reg = 0x04; goto channel;
 		case OUTPUT_RECORD:      reg = 0x05; goto channel;
-		case OUTPUT_WIDTH:       reg = 0x06; goto channel;	//TODO: verify
 		case OUTPUT_PLAYCHAN:    reg = 0x07; goto channel;
 		case OUTPUT_PHASE:       reg = 0x08; goto channel;
 		case OUTPUT_REFLEVEL:    if (!(flags & OUTPUT_HAS_REFLEVEL)) break;
@@ -360,7 +358,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case AUTOLEVEL_HEADROOM: reg = 0x26; goto channel;
 		case AUTOLEVEL_RISETIME: reg = 0x27; goto channel;
 		channel:                      if (idx == -1) break;
-		return idx * 0x30 | reg;
+		return idx * 0x30 + reg;
 		case NAME:
 			if (idx == -1) break;
 			return 0x2800 + (idx << 3);

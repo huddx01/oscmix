@@ -1,0 +1,205 @@
+/*
+ * channelEqPopup.css — layout for the channelEq.html popup window.
+ * Reuses the same color tokens as roomEq.css so visuals stay consistent.
+ */
+
+:root {
+	--clr-accent:        #e87c2a;
+	--clr-accent-bright: #ff9940;
+	--clr-accent-dim:    #b85c14;
+	--clr-bg-page:       #1a1a1a;
+	--clr-bg-container:  #111;
+	--clr-bg-canvas:     #0d0d0d;
+	--clr-bg-band:       #181818;
+	--clr-bg-btn:        #222;
+	--clr-border-strong: #444;
+	--clr-border-mid:    #333;
+	--clr-border-subtle: #2a2a2a;
+	--clr-border-hover:  #555;
+	--clr-text-primary:  #ccc;
+	--clr-text-muted:    #aaa;
+	--clr-text-dim:      #888;
+	--clr-text-faint:    #666;
+	--clr-text-off:      #555;
+	--clr-text-dark:     #111;
+	--clr-canvas-grid-zero:   #2e2e2e;
+	--clr-canvas-grid-normal: #191919;
+	--clr-canvas-grid-label:  #333;
+	--clr-knob-track:        #333;
+	--clr-knob-accent:       var(--clr-accent);
+	--clr-knob-accent-bright:var(--clr-accent-bright);
+	--clr-knob-value:        var(--clr-text-muted);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+	background: var(--clr-bg-page);
+	color: var(--clr-text-primary);
+	font-family: 'Segoe UI', Arial, sans-serif;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	height: 100vh;
+	padding: 14px;
+	user-select: none;
+}
+
+h1 {
+	font-size: 12px;
+	letter-spacing: 3px;
+	text-transform: uppercase;
+	color: var(--clr-accent);
+	margin-bottom: 10px;
+}
+
+/* Container fills remaining vertical space; canvas stretches, bands row is fixed. */
+.cheq-container {
+	background: var(--clr-bg-container);
+	border: 1px solid var(--clr-border-mid);
+	border-radius: 6px;
+	padding: 14px;
+	width: 100%;
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	box-shadow: 0 0 30px rgba(0,0,0,0.8);
+}
+
+/* Toolbar (EQ bypass) */
+.cheq-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+#eqCanvas {
+	width: 100%;
+	flex: 1 1 auto;
+	min-height: 140px;
+	background: var(--clr-bg-canvas);
+	border: 1px solid var(--clr-border-subtle);
+	border-radius: 4px;
+	cursor: crosshair;
+	display: block;
+}
+
+/* Bands row: LC column on the left, then B1/B2/B3 columns. */
+.cheq-bands {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+}
+
+/* LowCut column ----------------------------------------------------- */
+.lc-col {
+	background: var(--clr-bg-band);
+	border: 1px solid var(--clr-border-subtle);
+	border-radius: 4px;
+	padding: 8px 6px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	min-width: 96px;
+}
+.lc-col .btn { min-width: 64px; }
+
+.lc-knobs {
+	display: flex;
+	gap: 6px;
+}
+
+/* Band columns ------------------------------------------------------ */
+.band-cols {
+	display: flex;
+	flex: 1 1 auto;
+	gap: 6px;
+}
+
+.band {
+	flex: 1;
+	background: var(--clr-bg-band);
+	border: 1px solid var(--clr-border-subtle);
+	border-radius: 4px;
+	padding: 8px 6px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 5px;
+	min-width: 0;
+	transition: border-color .2s;
+}
+.band:hover { border-color: var(--clr-border-hover); }
+.band.active {
+	border-color: var(--band-accent, var(--clr-accent));
+	background: rgba(255,255,255,0.02);
+}
+
+.band-label {
+	font-size: 11px;
+	letter-spacing: 1px;
+	font-weight: bold;
+	text-transform: uppercase;
+	color: var(--band-accent, var(--clr-accent));
+}
+
+.filter-select {
+	width: 100%;
+	background: var(--clr-bg-container);
+	color: var(--clr-text-primary);
+	border: 1px solid var(--clr-border-mid);
+	border-radius: 3px;
+	padding: 2px;
+	font-size: 10px;
+	outline: none;
+	cursor: pointer;
+	text-align: center;
+}
+.filter-select:focus { border-color: var(--band-accent, var(--clr-accent)); }
+
+.type-fixed {
+	color: var(--clr-text-faint);
+	font-size: 10px;
+	font-style: italic;
+}
+
+/* Knobs ------------------------------------------------------------- */
+.knob-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+	gap: 1px;
+}
+.knob-label {
+	font-size: 9px;
+	color: var(--clr-text-faint);
+	letter-spacing: .5px;
+	text-transform: uppercase;
+}
+canvas.knob { cursor: ns-resize; display: block; }
+.knob-value {
+	font-size: 9px;
+	color: var(--knob-value-color, var(--clr-text-muted));
+	min-height: 12px;
+	text-align: center;
+}
+.band .knob-value { --knob-value-color: var(--band-accent, var(--clr-text-muted)); }
+
+/* Tooltip ----------------------------------------------------------- */
+.tooltip {
+	position: fixed;
+	display: none;
+	background: var(--clr-bg-container);
+	color: var(--clr-text-primary);
+	border: 1px solid var(--clr-accent);
+	border-radius: 3px;
+	padding: 3px 7px;
+	font-size: 11px;
+	pointer-events: none;
+	z-index: 1000;
+	white-space: nowrap;
+}

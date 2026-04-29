@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Channel EQ</title>
+<link rel="stylesheet" href="css/button.css">
+<link rel="stylesheet" href="css/channelEqPopup.css">
+</head>
+<body>
+
+<h1 id="title">EQ</h1>
+
+<div class="cheq-container">
+	<div class="cheq-toolbar">
+		<span id="bypassBtnSlot"></span>
+	</div>
+	<canvas id="eqCanvas"></canvas>
+	<div class="cheq-bands">
+		<!-- LowCut column populated in JS -->
+		<div class="lc-col" id="lcCol"></div>
+		<!-- Band 1, 2, 3 columns populated in JS -->
+		<div class="band-cols" id="bandCols"></div>
+	</div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+<script type="module" src="js/channelEq.js"></script>
+</body>
+</html>

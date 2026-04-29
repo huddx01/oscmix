@@ -1,0 +1,133 @@
+/*
+ * button.css — shared styles for the Button component (js/button.js).
+ *
+ * Tokens are read from the surrounding context with sensible fallbacks so the
+ * component renders identically whether it's used in the main app or in a
+ * standalone page like roomEq.html.
+ */
+
+.btn {
+	background: var(--clr-bg-btn, #222);
+	color: var(--clr-text-primary, #ccc);
+	border: 1px solid var(--clr-border-strong, #444);
+	border-radius: 4px;
+	padding: 5px 12px;
+	font-size: 11px;
+	cursor: pointer;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	transition: background-color .15s, color .15s, border-color .15s;
+	font-family: inherit;
+	line-height: 1.2;
+}
+
+.btn:hover {
+	background: var(--clr-accent, #e87c2a);
+	color:      var(--clr-text-dark, #111);
+	border-color: var(--clr-accent, #e87c2a);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Bypass (On/Off): orange when on, dark when off                            */
+/* ------------------------------------------------------------------------ */
+.btn-bypass {
+	min-width: 52px;
+}
+
+.btn-bypass.state-on {
+	background:   var(--clr-accent, #e87c2a);
+	color:        var(--clr-text-dark, #111);
+	border-color: var(--clr-accent, #e87c2a);
+}
+.btn-bypass.state-on:hover {
+	background:   var(--clr-accent-bright, #ff9940);
+	border-color: var(--clr-accent-bright, #ff9940);
+}
+
+.btn-bypass.state-off {
+	background:   var(--clr-bg-btn, #222);
+	color:        var(--clr-text-off, #555);
+	border-color: var(--clr-border-mid, #333);
+}
+.btn-bypass.state-off:hover {
+	background:   var(--clr-border-mid, #333);
+	color:        var(--clr-text-dim, #888);
+	border-color: var(--clr-border-strong, #444);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Toggle: generic on/off (used for misc toggle controls)                    */
+/* ------------------------------------------------------------------------ */
+.btn-toggle {
+	background:   var(--clr-bg-btn, #222);
+	color:        var(--clr-text-off, #555);
+	border-color: var(--clr-border-mid, #333);
+}
+.btn-toggle.is-active {
+	background:   var(--clr-accent, #e87c2a);
+	color:        var(--clr-text-dark, #111);
+	border-color: var(--clr-accent, #e87c2a);
+}
+.btn-toggle:not(.is-active):hover {
+	border-color: var(--clr-border-hover, #555);
+	color:        var(--clr-text-primary, #ccc);
+}
+.btn-toggle.is-active:hover {
+	background:   var(--clr-accent-bright, #ff9940);
+	border-color: var(--clr-accent-bright, #ff9940);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Side L / R: stereo channel selectors                                      */
+/* ------------------------------------------------------------------------ */
+.btn-side {
+	min-width: 52px;
+	background:   var(--clr-bg-btn, #222);
+	color:        var(--clr-text-off, #555);
+	border:       1px solid var(--clr-border-mid, #333);
+}
+.btn-side.side-l.active {
+	background:   var(--clr-left, #e87c2a);
+	color:        var(--clr-text-dark, #111);
+	border-color: var(--clr-left, #e87c2a);
+}
+.btn-side.side-r.active {
+	background:   var(--clr-right, #00ccee);
+	color:        var(--clr-text-dark, #111);
+	border-color: var(--clr-right, #00ccee);
+}
+.btn-side:not(.active):hover {
+	border-color: var(--clr-border-hover, #555);
+	color:        var(--clr-text-primary, #ccc);
+}
+.btn-side.side-r:not(.active):hover {
+	background:   var(--clr-right, #00ccee);
+	color:        var(--clr-text-dark, #111);
+	border-color: var(--clr-right, #00ccee);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Link: stereo link toggle                                                  */
+/* ------------------------------------------------------------------------ */
+.btn-link {
+	background:   var(--clr-bg-btn, #222);
+	border:       1px solid var(--clr-border-mid, #333);
+	border-radius: 4px;
+	padding: 5px 8px;
+	font-size: 13px;
+	line-height: 1;
+}
+.btn-link.linked {
+	background:   var(--clr-link, #44dd88);
+	color:        var(--clr-text-dark, #111);
+	border-color: var(--clr-link, #44dd88);
+}
+.btn-link.linked:hover {
+	background:   var(--clr-link-bright, #88ffbb);
+	border-color: var(--clr-link-bright, #88ffbb);
+}
+.btn-link:not(.linked):hover {
+	background:   rgba(68, 221, 136, 0.15);
+	border-color: var(--clr-link, #44dd88);
+	color:        var(--clr-link, #44dd88);
+}

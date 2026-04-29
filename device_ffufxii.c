@@ -342,7 +342,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case AUTOLEVEL_HEADROOM: reg = 0x25; goto channel;
 		case AUTOLEVEL_RISETIME: reg = 0x26; goto channel;
 			channel:                      if (idx == -1) break;
-			return idx * 0x30 | reg;
+			return idx * 0x30 + reg;
 		case NAME:
 			if (idx == -1) break;
 			return 0x2800 + (idx << 3);

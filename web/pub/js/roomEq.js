@@ -1,5 +1,8 @@
 "use strict";
-import { Knob } from './knob.js';
+import { Knob }      from './knob.js';
+import { Button }    from './button.js';
+import { EQGraph }   from './eqGraph.js';
+import { EQBandRow } from './eqBandRow.js';
 
 // ------------------------------------------------
 //  CONFIG
@@ -38,32 +41,6 @@ let activeSide = 'L';
 let linked     = false;
 
 // ------------------------------------------------
-//  THEME  (EQ canvas only — knobs use CLR above)
-// ------------------------------------------------
-function getTheme() {
-	const s = getComputedStyle(document.documentElement);
-	const v = name => s.getPropertyValue(name).trim();
-	return {
-		gridZero:           v('--clr-canvas-grid-zero'),
-		gridNormal:         v('--clr-canvas-grid-normal'),
-		gridLabel:          v('--clr-canvas-grid-label'),
-		accent:             v('--clr-accent'),
-		bandCurve:          v('--clr-canvas-band-curve'),
-		fillTop:            v('--clr-canvas-fill-top'),
-		fillBot:            v('--clr-canvas-fill-bot'),
-		bypassedFill:       v('--clr-canvas-bypassed'),
-		bypassedStroke:     v('--clr-canvas-bypassed-stroke'),
-		nodeRingActive:     v('--clr-canvas-node-ring-active'),
-		nodeRingInactive:   v('--clr-canvas-node-ring-inactive'),
-		nodeDrag:           v('--clr-accent-bright'),
-		nodeHover:          v('--clr-accent'),
-		nodeDefault:        v('--clr-accent-dim'),
-		nodeStroke:         v('--clr-accent-bright'),
-		nodeLabel:          v('--clr-text-dark'),
-	};
-}
-
-// ------------------------------------------------
 //  TMREQ TYPE MAP
 // ------------------------------------------------
 const TMREQ_TYPE_TO_NAME = { '0.00':'Bell', '1.00':'Shelving', '2.00':'Low Pass', '3.00':'High Pass' };
@@ -91,13 +68,6 @@ function activeBands()  { return state[activeSide].bands; }
 // ------------------------------------------------
 //  HELPERS
 // ------------------------------------------------
-function freqToNorm(f) {
-	return (Math.log10(f)-Math.log10(FREQ_MIN)) /
-	       (Math.log10(FREQ_MAX)-Math.log10(FREQ_MIN));
-}
-function normToFreq(n) {
-	return Math.pow(10, Math.log10(FREQ_MIN)+n*(Math.log10(FREQ_MAX)-Math.log10(FREQ_MIN)));
-}
 function formatFreq(f) {
 	return f>=1000 ? (f/1000).toFixed(f%1000===0?0:1)+' kHz' : Math.round(f)+' Hz';
 }
@@ -161,7 +131,7 @@ function updateAllKnobColors() {
 
 function updateDropdownColors() {
 	FULL_CHOICE_BANDS.forEach(i => {
-		const sel = document.getElementById(`ftype-${i}`);
+		const sel = eqBandRow.typeSelect(i);
 		if (!sel) return;
 		const typeEqual = isStereo && state.L.bands[i].type === state.R.bands[i].type;
 		sel.style.borderColor = (linked && typeEqual) ? CLR.link.accent : CLR[activeSide].accent;
@@ -172,10 +142,61 @@ function updateDropdownColors() {
 //  BUILD DOM — Band Knobs
 // ------------------------------------------------
 const container  = document.getElementById('bandsContainer');
-const bandKnobs  = []; // Array<{gain:Knob, freq:Knob, q:Knob}>
 const extraKnobs = { L: {}, R: {} };
 
-for (let i=0; i<N; i++) {
+const eqBandRow = new EQBandRow({
+	bandCount: N,
+	fullChoiceBands: FULL_CHOICE_BANDS,
+	filterTypes: FILTER_TYPES,
+	limits: {
+		db:   { min: DB_MIN,   max: DB_MAX   },
+		freq: { min: FREQ_MIN, max: FREQ_MAX },
+		q:    { min: Q_MIN,    max: Q_MAX    },
+	},
+	defaults: (i) => ({
+		gain: DEFAULT_GAIN,
+		freq: DEFAULT_FREQS[i],
+		q:    DEFAULT_Q,
+		type: 'Bell',
+	}),
+	knobOptions: {
+		gain: { label: 'Gain', size: 38 },
+		freq: { label: 'Freq', size: 38 },
+		q:    { label: 'Q',    size: 38 },
+	},
+	idPrefix: 'b',
+	onBandChange: (i, param, val) => {
+		if (param === 'type') {
+			activeBands()[i].type = val;
+			if (linked) state[otherSide(activeSide)].bands[i].type = val;
+			drawEQ();
+			notifyOSC_band(i, 'type', linked ? ['L','R'] : [activeSide]);
+			updateDropdownColors();
+			return;
+		}
+		// gain | freq | q
+		activeBands()[i][param] = val;
+		const knob = eqBandRow.bandKnob(i, param);
+		if (linked) {
+			const other = otherSide(activeSide);
+			state[other].bands[i][param] = val;
+			notifyOSC_band(i, param, [other]);
+			applyKnobColor(knob, CLR.link);
+		} else {
+			applyKnobColor(knob, CLR[activeSide]);
+		}
+		drawEQ();
+		notifyOSC_band(i, param, [activeSide]);
+		showTooltip(tooltipStr(i, param), (linked ? CLR.link : CLR[activeSide]).accent);
+	},
+	onKnobLeave: () => hideTooltip(),
+});
+
+// Compatibility alias used throughout the file
+const bandKnobs = eqBandRow.knobs;
+
+// roomEq layout: each band is a vertical column with label + knobs + optional select
+for (let i = 0; i < N; i++) {
 	const div = document.createElement('div');
 	div.className = 'band'; div.id = `band-${i}`;
 
@@ -183,73 +204,13 @@ for (let i=0; i<N; i++) {
 	lbl.className = 'band-label'; lbl.textContent = `B${i+1}`;
 	div.appendChild(lbl);
 
-	const bk = {
-		gain: new Knob({
-			id: `b${i}-gain`, label: 'Gain',
-			min: DB_MIN, max: DB_MAX, step: 0.1,
-			value: DEFAULT_GAIN, resetValue: DEFAULT_GAIN,
-			bipolar: true,
-			format: v => (v >= 0 ? '+' : '') + v.toFixed(1) + ' dB',
-			size: 38,
-			sendDuringDrag: true, sendInterval: 30,
-		}),
-		freq: new Knob({
-			id: `b${i}-freq`, label: 'Freq',
-			min: FREQ_MIN, max: FREQ_MAX,
-			value: DEFAULT_FREQS[i], resetValue: DEFAULT_FREQS[i],
-			scale: 'log',
-			format: formatFreq,
-			size: 38,
-			sendDuringDrag: true, sendInterval: 30,
-		}),
-		q: new Knob({
-			id: `b${i}-q`, label: 'Q',
-			min: Q_MIN, max: Q_MAX, step: 0.01,
-			value: DEFAULT_Q, resetValue: DEFAULT_Q,
-			size: 38,
-			sendDuringDrag: true, sendInterval: 30,
-		}),
-	};
-	bandKnobs.push(bk);
+	div.appendChild(eqBandRow.bandKnob(i, 'gain').element);
+	div.appendChild(eqBandRow.bandKnob(i, 'freq').element);
+	div.appendChild(eqBandRow.bandKnob(i, 'q').element);
 
-	for (const [param, knob] of Object.entries(bk)) {
-		knob.element.addEventListener('user-change', e => {
-			const val = e.detail.value;
-			activeBands()[i][param] = val;
+	const sel = eqBandRow.typeSelect(i);
+	if (sel) div.appendChild(sel);
 
-			if (linked) {
-				const other = otherSide(activeSide);
-				state[other].bands[i][param] = val;
-				notifyOSC_band(i, param, [other]);
-				applyKnobColor(knob, CLR.link); // now equal -> green
-			} else {
-				applyKnobColor(knob, CLR[activeSide]);
-			}
-
-			drawEQ();
-			notifyOSC_band(i, param, [activeSide]);
-			showTooltip(tooltipStr(i, param), (linked ? CLR.link : CLR[activeSide]).accent);
-		});
-		knob.element.addEventListener('mouseleave', hideTooltip);
-		div.appendChild(knob.element);
-	}
-
-	if (FULL_CHOICE_BANDS.has(i)) {
-		const sel = document.createElement('select');
-		sel.className = 'filter-select'; sel.id = `ftype-${i}`;
-		FILTER_TYPES.forEach(t => {
-			const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o);
-		});
-		sel.value = activeBands()[i].type;
-		sel.addEventListener('change', () => {
-			activeBands()[i].type = sel.value;
-			if (linked) state[otherSide(activeSide)].bands[i].type = sel.value;
-			drawEQ();
-			notifyOSC_band(i, 'type', linked ? ['L','R'] : [activeSide]);
-			updateDropdownColors();
-		});
-		div.appendChild(sel);
-	}
 	container.appendChild(div);
 }
 
@@ -369,251 +330,105 @@ window.addEventListener('mousemove', e => {
 });
 
 // ------------------------------------------------
-//  CANVAS / EQ DRAW
+//  CANVAS / EQ DRAW (delegated to EQGraph)
 // ------------------------------------------------
 const canvas = document.getElementById('eqCanvas');
-const ctx    = canvas.getContext('2d');
-let nodeDrag = null, hoveredNode = -1;
 
-function resizeCanvas() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; drawEQ(); }
+const eqGraph = new EQGraph(canvas, {
+	limits: {
+		db:   { min: DB_MIN,   max: DB_MAX   },
+		freq: { min: FREQ_MIN, max: FREQ_MAX },
+		q:    { min: Q_MIN,    max: Q_MAX    },
+	},
+	displayLimits: {
+		// 2.5 dB headroom above/below; start the freq axis at 10 Hz so the
+		// 20 Hz grid label sits inside the canvas instead of behind the dB labels.
+		db:   { min: DB_MIN - 2.5, max: DB_MAX + 2.5 },
+		freq: { min: 10, max: FREQ_MAX },
+	},
+	getBands:         () => activeBands().map((b, i) => ({
+		// Bands not in FULL_CHOICE_BANDS render as Bell regardless of stored type
+		type: FULL_CHOICE_BANDS.has(i) ? b.type : 'Bell',
+		gain: b.gain, freq: b.freq, q: b.q,
+	})),
+	getInactiveBands: () => isStereo
+		? state[otherSide(activeSide)].bands.map((b, i) => ({
+			type: FULL_CHOICE_BANDS.has(i) ? b.type : 'Bell',
+			gain: b.gain, freq: b.freq, q: b.q,
+		}))
+		: null,
+	isBypassed:       () => bypassed,
+	getActiveColor:   () => CLR[activeSide],
+	getInactiveColor: () => CLR[otherSide(activeSide)],
+	getNodeColor:     (i) => nodeColor(i),
 
-function calcResponse(type, freq, gain, q, fArr) {
-	const Fs=48000, f0=Math.max(20,Math.min(23000,freq));
-	const w0=2*Math.PI*f0/Fs, cw=Math.cos(w0), sw=Math.sin(w0);
-	const A=Math.pow(10,gain/40), aq=sw/(2*q);
-	let b0,b1,b2,a0,a1,a2;
-	switch(type) {
-		case 'Bell':
-			b0=1+aq*A;b1=-2*cw;b2=1-aq*A;a0=1+aq/A;a1=-2*cw;a2=1-aq/A; break;
-		case 'Shelving': {
-			const sqA=Math.sqrt(A),aqS=2*sqA*aq;
-			if (freq<=SHELVING_POL_FREQ) {
-				b0=A*((A+1)-(A-1)*cw+aqS);b1=2*A*((A-1)-(A+1)*cw);b2=A*((A+1)-(A-1)*cw-aqS);
-				a0=(A+1)+(A-1)*cw+aqS;a1=-2*((A-1)+(A+1)*cw);a2=(A+1)+(A-1)*cw-aqS;
-			} else {
-				b0=A*((A+1)+(A-1)*cw+aqS);b1=-2*A*((A-1)+(A+1)*cw);b2=A*((A+1)+(A-1)*cw-aqS);
-				a0=(A+1)-(A-1)*cw+aqS;a1=2*((A-1)-(A+1)*cw);a2=(A+1)-(A-1)*cw-aqS;
-			}
-			break; }
-		case 'Low Pass':
-			b0=(1-cw)/2;b1=1-cw;b2=(1-cw)/2;a0=1+aq;a1=-2*cw;a2=1-aq; break;
-		case 'High Pass':
-			b0=(1+cw)/2;b1=-(1+cw);b2=(1+cw)/2;a0=1+aq;a1=-2*cw;a2=1-aq; break;
-		default: b0=1;b1=0;b2=0;a0=1;a1=0;a2=0;
-	}
-	return fArr.map(f => {
-		const w=2*Math.PI*f/Fs, cosW=Math.cos(w);
-		const rN=b0*b0+b1*b1+b2*b2+2*(b0*b1+b1*b2)*cosW+2*b0*b2*Math.cos(2*w);
-		const rD=a0*a0+a1*a1+a2*a2+2*(a0*a1+a1*a2)*cosW+2*a0*a2*Math.cos(2*w);
-		return 20*Math.log10(Math.max(1e-10,Math.sqrt(Math.max(0,rN/rD))));
-	});
-}
-
-function computeCombined(bands) {
-	const W = canvas.width;
-	const fArr = Array.from({length:W}, (_,i) => normToFreq(i/(W-1)));
-	const combined = new Array(W).fill(0);
-	bands.forEach((b,i) => {
-		const type = FULL_CHOICE_BANDS.has(i) ? b.type : 'Bell';
-		calcResponse(type, b.freq, b.gain, b.q, fArr).forEach((v,j) => combined[j] += v);
-	});
-	return combined;
-}
-
-function drawCurve(combined, clr, withFill, alpha) {
-	const W = canvas.width, H = canvas.height;
-	ctx.globalAlpha = alpha;
-
-	ctx.beginPath();
-	ctx.moveTo(0, dbToY(combined[0], H));
-	for (let i=1; i<W; i++) ctx.lineTo(i, dbToY(combined[i], H));
-
-	if (withFill) {
-		ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
-		const grad = ctx.createLinearGradient(0, 0, 0, H);
-		grad.addColorStop(0, hexToRgba(clr, 0.30));
-		grad.addColorStop(1, hexToRgba(clr, 0.02));
-		ctx.fillStyle = grad;
-		ctx.fill();
-
-		ctx.beginPath();
-		ctx.moveTo(0, dbToY(combined[0], H));
-		for (let i=1; i<W; i++) ctx.lineTo(i, dbToY(combined[i], H));
-	}
-
-	ctx.strokeStyle = clr;
-	ctx.lineWidth   = withFill ? 2 : 1.5;
-	ctx.stroke();
-	ctx.globalAlpha = 1;
-}
-
-function hexToRgba(hex, a) {
-	const r = parseInt(hex.slice(1,3),16);
-	const g = parseInt(hex.slice(3,5),16);
-	const b = parseInt(hex.slice(5,7),16);
-	return `rgba(${r},${g},${b},${a})`;
-}
-
-function drawNodes(bands) {
-	const W = canvas.width, H = canvas.height;
-	ctx.globalAlpha = bypassed ? 0.45 : 1;
-	bands.forEach((b,i) => {
-		const x = freqToX(b.freq,W), y = dbToY(b.gain,H);
-		const isHov = hoveredNode===i, isDrg = nodeDrag&&nodeDrag.band===i;
-		const clr   = nodeColor(i);
-		const qRad  = 12 + (b.q-Q_MIN)/(Q_MAX-Q_MIN)*27;
-		// Q ring
-		ctx.beginPath(); ctx.arc(x,y,qRad,0,Math.PI*2);
-		ctx.strokeStyle = isHov||isDrg ? hexToRgba(clr.accent,0.55) : hexToRgba(clr.accent,0.15);
-		ctx.lineWidth = 1.5; ctx.stroke();
-		// Node circle
-		ctx.beginPath(); ctx.arc(x,y,isDrg?12:9,0,Math.PI*2);
-		ctx.fillStyle  = isDrg ? clr.accentBright : isHov ? clr.accent : hexToRgba(clr.accent,0.55);
-		ctx.fill();
-		ctx.strokeStyle = clr.accentBright; ctx.lineWidth = 1.5; ctx.stroke();
-		// Band number label
-		ctx.fillStyle = '#111'; ctx.font = 'bold 13px Arial';
-		ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-		ctx.fillText(i+1,x,y);
-		ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-	});
-	ctx.globalAlpha = 1;
-}
-
-function drawEQ() {
-	const W=canvas.width, H=canvas.height;
-	const t=getTheme();
-	ctx.clearRect(0,0,W,H);
-
-	// Grid
-	[-20,-15,-10,-5,0,5,10,15,20].forEach(db => {
-		const y=dbToY(db,H);
-		ctx.strokeStyle=db===0?t.gridZero:t.gridNormal;
-		ctx.lineWidth=db===0?1.5:1;
-		ctx.setLineDash(db===0?[4,4]:[]);
-		ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
-		ctx.setLineDash([]);
-		ctx.fillStyle=t.gridLabel;ctx.font='9px monospace';
-		ctx.fillText((db>0?'+':'')+db,3,y-2);
-	});
-	[20,50,100,200,500,1000,2000,5000,10000,20000].forEach(f => {
-		const x=freqToX(f,W);
-		ctx.strokeStyle=t.gridNormal;ctx.lineWidth=1;
-		ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
-		ctx.fillStyle=t.gridLabel;ctx.font='9px monospace';
-		ctx.fillText(f>=1000?(f/1000)+'k':f,x+2,H-4);
-	});
-
-	if (isStereo) {
-		// Draw inactive curve first (dimmer, no fill)
-		const inactiveCombined = computeCombined(state[otherSide(activeSide)].bands);
-		drawCurve(inactiveCombined, CLR[otherSide(activeSide)].accent, false, bypassed ? 0.15 : 0.4);
-	}
-
-	// Draw active curve — bypassed: actual shape but no fill, muted alpha
-	const activeCombined = computeCombined(activeBands());
-	drawCurve(activeCombined, CLR[activeSide].accent, !bypassed, bypassed ? 0.35 : 1.0);
-
-	// Node handles at actual band positions
-	drawNodes(activeBands());
-}
-
-function dbToY(db,H)  { return H*(1-(db-DB_MIN)/(DB_MAX-DB_MIN)); }
-function freqToX(f,W) { return W*freqToNorm(f); }
-
-function getNodeAt(mx,my) {
-	const W=canvas.width,H=canvas.height;
-	for(let i=N-1;i>=0;i--)
-		if(Math.hypot(mx-freqToX(activeBands()[i].freq,W),my-dbToY(activeBands()[i].gain,H))<21) return i;
-	return -1;
-}
-
-canvas.addEventListener('mousemove', e => {
-	const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
-	if (nodeDrag) {
-		const {band,sx,sy,sf,sg}=nodeDrag,W=canvas.width,H=canvas.height;
-		let fn=freqToNorm(sf)+(mx-sx)/(W*0.7); fn=Math.max(0,Math.min(1,fn));
-		activeBands()[band].freq=normToFreq(fn);
-		let gain=sg-(my-sy)*((DB_MAX-DB_MIN)/H)*1.5;
-		gain=Math.round(Math.max(DB_MIN,Math.min(DB_MAX,gain))*10)/10;
-		activeBands()[band].gain=gain;
+	onBandDrag: (i, { freq, gain }) => {
+		const b = activeBands()[i];
+		b.freq = freq; b.gain = gain;
 		if (linked) {
-			state[otherSide(activeSide)].bands[band].freq = activeBands()[band].freq;
-			state[otherSide(activeSide)].bands[band].gain = gain;
+			const o = state[otherSide(activeSide)].bands[i];
+			o.freq = freq; o.gain = gain;
 		}
-		bandKnobs[band].gain.updateFromOSC(activeBands()[band].gain);
-		bandKnobs[band].freq.updateFromOSC(activeBands()[band].freq);
-		drawEQ();
+		bandKnobs[i].gain.updateFromOSC(gain);
+		bandKnobs[i].freq.updateFromOSC(freq);
 		if (linked) updateAllKnobColors();
-		showTooltip(`B${band+1}  ${formatFreq(activeBands()[band].freq)}  ${(gain>=0?'+':'')+gain.toFixed(1)} dB  Q:${activeBands()[band].q.toFixed(2)}`, (linked ? CLR.link : CLR[activeSide]).accent);
-		canvas.style.cursor='grabbing'; return;
-	}
-	const hit=getNodeAt(mx,my);
-	if(hit!==hoveredNode){hoveredNode=hit;drawEQ();}
-	canvas.style.cursor=hit>=0?'grab':'crosshair';
-	if(hit>=0) showTooltip(`B${hit+1}  ${formatFreq(activeBands()[hit].freq)}  ${(activeBands()[hit].gain>=0?'+':'')+activeBands()[hit].gain.toFixed(1)} dB  Q:${activeBands()[hit].q.toFixed(2)}`, nodeColor(hit).accent);
-	else hideTooltip();
-});
-
-canvas.addEventListener('mousedown', e => {
-	const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
-	const hit=getNodeAt(mx,my);
-	if(hit>=0) {
-		nodeDrag={band:hit,sx:mx,sy:my,sf:activeBands()[hit].freq,sg:activeBands()[hit].gain};
-		const bandEl = document.getElementById(`band-${hit}`);
+	},
+	onBandRelease: (i) => {
+		notifyOSC_band(i, 'gain', linked ? ['L','R'] : [activeSide]);
+		notifyOSC_band(i, 'freq', linked ? ['L','R'] : [activeSide]);
+	},
+	onBandFocus: (i) => {
+		const bandEl = document.getElementById(`band-${i}`);
+		if (!bandEl) return;
 		bandEl.classList.add('active');
 		bandEl.style.borderColor = (linked ? CLR.link : CLR[activeSide]).accent;
-		e.preventDefault();
-	}
+	},
+	onBandBlur: (i) => {
+		const bandEl = document.getElementById(`band-${i}`);
+		if (!bandEl) return;
+		bandEl.classList.remove('active');
+		bandEl.style.borderColor = '';
+	},
+	onBandQ: (i, q) => {
+		activeBands()[i].q = q;
+		if (linked) state[otherSide(activeSide)].bands[i].q = q;
+		bandKnobs[i].q.updateFromOSC(q);
+		notifyOSC_band(i, 'q', linked ? ['L','R'] : [activeSide]);
+	},
+
+	onTooltipShow: (txt, clr) => showTooltip(txt, clr),
+	onTooltipHide: ()         => hideTooltip(),
+
+	formatBandFull: (i, b) =>
+		`B${i+1}  ${formatFreq(b.freq)}  ${(b.gain>=0?'+':'')+b.gain.toFixed(1)} dB  Q:${b.q.toFixed(2)}`,
+	formatBandQ:    (i, b) => `B${i+1} Q: ${b.q.toFixed(2)}`,
 });
 
-window.addEventListener('mouseup', () => {
-	if(nodeDrag) {
-		notifyOSC_band(nodeDrag.band, 'gain', linked ? ['L','R'] : [activeSide]);
-		notifyOSC_band(nodeDrag.band, 'freq', linked ? ['L','R'] : [activeSide]);
-		const relBandEl = document.getElementById(`band-${nodeDrag.band}`);
-		relBandEl.classList.remove('active');
-		relBandEl.style.borderColor = '';
-		nodeDrag=null; hideTooltip(); canvas.style.cursor='crosshair';
-	}
-});
+function drawEQ() { eqGraph.draw(); }
 
-canvas.addEventListener('wheel', e => {
-	e.preventDefault();
-	const r=canvas.getBoundingClientRect();
-	const hit=getNodeAt(e.clientX-r.left,e.clientY-r.top);
-	if(hit<0) return;
-	activeBands()[hit].q=Math.round(Math.max(Q_MIN,Math.min(Q_MAX,activeBands()[hit].q+(e.deltaY<0?1:-1)*0.2))*100)/100;
-	if (linked) state[otherSide(activeSide)].bands[hit].q = activeBands()[hit].q;
-	bandKnobs[hit].q.updateFromOSC(activeBands()[hit].q);
-	drawEQ();
-	showTooltip(`B${hit+1} Q: ${activeBands()[hit].q.toFixed(2)}`, nodeColor(hit).accent);
-},{passive:false});
+// Persist & restore the popup window size.
+(function rememberWindowSize() {
+	const KEY = 'roomEq_windowSize';
+	try {
+		const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+		if (saved && saved.w >= 400 && saved.h >= 300) {
+			window.resizeTo(saved.w, saved.h);
+		}
+	} catch (e) { /* ignore */ }
 
-let tN=-1,tSX=0,tSY=0,tSF=0,tSG=0;
-canvas.addEventListener('touchstart', e => {
-	const r=canvas.getBoundingClientRect(),t=e.touches[0];
-	tN=getNodeAt(t.clientX-r.left,t.clientY-r.top);
-	if(tN>=0){tSX=t.clientX-r.left;tSY=t.clientY-r.top;tSF=activeBands()[tN].freq;tSG=activeBands()[tN].gain;}
-},{passive:true});
-canvas.addEventListener('touchmove', e => {
-	if(tN<0) return;
-	const r=canvas.getBoundingClientRect(),t=e.touches[0];
-	const mx=t.clientX-r.left,my=t.clientY-r.top,W=canvas.width,H=canvas.height;
-	let fn=freqToNorm(tSF)+(mx-tSX)/(W*0.7);fn=Math.max(0,Math.min(1,fn));
-	activeBands()[tN].freq=normToFreq(fn);
-	let gain=tSG-(my-tSY)*((DB_MAX-DB_MIN)/H)*1.5;
-	gain=Math.round(Math.max(DB_MIN,Math.min(DB_MAX,gain))*10)/10;
-	activeBands()[tN].gain=gain;
-	if (linked) {
-		state[otherSide(activeSide)].bands[tN].freq = activeBands()[tN].freq;
-		state[otherSide(activeSide)].bands[tN].gain = gain;
-	}
-	bandKnobs[tN].gain.updateFromOSC(activeBands()[tN].gain);
-	bandKnobs[tN].freq.updateFromOSC(activeBands()[tN].freq);
-	drawEQ();
-},{passive:true});
-canvas.addEventListener('touchend', () => { tN=-1; });
+	let timer = null;
+	window.addEventListener('resize', () => {
+		clearTimeout(timer);
+		timer = setTimeout(() => {
+			try {
+				localStorage.setItem(KEY, JSON.stringify({
+					w: window.outerWidth,
+					h: window.outerHeight,
+				}));
+			} catch (e) { /* ignore */ }
+		}, 200);
+	});
+})();
 
 // ------------------------------------------------
 //  PRESETS
@@ -649,7 +464,7 @@ presetSelect.addEventListener('change', () => {
 		presets[n].forEach((src,i) => Object.assign(state[side].bands[i],src));
 	}
 	FULL_CHOICE_BANDS.forEach(i => {
-		const s=document.getElementById(`ftype-${i}`); if(s) s.value=activeBands()[i].type;
+		const s=eqBandRow.typeSelect(i); if(s) s.value=activeBands()[i].type;
 	});
 	syncKnobsFromBands();
 	drawEQ();
@@ -666,7 +481,7 @@ function resetEQ() {
 		state[side].delay=0.00; state[side].volCal=0.00;
 	}
 	FULL_CHOICE_BANDS.forEach(i => {
-		const s=document.getElementById(`ftype-${i}`); if(s) s.value='Bell';
+		const s=eqBandRow.typeSelect(i); if(s) s.value='Bell';
 	});
 	syncKnobsFromBands();
 	syncExtraKnobs();
@@ -674,20 +489,49 @@ function resetEQ() {
 	notifyOSC_all(sides);
 }
 
-function updateBypassBtn() {
-	const btn=document.getElementById('bypassBtn');
-	if (!bypassed) {
-		btn.className='bypass-btn state-on'; btn.textContent='On';
-	} else {
-		btn.className='bypass-btn state-off'; btn.textContent='Off';
-	}
-}
-
-function toggleBypass() {
-	bypassed=!bypassed;
-	updateBypassBtn();
+// Toolbar buttons (constructed once, then state-driven via .active)
+const bypassBtn = new Button({
+	variant: 'bypass',
+	id: 'bypassBtn',
+	onLabel:  'On',
+	offLabel: 'Off',
+	active:   true,  // bypassed=false initially -> button shows On
+});
+document.getElementById('bypassBtnSlot').replaceWith(bypassBtn.element);
+bypassBtn.element.addEventListener('user-change', () => {
+	bypassed = !bypassBtn.active;
 	drawEQ();
 	notifyOSC_bypass();
+});
+
+const sideLBtn = new Button({
+	variant: 'side', side: 'L', id: 'sideLBtn',
+	label: 'LEFT', active: true,
+});
+const sideRBtn = new Button({
+	variant: 'side', side: 'R', id: 'sideRBtn',
+	label: 'RIGHT', active: false,
+});
+const linkBtn = new Button({
+	variant: 'link', id: 'linkBtn',
+	onHtml: '\u{1F517}', offHtml: '\u{1F517}',
+	active: false,
+});
+document.getElementById('sideLBtnSlot').replaceWith(sideLBtn.element);
+document.getElementById('linkBtnSlot').replaceWith(linkBtn.element);
+document.getElementById('sideRBtnSlot').replaceWith(sideRBtn.element);
+
+sideLBtn.element.addEventListener('user-change', () => setSide('L'));
+sideRBtn.element.addEventListener('user-change', () => setSide('R'));
+linkBtn.element.addEventListener('user-change', () => {
+	linked = linkBtn.active;
+	updateAllKnobColors();
+	updateBandLabelColors();
+	drawEQ();
+});
+
+function updateBypassBtn() {
+	bypassBtn.active = !bypassed;
 }
 
 // Sync band knobs from active side's state (no OSC fired)
@@ -716,7 +560,7 @@ function setSide(side) {
 	activeSide = side;
 	syncKnobsFromBands();
 	FULL_CHOICE_BANDS.forEach(i => {
-		const s = document.getElementById(`ftype-${i}`);
+		const s = eqBandRow.typeSelect(i);
 		if (s) s.value = activeBands()[i].type;
 	});
 	updateSideButtons();
@@ -724,26 +568,9 @@ function setSide(side) {
 	drawEQ();
 }
 
-function toggleLink() {
-	linked = !linked;
-	updateAllKnobColors();
-	updateLinkButton();
-	updateBandLabelColors();
-	drawEQ();
-}
-
 function updateSideButtons() {
-	const lBtn = document.getElementById('sideLBtn');
-	const rBtn = document.getElementById('sideRBtn');
-	if (!lBtn || !rBtn) return;
-	lBtn.classList.toggle('active', activeSide === 'L');
-	rBtn.classList.toggle('active', activeSide === 'R');
-}
-
-function updateLinkButton() {
-	const btn = document.getElementById('linkBtn');
-	if (!btn) return;
-	btn.classList.toggle('linked', linked);
+	sideLBtn.active = activeSide === 'L';
+	sideRBtn.active = activeSide === 'R';
 }
 
 function updateBandLabelColors() {
@@ -797,7 +624,7 @@ function importJSON(event) {
 			state[activeSide].delay  = typeof data.delay  ==='number' ? Math.max(0,Math.min(42.50,data.delay)) : 0;
 			state[activeSide].volCal = typeof data.volCal ==='number' ? Math.max(-24,Math.min(3,data.volCal)) : 0;
 			updateBypassBtn();
-			FULL_CHOICE_BANDS.forEach(i=>{const s=document.getElementById(`ftype-${i}`);if(s)s.value=bands[i].type;});
+			FULL_CHOICE_BANDS.forEach(i=>{const s=eqBandRow.typeSelect(i);if(s)s.value=bands[i].type;});
 			syncKnobsFromBands();
 			syncExtraKnobs();
 			drawEQ();
@@ -930,7 +757,7 @@ function importTmreq(event) {
 				applyTmreqData(parseTmreqChannel(channels[idx].text), activeSide);
 				appliedSides = [activeSide];
 			}
-			FULL_CHOICE_BANDS.forEach(i=>{const s=document.getElementById(`ftype-${i}`);if(s) s.value=activeBands()[i].type;});
+			FULL_CHOICE_BANDS.forEach(i=>{const s=eqBandRow.typeSelect(i);if(s) s.value=activeBands()[i].type;});
 			syncKnobsFromBands();
 			syncExtraKnobs();
 			drawEQ();
@@ -1017,12 +844,6 @@ function notifyOSC_all(sides) {
 	notifyOSC_bypass();
 }
 
-canvas.addEventListener('wheel', e => {
-	const r=canvas.getBoundingClientRect();
-	const hit=getNodeAt(e.clientX-r.left,e.clientY-r.top);
-	if (hit>=0) notifyOSC_band(hit,'q', linked ? ['L','R'] : [activeSide]);
-},{passive:true,capture:true});
-
 window.addEventListener('message', e => {
 	if (!e.data||e.data.type!=='ROOMEQ_OSC_RECV') return;
 	const {addr,value}=e.data;
@@ -1070,8 +891,7 @@ window.addEventListener('message', e => {
 			if (prop==='freq') bandKnobs[bi].freq.updateFromOSC(state[side].bands[bi].freq);
 			if (prop==='q')    bandKnobs[bi].q.updateFromOSC(state[side].bands[bi].q);
 			if (prop==='type') {
-				const sel=document.getElementById(`ftype-${bi}`);
-				if (sel) sel.value=state[side].bands[bi].type;
+				eqBandRow.setType(bi, state[side].bands[bi].type);
 			}
 		}
 		updateAllKnobColors();
@@ -1107,12 +927,12 @@ if (isStereo) {
 //  INIT
 // ------------------------------------------------
 refreshPresets();
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+eqGraph.resize();        // initial sizing + first draw
 drawAllKnobs();
 updateBypassBtn();
 
-window.toggleBypass = toggleBypass;
+// Exposed for the remaining inline-onclick handlers in roomEq.html
+// (preset/reset/import/export buttons — these will move to button.js in a later step)
 window.savePreset   = savePreset;
 window.deletePreset = deletePreset;
 window.resetEQ      = resetEQ;
@@ -1120,5 +940,3 @@ window.exportJSON   = exportJSON;
 window.importJSON   = importJSON;
 window.exportTmreq  = exportTmreq;
 window.importTmreq  = importTmreq;
-window.setSide      = setSide;
-window.toggleLink   = toggleLink;

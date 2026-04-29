@@ -1528,7 +1528,6 @@ static const struct node roottree[] = {
 		{"fx", OUTPUT_FXRETURN, .set=setfixed, .new=newfixed, .scale=0.1, .min=-65.0, .max=0.0},
 		{"stereo", OUTPUT_STEREO, .set=setbool, .new=newoutputstereo},
 		{"record", OUTPUT_RECORD, .set=setbool, .new=newbool},
-		{"width", OUTPUT_WIDTH, .set=setint, .new=newint, .min=-100, .max=100},
 		{"name", NAME, .set=setname, .new=newname},
 		{"playchan", OUTPUT_PLAYCHAN, .set=setint, .new=newint},
 		{"phase", OUTPUT_PHASE, .set=setbool, .new=newbool},

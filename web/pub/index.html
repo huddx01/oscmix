@@ -11,6 +11,8 @@
 		<link rel="preload" href="css/help.css" as="style" />
 		<link rel="stylesheet" href="css/help.css" media="print" onload="this.media='all'" />
 		<link rel="stylesheet" href="css/knob.css" />
+		<link rel="stylesheet" href="css/button.css" />
+		<link rel="stylesheet" href="css/channelEq.css" />
 
 		<link rel="modulepreload" href="js/oscmix.js" />
 	</head>
@@ -136,59 +138,11 @@
 					</fieldset>
 				</div>
 				<div class="channel-panel channel-panel-eq" data-type="input output">
-					<svg id="eq-plot" class="eq-plot">
-						<path id="eq-grid" class="eq-grid" />
-						<polyline id="eq-curve" class="eq-curve" />
-					</svg>
-					<details open>
-						<summary>EQ<input type="checkbox" id="eq" class="eq" /></summary>
-						<div class="eq-controls">
-							<div>Band</div>
-							<div>1</div>
-							<div>2</div>
-							<div>3</div>
-							<div>Type</div>
-							<select id="eq/band1type">
-								<option value="PEAK">Peak</option>
-								<option value="LOW_SHELF">Low Shelf</option>
-								<option value="HIGH_PASS">High Pass</option>
-								<option value="LOW_PASS">Low Pass</option>
-							</select>
-							<output>Peak</output>
-							<select id="eq/band3type">
-								<option value="PEAK">Peak</option>
-								<option value="HIGH_SHELF">High Shelf</option>
-								<option value="LOW_PASS">Low Pass</option>
-								<option value="HIGH_PASS">High Pass</option>
-							</select>
-							<div>Gain</div>
-							<input id="eq/band1gain" type="number" min="-20" max="20" step="0.5" />
-							<input id="eq/band2gain" type="number" min="-20" max="20" step="0.5" />
-							<input id="eq/band3gain" type="number" min="-20" max="20" step="0.5" />
-							<div>Freq.</div>
-							<input id="eq/band1freq" type="number" min="20" max="20000" />
-							<input id="eq/band2freq" type="number" min="20" max="20000" />
-							<input id="eq/band3freq" type="number" min="20" max="20000" />
-							<div>Q</div>
-							<input id="eq/band1q" type="number" min="0.4" max="9.9" step="0.1" />
-							<input id="eq/band2q" type="number" min="0.4" max="9.9" step="0.1" />
-							<input id="eq/band3q" type="number" min="0.4" max="9.9" step="0.1" />
-						</div>
-					</details>
-					<details open>
-						<summary>Low Cut<input id="lowcut" class="lowcut" type="checkbox" /></summary>
-						<fieldset>
-							<label
-								>Slope<select id="lowcut/slope">
-									<option>6 dB/oct</option>
-									<option>12 dB/oct</option>
-									<option>18 dB/oct</option>
-									<option>24 dB/oct</option>
-								</select>
-					</label>
-							<label>Freq.<input id="lowcut/freq" type="number" min="20" max="500" /></label>
-						</fieldset>
-					</details>
+					<!-- Hidden checkboxes mirror EQ/LC enabled state so CSS :has() can glow the EQ label. -->
+					<input type="checkbox" class="eq" hidden />
+					<input type="checkbox" class="lowcut" hidden />
+					<!-- Built lazily by Channel#initEQ on first open of the EQ panel. -->
+					<div class="ch-eq-host"></div>
 				</div>
 				<div class="channel-panel channel-panel-dynamics" data-type="input output">
 					<details open>
@@ -722,7 +676,7 @@
 				<form id="ui-settings">
 					<fieldset class="custom-form">
 						<label class="form-row" title="Shows Help for URL Parameters">Help:
-							<button class="help-button" id="url-help-button">Open</button>
+							<button type="button" class="help-button" id="url-help-button">Open</button>
 						</label>
 						<label class="form-row" title="Select your preferred UI Theme">Theme:
 							<select id="ui-style-select">

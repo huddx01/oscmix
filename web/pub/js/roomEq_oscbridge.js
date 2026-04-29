@@ -47,9 +47,9 @@ export class RoomEQBridge {
       try {
         const sentValue = (isType || isFreq || isBypass) ? Math.round(value) : value;
         this.#iface.send(addr, (isType || isFreq || isBypass) ? ',i' : ',f', [sentValue]);
-
-        const method = this.#iface.methods.get(addr);
-        if (method) method._cachedValue = sentValue;
+        // Mirror outgoing values into the central cache so a re-opened popup
+        // sees the up-to-date state.
+        this.#iface.values.set(addr, sentValue);
 
         if (isBypass) {
           const channelKey = addr.slice(1, addr.lastIndexOf('/'));
@@ -82,12 +82,13 @@ export class RoomEQBridge {
       btn.addEventListener('click', () => this.#openPopup(channelKey, prefix));
     }
 
+    // The central cache (iface.values) is populated automatically by handleOSC,
+    // so we only need to chain through to existing handlers + popup-forwarding.
     for (const param of ROOMEQ_PARAMS) {
       const addr     = `${prefix}/${param}`;
       const existing = this.#iface.methods.get(addr);
       const isBypass = param === 'roomeq';
       const wrapped = (args) => {
-        wrapped._cachedValue = args[0];
         if (existing) existing(args);
         if (isBypass && entry.button) {
           entry.button.classList.toggle('is-active', !!args[0]);
@@ -150,19 +151,17 @@ export class RoomEQBridge {
 
   #pushFullState(channelKey, prefix, popup) {
     for (const param of ROOMEQ_PARAMS) {
-      const addr   = `${prefix}/${param}`;
-      const method = this.#iface.methods.get(addr);
-      if (method?._cachedValue !== undefined) {
-        popup.postMessage({ type: 'ROOMEQ_OSC_RECV', addr, value: method._cachedValue }, '*');
+      const addr  = `${prefix}/${param}`;
+      const value = this.#iface.getCached(addr);
+      if (value !== undefined) {
+        popup.postMessage({ type: 'ROOMEQ_OSC_RECV', addr, value }, '*');
       }
     }
   }
 }
 
+// Retained for backward compatibility; the central cache in iface.values is
+// the canonical source. New code should use iface.getCached(addr).
 export function withValueCache(handler) {
-  const wrapped = (args) => {
-    wrapped._cachedValue = args[0];
-    handler(args);
-  };
-  return wrapped;
+  return handler;
 }
