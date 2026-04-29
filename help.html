@@ -2,87 +2,116 @@
 <div id="help-overlay"></div>
 <div id="help-popup">
   <span class="close-button" id="close-help">&times;</span>
-  <h1>URL Parameters Documentation</h1>
-  <p>You can control the initial setup of the mixer by adding parameters to the URL.</p>
-  
-  <h3>Currently supported devices:</h3>
-  <p>- Fireface 802 (Use Port 2)</p>
-  <p>- Fireface UCX (Use Port 2)</p>
-  <p>- Fireface UCX II (Use Port 2)</p>
-  <p>- Fireface UFX (Use Port 3)</p>
-  <p>- Fireface UFX II (Use Port 3)</p>
-  <p>- Fireface UFX III (Use Port R or Port 4)</p>
-  <p>- Fireface UFX+ (Use Port R or Port 4)</p>
-  
-  <br>
-  <p>The base URL is:</p>
-  <div class="current-url-container">
-    <code id="current-base-url"></code>
-  </div>
-  <br>
-  <table class="param-table">
-    <thead>
-      <tr>
-        <th>Parameter</th>
-        <th>Description</th>
-        <th>Example</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><code>midi</code></td>
-        <td>Set connection type to MIDI</td>
-        <td><code class="url-example" data-params="midi"></code></td>
-        <td><button class="copy-btn" data-params="midi">Copy</button></td>
-      </tr>
-      <tr>
-        <td><code>midi</code> + <code>auto-connect</code></td>
-        <td>Enable MIDI and auto-connect to recognized device</td>
-        <td><code class="url-example" data-params="midi&amp;auto-connect=true"></code></td>
-        <td><button class="copy-btn" data-params="midi&amp;auto-connect=true">Copy</button></td>
-      </tr>
-      <tr>
-        <td><code>midi-input</code></td>
-        <td>Specify MIDI input device by name<br>(use quotes for names with spaces)</td>
-        <td><code class="url-example" data-params='midi-input="Fireface 802 (12345678) Port 2"'></code></td>
-        <td><button class="copy-btn" data-params='midi-input="Fireface 802 (12345678) Port 2"'>Copy</button></td>
-      </tr>
-      <tr>
-        <td><code>midi-output</code></td>
-        <td>Specify MIDI output device by name<br>(use quotes for names with spaces)</td>
-        <td><code class="url-example" data-params='midi-output="Fireface 802 (12345678) Port 2"'></code></td>
-        <td><button class="copy-btn" data-params='midi-output="Fireface 802 (12345678) Port 2"'>Copy</button></td>
-      </tr>
-      <tr>
-        <td><code>theme</code></td>
-        <td>Set initial theme</td>
-        <td><code class="url-example" data-params="theme=css/theme/tm_dark.css"></code></td>
-        <td><button class="copy-btn" data-params="theme=css/theme/tm_dark.css">Copy</button></td>
-      </tr>
-    </tbody>
-  </table>
-  
-  <h3>Advanced Usage Examples:</h3>
-  <ul>
-    <li>Full setup with specific device and auto-connect:<br>
-      <code class="dynamic-url" data-params="midi&amp;midi-input=&quot;Fireface 802 (12345678) Port 2&quot;&amp;midi-output=&quot;Fireface 802 (12345678) Port 2&quot;&amp;auto-connect=true"></code>
-      <button class="copy-btn" data-params="midi&amp;midi-input=&quot;Fireface 802 (12345678) Port 2&quot;&amp;midi-output=&quot;Fireface 802 (12345678) Port 2&quot;&amp;auto-connect=true">Copy</button>
-    </li>
-    <li>MIDI mode with TM dark theme:<br>
-      <code class="dynamic-url" data-params="midi&amp;theme=css/theme/tm_dark.css"></code>
-      <button class="copy-btn" data-params="midi&amp;theme=css/theme/tm_dark.css">Copy</button>
-    </li>
-    <li>MIDI mode with TM light theme:<br>
-      <code class="dynamic-url" data-params="midi&amp;theme=css/theme/tm_light.css"></code>
-      <button class="copy-btn" data-params="midi&amp;theme=css/theme/tm_light.css">Copy</button>
-    </li>
-  </ul>
-  
-  <p><strong>Note:</strong> Device names are case-insensitive but must match exactly otherwise. Use quotes for names containing spaces or special characters.</p>
-  
-  <div class="copy-section">
-    <button id="copy-url-button">Copy Example URL</button>
-    <span id="copy-status"></span>
-  </div>
+  <h1>URL Parameter Builder</h1>
+  <p>Configure your startup options below — the URL is generated automatically.</p>
+
+  <form id="url-builder" class="url-builder" autocomplete="off">
+    <div class="builder-row">
+      <label class="builder-check">
+        <input type="checkbox" id="builder-midi" />
+        <span>Enable MIDI connection (<code>midi</code>)</span>
+      </label>
+    </div>
+
+    <div class="builder-row">
+      <label class="builder-check">
+        <input type="checkbox" id="builder-auto-connect" />
+        <span>Auto-connect on load (<code>auto-connect=true</code>)</span>
+      </label>
+    </div>
+
+    <div class="builder-row">
+      <label for="builder-midi-input">MIDI Input (<code>midi-input</code>):</label>
+      <select id="builder-midi-input">
+        <option value="">— none —</option>
+      </select>
+    </div>
+
+    <div class="builder-row">
+      <label for="builder-midi-output">MIDI Output (<code>midi-output</code>):</label>
+      <select id="builder-midi-output">
+        <option value="">— none —</option>
+      </select>
+    </div>
+
+    <div class="builder-row">
+      <button type="button" id="builder-load-midi">Load MIDI Devices</button>
+      <span id="builder-midi-status" class="builder-hint"></span>
+    </div>
+
+    <div class="builder-row">
+      <label for="builder-theme">Theme (<code>theme</code>):</label>
+      <select id="builder-theme">
+        <option value="">— none —</option>
+      </select>
+    </div>
+
+    <div class="builder-row">
+      <label for="builder-url">Generated URL:</label>
+      <textarea id="builder-url" readonly rows="3"></textarea>
+    </div>
+
+    <div class="copy-section">
+      <button type="button" id="builder-copy">Copy</button>
+      <button type="button" id="builder-open">Open</button>
+      <span id="copy-status"></span>
+    </div>
+  </form>
+
+  <details>
+    <summary>Reference &amp; Examples</summary>
+
+    <h3>Currently supported devices:</h3>
+    <p>- Fireface 802 (Use Port 2)</p>
+    <p>- Fireface UCX (Use Port 2)</p>
+    <p>- Fireface UCX II (Use Port 2)</p>
+    <p>- Fireface UFX (Use Port 3)</p>
+    <p>- Fireface UFX II (Use Port 3)</p>
+    <p>- Fireface UFX III (Use Port R or Port 4)</p>
+    <p>- Fireface UFX+ (Use Port R or Port 4)</p>
+
+    <p>The base URL is:</p>
+    <div class="current-url-container">
+      <code id="current-base-url"></code>
+    </div>
+
+    <table class="param-table">
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Description</th>
+          <th>Example</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>midi</code></td>
+          <td>Set connection type to MIDI</td>
+          <td><code class="url-example" data-params="midi"></code></td>
+        </tr>
+        <tr>
+          <td><code>auto-connect</code></td>
+          <td>Connect automatically after the page loads</td>
+          <td><code class="url-example" data-params="midi&amp;auto-connect=true"></code></td>
+        </tr>
+        <tr>
+          <td><code>midi-input</code></td>
+          <td>MIDI input port name (URL-encoded)</td>
+          <td><code class="url-example" data-params="midi-input=Fireface%20802%20(12345678)%20Port%202"></code></td>
+        </tr>
+        <tr>
+          <td><code>midi-output</code></td>
+          <td>MIDI output port name (URL-encoded)</td>
+          <td><code class="url-example" data-params="midi-output=Fireface%20802%20(12345678)%20Port%202"></code></td>
+        </tr>
+        <tr>
+          <td><code>theme</code></td>
+          <td>Initial theme stylesheet</td>
+          <td><code class="url-example" data-params="theme=css/theme/tm_dark.css"></code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Note:</strong> Port names are matched case-insensitively. Always URL-encode values — the builder above does this for you.</p>
+  </details>
 </div>

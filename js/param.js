@@ -59,24 +59,38 @@ function configureFromUrl() {
 			typeSelect.dispatchEvent(event);
 		}
 		
+		const startedAt = Date.now();
+		const TIMEOUT_MS = 10000;
 		const checkInterval = setInterval(() => {
 			const inputSelect = document.getElementById('connection-midi-input');
 			const outputSelect = document.getElementById('connection-midi-output');
-			
+
 			if (!inputSelect || !outputSelect) return;
-			
-			let devicesSet = false;
-			if (midiInput) devicesSet |= setSelectByText(inputSelect, midiInput);
-			if (midiOutput) devicesSet |= setSelectByText(outputSelect, midiOutput);
-			
-			if (autoConnect && (devicesSet || (!midiInput && !midiOutput))) {
-				const connectBtn = document.getElementById('connection-connect');
-				if (connectBtn) {
-					setTimeout(() => connectBtn.click(), 500);
+
+			const inputReady = !midiInput || (inputSelect.options.length > 0);
+			const outputReady = !midiOutput || (outputSelect.options.length > 0);
+			if (!inputReady || !outputReady) {
+				if (Date.now() - startedAt > TIMEOUT_MS) {
+					console.warn('URL config: MIDI ports never appeared, giving up.');
+					clearInterval(checkInterval);
 				}
+				return;
 			}
-			
+
+			let inputOk = true, outputOk = true;
+			if (midiInput) inputOk = setSelectByText(inputSelect, midiInput);
+			if (midiOutput) outputOk = setSelectByText(outputSelect, midiOutput);
+
+			// Fire change so oscmix.js updates dataset.id / currentDevice
+			if (midiInput && inputOk) inputSelect.dispatchEvent(new Event('change'));
+			if (midiOutput && outputOk) outputSelect.dispatchEvent(new Event('change'));
+
 			clearInterval(checkInterval);
+
+			if (autoConnect && inputOk && outputOk) {
+				const connectBtn = document.getElementById('connection-connect');
+				if (connectBtn) setTimeout(() => connectBtn.click(), 500);
+			}
 		}, 300);
 	} catch (error) {
 		console.error("Error in URL config:", error);

@@ -1,0 +1,138 @@
+/*
+ * channelEq.css — styles for the per-channel EQ panel built lazily in
+ * oscmix.js's initChannelEQ. Independent of theme; uses --clr-* fallbacks
+ * so the panel works in any active theme.
+ */
+
+.ch-eq-host {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	width: 100%;
+	height: 100%;
+	min-width: 0;
+	min-height: 0;
+	font-size: 11px;
+	color: var(--clr-text-primary, #ccc);
+	box-sizing: border-box;
+}
+
+/* Toolbar -------------------------------------------------------------- */
+
+.ch-eq-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* Compact buttons within the channel EQ — smaller than the roomEq variant. */
+.ch-eq-host .btn {
+	padding: 2px 8px;
+	font-size: 10px;
+	letter-spacing: .5px;
+}
+.ch-eq-host .btn-bypass { min-width: 32px; }
+
+/* Canvas --------------------------------------------------------------- */
+
+.ch-eq-canvas {
+	width: 100%;
+	height: 110px;
+	background: var(--clr-bg-canvas, #0d0d0d);
+	border: 1px solid var(--clr-border-subtle, #2a2a2a);
+	border-radius: 4px;
+	cursor: crosshair;
+	display: block;
+	flex: 0 0 auto;
+}
+
+/* Bands grid (3 columns: B1, B2, B3) ----------------------------------- */
+
+.ch-eq-bands {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	grid-auto-rows: auto;
+	row-gap: 4px;
+	column-gap: 4px;
+	align-items: center;
+}
+
+.ch-eq-row {
+	display: contents;
+}
+
+.ch-eq-cell {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 0;
+}
+
+/* Band header row (B1 / B2 / B3) */
+.ch-eq-cell-band {
+	font-weight: bold;
+	font-size: 11px;
+	letter-spacing: 1px;
+	color: var(--band-accent, var(--clr-accent, #e87c2a));
+	text-transform: uppercase;
+	user-select: none;
+}
+
+/* Type select / fixed-Bell label */
+.ch-eq-cell-type select {
+	width: 100%;
+	max-width: 110px;
+	background: var(--clr-bg-container, #111);
+	color: var(--clr-text-primary, #ccc);
+	border: 1px solid var(--clr-border-mid, #333);
+	border-radius: 3px;
+	padding: 1px 2px;
+	font-size: 10px;
+	outline: none;
+	cursor: pointer;
+	text-align: center;
+}
+
+.ch-eq-cell-type select:focus {
+	border-color: var(--band-accent, var(--clr-accent, #e87c2a));
+}
+
+.ch-eq-type-fixed {
+	color: var(--clr-text-faint, #666);
+	font-size: 10px;
+	font-style: italic;
+}
+
+/* Knob cells: label and value share the same compact uppercase typography.
+ * The value is colored with the band accent. */
+.ch-eq-host .knob-container { width: 100%; gap: 1px; }
+.ch-eq-host .knob-label,
+.ch-eq-host .knob-value {
+	font-size: 9px;
+	letter-spacing: .5px;
+	text-transform: uppercase;
+	min-height: 11px;
+	line-height: 1.1;
+}
+.ch-eq-host .knob-label { color: var(--clr-text-faint, #666); }
+.ch-eq-host .knob-value { color: var(--clr-text-muted, #aaa); }
+
+.ch-eq-cell-knob .knob-value {
+	color: var(--band-accent, var(--clr-knob-value, #aaa));
+}
+
+/* LowCut --------------------------------------------------------------- */
+
+.ch-lowcut {
+	display: grid;
+	grid-template-columns: auto 1fr 1fr;
+	column-gap: 6px;
+	align-items: center;
+	margin-top: 4px;
+	padding-top: 6px;
+	border-top: 1px solid var(--clr-border-subtle, #2a2a2a);
+}
+
+.ch-lowcut .btn {
+	justify-self: start;
+}

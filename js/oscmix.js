@@ -1,6 +1,9 @@
 "use strict";
 
-import { Knob } from "./knob.js";
+import { Knob }      from "./knob.js";
+import { Button }    from "./button.js";
+import { EQGraph }   from "./eqGraph.js";
+import { EQBandRow } from "./eqBandRow.js";
 import { device_ff802 } from "./device_ff802.js";
 import { device_ffucx } from "./device_ffucx.js";
 import { device_ffucxii } from "./device_ffucxii.js";
@@ -10,6 +13,7 @@ import { device_ffufxiii } from "./device_ffufxiii.js";
 import { device_ffufxp } from "./device_ffufxp.js";
 
 import { RoomEQBridge, withValueCache } from './roomEq_oscbridge.js';
+import { ChannelEQBridge }              from './channelEq_oscbridge.js';
 
 // Order matters here: specific/longer device names MUST come before their prefixes
 // (e.g., UFX+ before UFX, UCXII before UCX, UFXIII before UFXII before UFX)
@@ -24,6 +28,7 @@ const devices = [
 ];
 
 let currentDevice = device_ffufxiii;
+let loadedDevice = null;  // tracks which device the channel UI was last built for
 
 let arcControlWindow = null;
 
@@ -464,6 +469,7 @@ class ConnectionMIDI extends AbortController {
 class Interface {
 	constructor() {
 		this.methods = new Map();
+		this.values  = new Map();   // addr → last-received args[0]
 		this.durecFiles = [];
 		this.currentFile = -1;
 
@@ -615,8 +621,22 @@ class Interface {
 				(debugFlags.incoming && debugFlags.other && isOther) ) {
 				console.debug("[OSC IN]", addr, args);
 			}
+			// Cache the first arg of every incoming message except high-rate
+			// metering data — that floods the cache without anyone wanting it.
+			if (!isLevel && args.length > 0) {
+				this.values.set(addr, args[0]);
+			}
 			const method = this.methods.get(addr);
 			if (method) method(args);
+		}
+	}
+
+	getCached(addr) { return this.values.get(addr); }
+
+	// Iterate cached entries with addresses starting with `prefix`. fn(addr, value)
+	eachCached(prefix, fn) {
+		for (const [addr, value] of this.values) {
+			if (addr.startsWith(prefix)) fn(addr, value);
 		}
 	}
 
@@ -665,134 +685,333 @@ class Interface {
 class OSCEvent extends Event {}
 class SubmixEvent extends Event {}
 
-class EQBand {
-	static PEAK = 0;
-	static LOW_SHELF = 1;
-	static HIGH_SHELF = 2;
-	static LOW_PASS = 3;
-	static HIGH_PASS = 4;
+// Per-channel EQ panel — built lazily on first reveal of the EQ panel.
+// Owns the EQGraph (canvas), 3-band knob row, EQ bypass, LowCut block.
+// All OSC bindings are wired here; the Channel#elements set no longer
+// auto-binds eq/* or lowcut/* IDs.
+const CH_EQ_BAND_COLORS = [
+	{ accent: '#e87c2a', accentBright: '#ff9940' }, // band 1 — orange
+	{ accent: '#5fcc5f', accentBright: '#88ee88' }, // band 2 — green
+	{ accent: '#5fb8ee', accentBright: '#88d4ff' }, // band 3 — blue
+];
+const CH_EQ_LOWCUT_COLOR = { accent: '#e87c2a', accentBright: '#ff9940' };
+const CH_EQ_BAND1_TYPES = ['Bell', 'Low Shelf', 'High Pass', 'Low Pass'];
+const CH_EQ_BAND3_TYPES = ['Bell', 'High Shelf', 'Low Pass', 'High Pass'];
+const CH_EQ_TYPES_PER_BAND = { 0: CH_EQ_BAND1_TYPES, 2: CH_EQ_BAND3_TYPES };
+const CH_EQ_FULL_CHOICE   = new Set([0, 2]);
+const CH_EQ_LOWCUT_SLOPES = [6, 12, 18, 24];
 
-	#type = EQBand.PEAK;
-	#gain = 0;
-	#freq = 100;
-	#q = 1;
+function initChannelEQ(host, channelType, channelIdx, iface) {
+	const prefix = `/${channelType}/${channelIdx + 1}`;
+	const idPrefix = `${channelType}${channelIdx}-eq`;
 
-	constructor() {
-		this.#updateCoeffs();
-	}
-	#updateCoeffs() {
-		const f2 = this.#freq * this.#freq;
-		const f4 = f2 * f2;
-		const A = Math.pow(10, this.#gain / 40);
-		const Q = this.#q;
-		switch (this.#type) {
-			case EQBand.PEAK:
-				this.a0 = f4;
-				this.a1 = ((A * A) / (Q * Q) - 2) * f2;
-				this.a2 = 1;
-				this.b0 = f4;
-				this.b1 = (1 / (A * A * Q * Q) - 2) * f2;
-				break;
-			case EQBand.LOW_SHELF:
-				this.a0 = A * A * f4;
-				this.a1 = A * (1 / (Q * Q) - 2) * f2;
-				this.a2 = 1;
-				this.b0 = f4 / (A * A);
-				this.b1 = ((1 / (Q * Q) - 2) / A) * f2;
-				break;
-			case EQBand.HIGH_SHELF:
-				this.a0 = A * A * f4;
-				this.a1 = A * A * A * (1 / (Q * Q) - 2) * f2;
-				this.a2 = A * A * A * A;
-				this.b0 = A * A * f4;
-				this.b1 = A * (1 / (Q * Q) - 2) * f2;
-				break;
-			case EQBand.LOW_PASS:
-				this.a0 = f4;
-				this.a1 = 0;
-				this.a2 = 0;
-				this.b0 = f4;
-				this.b1 = (1 / (Q * Q) - 2) * f2;
-				break;
-			case EQBand.HIGH_PASS:
-				this.a0 = 0;
-				this.a1 = 0;
-				this.a2 = 1;
-				this.b0 = f4;
-				this.b1 = (1 / (Q * Q) - 2) * f2;
-				break;
-		}
-	}
-	set type(value) {
-		this.#type = value;
-		this.#updateCoeffs();
-	}
-	set gain(value) {
-		this.#gain = value;
-		this.#updateCoeffs();
-	}
-	set freq(value) {
-		this.#freq = value;
-		this.#updateCoeffs();
-	}
-	set q(value) {
-		this.#q = value;
-		this.#updateCoeffs();
-	}
-	eval(f2, f4) {
-		return (this.a0 + this.a1 * f2 + this.a2 * f4) / (this.b0 + this.b1 * f2 + f4);
-	}
-}
+	// Send to device AND mirror through iface.methods so any open popup stays
+	// in sync (the bridge wraps those methods to forward to the popup window).
+	const sendOsc = (addr, typetag, args) => {
+		iface.send(addr, typetag, args);
+		iface.methods.get(addr)?.(args);
+	};
 
-class LowCut {
-	static #k = [1, 0.655, 0.528, 0.457];
-	order = 1;
-	freq = 100;
-	eval(f2) {
-		const freq = this.freq * LowCut.#k[this.order];
-		const freq2 = freq * freq;
-		let y = 1;
-		for (let i = 0; i <= this.order; ++i) y *= f2 / (f2 + freq2);
-		return y;
-	}
-}
+	const eqState = {
+		enabled: true,
+		bands: [
+			{ type: 'Bell', gain: 0, freq: 100,   q: 1 },
+			{ type: 'Bell', gain: 0, freq: 1000,  q: 1 },
+			{ type: 'Bell', gain: 0, freq: 10000, q: 1 },
+		],
+	};
+	const lowCutState = { enabled: false, freq: 100, slope: 1 };
 
-class EQPlot {
-	#svg;
-	#grid;
-	#curve;
-	bands = [];
-	constructor(svg) {
-		this.#svg = svg;
-		this.#curve = svg.querySelector(".eq-curve");
-		const grid = svg.querySelector(".eq-grid");
-		const observer = new ResizeObserver(() => {
-			const w = svg.clientWidth;
-			const h = svg.clientHeight;
-			const d = [];
-			for (let i = 0; i < 5; ++i) d.push(`M 0 ${Math.round(((4 + 10 * i) * h) / 48) + 0.5} H ${w}`);
-			for (let i = 0; i < 3; ++i) d.push(`M ${Math.round(((7 + 10 * i) * w) / 30) + 0.5} 0 V ${h}`);
-			grid.setAttribute("d", d.join(" "));
-			this.update();
+	host.innerHTML = '';
+
+	// ----- Toolbar (EQ bypass) ------------------------------------------
+	const toolbar = document.createElement('div');
+	toolbar.className = 'ch-eq-toolbar';
+	const eqBypassBtn = new Button({
+		variant: 'bypass',
+		label: 'EQ',
+		active: eqState.enabled,
+		title: 'Toggle EQ',
+	});
+	toolbar.appendChild(eqBypassBtn.element);
+	host.appendChild(toolbar);
+
+	// ----- Canvas / Graph ------------------------------------------------
+	const canvas = document.createElement('canvas');
+	canvas.className = 'ch-eq-canvas';
+	host.appendChild(canvas);
+
+	// Bands grid (declared early so the graph can call eqBandRow.set*)
+	const bandsGrid = document.createElement('div');
+	bandsGrid.className = 'ch-eq-bands';
+	host.appendChild(bandsGrid);
+
+	// LowCut section
+	const lowCutSection = document.createElement('div');
+	lowCutSection.className = 'ch-lowcut';
+	host.appendChild(lowCutSection);
+
+	// Bands array consumed by EQGraph: 3 EQ bands + LowCut as 4th band.
+	const graphBands = () => {
+		const out = eqState.bands.map(b => ({ ...b, enabled: eqState.enabled }));
+		out.push({
+			type: 'Low Cut',
+			freq: lowCutState.freq,
+			slope: lowCutState.slope,
+			enabled: lowCutState.enabled,
 		});
-		observer.observe(svg);
-	}
-	update() {
-		const w = this.#svg.clientWidth;
-		const h = this.#svg.clientHeight;
-		let points = [];
-		for (let x = 0; x <= w; ++x) {
-			const f2 = Math.pow(10, 2 * (((x - 0.5) * 3) / w + 1.3));
-			const f4 = f2 * f2;
-			let y = 1;
-			for (const band of this.bands) {
-				if (band.enabled) y *= band.eval(f2, f4);
+		return out;
+	};
+
+	// Forward declarations so circular references between graph/bands/lowcut work.
+	let eqBandRow;          // assigned below
+	let lowCutFreqKnob;     // assigned below
+
+	const eqGraph = new EQGraph(canvas, {
+		limits: {
+			db:   { min: -20, max: 20 },
+			freq: { min: 20,  max: 20000 },
+			q:    { min: 0.4, max: 9.9 },
+		},
+		displayLimits: {
+			db:   { min: -22.5, max: 22.5 },
+			freq: { min: 10,    max: 20000 },
+		},
+		getBands:       graphBands,
+		getActiveColor: () => CH_EQ_BAND_COLORS[0],
+		getNodeColor:   (i) => i < 3 ? CH_EQ_BAND_COLORS[i] : CH_EQ_LOWCUT_COLOR,
+		onBandDrag: (i, { freq, gain }) => {
+			if (i >= 3) {
+				lowCutState.freq = freq;
+				lowCutFreqKnob?.updateFromOSC(freq);
+				return;
 			}
-			y = Math.round(h / 2) + 0.5 + ((-10 * h) / 48) * Math.log10(y);
-			points.push(x, y);
+			eqState.bands[i].freq = freq;
+			eqState.bands[i].gain = gain;
+			eqBandRow?.setKnobValue(i, 'freq', freq);
+			eqBandRow?.setKnobValue(i, 'gain', gain);
+		},
+		onBandRelease: (i) => {
+			if (i >= 3) {
+				sendOsc(`${prefix}/lowcut/freq`, ',f', [lowCutState.freq]);
+				return;
+			}
+			sendOsc(`${prefix}/eq/band${i+1}freq`, ',f', [eqState.bands[i].freq]);
+			sendOsc(`${prefix}/eq/band${i+1}gain`, ',f', [eqState.bands[i].gain]);
+		},
+		onBandQ: (i, q) => {
+			if (i >= 3) return;
+			eqState.bands[i].q = q;
+			eqBandRow?.setKnobValue(i, 'q', q);
+			sendOsc(`${prefix}/eq/band${i+1}q`, ',f', [q]);
+		},
+		formatBandFull: (i, b) => {
+			if (b.type === 'Low Cut') {
+				const f = b.freq >= 1000 ? (b.freq/1000).toFixed(1)+' kHz' : Math.round(b.freq)+' Hz';
+				return `Low Cut  ${f}  ${CH_EQ_LOWCUT_SLOPES[Math.round(b.slope ?? 0)]} dB/oct`;
+			}
+			const f = b.freq >= 1000 ? (b.freq/1000).toFixed(b.freq%1000===0?0:1)+' kHz' : Math.round(b.freq)+' Hz';
+			return `B${i+1}  ${f}  ${(b.gain>=0?'+':'')+b.gain.toFixed(1)} dB  Q:${b.q.toFixed(2)}`;
+		},
+	});
+
+	// ----- Band knob row -------------------------------------------------
+	eqBandRow = new EQBandRow({
+		bandCount: 3,
+		fullChoiceBands: CH_EQ_FULL_CHOICE,
+		filterTypesPerBand: CH_EQ_TYPES_PER_BAND,
+		limits: {
+			db:   { min: -20, max: 20 },
+			freq: { min: 20,  max: 20000 },
+			q:    { min: 0.4, max: 9.9 },
+		},
+		defaults: (i) => eqState.bands[i],
+		knobOptions: {
+			gain: { label: 'Gain', size: 32 },
+			freq: { label: 'Freq', size: 32 },
+			q:    { label: 'Q',    size: 32 },
+		},
+		idPrefix,
+		onBandChange: (i, param, val) => {
+			if (param === 'type') {
+				const types = CH_EQ_TYPES_PER_BAND[i];
+				const typeIdx = Math.max(0, types.indexOf(val));
+				eqState.bands[i].type = val;
+				sendOsc(`${prefix}/eq/band${i+1}type`, ',i', [typeIdx]);
+				eqGraph.draw();
+				return;
+			}
+			eqState.bands[i][param] = val;
+			sendOsc(`${prefix}/eq/band${i+1}${param}`, ',f', [val]);
+			eqGraph.draw();
+		},
+	});
+
+	for (let i = 0; i < 3; i++) {
+		for (const param of ['gain', 'freq', 'q']) {
+			eqBandRow.setKnobAccent(i, param, CH_EQ_BAND_COLORS[i].accent, CH_EQ_BAND_COLORS[i].accentBright);
 		}
-		this.#curve.setAttribute("points", points.join(" "));
 	}
+
+	// ----- Bands grid layout ---------------------------------------------
+	// 3 columns (one per band), 5 rows: header, type, gain, freq, q.
+	const buildRow = (cellClass, cellsBuilder) => {
+		const row = document.createElement('div');
+		row.className = 'ch-eq-row';
+		for (let i = 0; i < 3; i++) {
+			const cell = document.createElement('div');
+			cell.className = `ch-eq-cell ${cellClass}`;
+			cell.style.setProperty('--band-accent',        CH_EQ_BAND_COLORS[i].accent);
+			cell.style.setProperty('--band-accent-bright', CH_EQ_BAND_COLORS[i].accentBright);
+			cellsBuilder(cell, i);
+			row.appendChild(cell);
+		}
+		bandsGrid.appendChild(row);
+	};
+
+	buildRow('ch-eq-cell-band', (cell, i) => {
+		cell.textContent = `B${i + 1}`;
+	});
+	buildRow('ch-eq-cell-type', (cell, i) => {
+		const sel = eqBandRow.typeSelect(i);
+		if (sel) cell.appendChild(sel);
+		else {
+			const fixed = document.createElement('span');
+			fixed.className = 'ch-eq-type-fixed';
+			fixed.textContent = 'Bell';
+			cell.appendChild(fixed);
+		}
+	});
+	buildRow('ch-eq-cell-knob', (cell, i) => cell.appendChild(eqBandRow.bandKnob(i, 'gain').element));
+	buildRow('ch-eq-cell-knob', (cell, i) => cell.appendChild(eqBandRow.bandKnob(i, 'freq').element));
+	buildRow('ch-eq-cell-knob', (cell, i) => cell.appendChild(eqBandRow.bandKnob(i, 'q').element));
+
+	// ----- LowCut --------------------------------------------------------
+	const lowCutBypassBtn = new Button({
+		variant: 'bypass',
+		label: 'LC',
+		active: lowCutState.enabled,
+		title: 'Toggle Low Cut',
+	});
+	lowCutSection.appendChild(lowCutBypassBtn.element);
+
+	const lowCutSlopeKnob = new Knob({
+		id: `${idPrefix}-lowcut-slope`,
+		label: 'dB/oct',
+		min: 0, max: 3, step: 1,
+		value: lowCutState.slope, resetValue: 1,
+		format: v => String(CH_EQ_LOWCUT_SLOPES[Math.round(v)] ?? '?'),
+		size: 32,
+	});
+	lowCutFreqKnob = new Knob({
+		id: `${idPrefix}-lowcut-freq`,
+		label: 'freq',
+		min: 20, max: 500,
+		value: lowCutState.freq, resetValue: 100,
+		scale: 'log',
+		format: v => Math.round(v) + ' Hz',
+		size: 32,
+		sendDuringDrag: true, sendInterval: 30,
+	});
+	lowCutSlopeKnob.setAccentColor(CH_EQ_LOWCUT_COLOR.accent, CH_EQ_LOWCUT_COLOR.accentBright);
+	lowCutFreqKnob.setAccentColor(CH_EQ_LOWCUT_COLOR.accent, CH_EQ_LOWCUT_COLOR.accentBright);
+	lowCutSection.appendChild(lowCutSlopeKnob.element);
+	lowCutSection.appendChild(lowCutFreqKnob.element);
+
+	// ----- OSC bindings --------------------------------------------------
+	eqBypassBtn.element.addEventListener('user-change', () => {
+		eqState.enabled = eqBypassBtn.active;
+		sendOsc(`${prefix}/eq`, ',i', [eqState.enabled ? 1 : 0]);
+		eqGraph.draw();
+	});
+	const prevEqMethod = iface.methods.get(`${prefix}/eq`);
+	iface.methods.set(`${prefix}/eq`, (args) => {
+		prevEqMethod?.(args);
+		eqState.enabled = !!args[0];
+		eqBypassBtn.active = eqState.enabled;
+		eqGraph.draw();
+	});
+
+	for (let i = 0; i < 3; i++) {
+		for (const param of ['gain', 'freq', 'q']) {
+			iface.methods.set(`${prefix}/eq/band${i+1}${param}`, (args) => {
+				eqState.bands[i][param] = args[0];
+				eqBandRow.setKnobValue(i, param, args[0]);
+				eqGraph.draw();
+			});
+		}
+		if (CH_EQ_FULL_CHOICE.has(i)) {
+			const types = CH_EQ_TYPES_PER_BAND[i];
+			iface.methods.set(`${prefix}/eq/band${i+1}type`, (args) => {
+				const t = types[args[0]] ?? 'Bell';
+				eqState.bands[i].type = t;
+				eqBandRow.setType(i, t);
+				eqGraph.draw();
+			});
+		}
+	}
+
+	lowCutBypassBtn.element.addEventListener('user-change', () => {
+		lowCutState.enabled = lowCutBypassBtn.active;
+		sendOsc(`${prefix}/lowcut`, ',i', [lowCutState.enabled ? 1 : 0]);
+		eqGraph.draw();
+	});
+	const prevLcMethod = iface.methods.get(`${prefix}/lowcut`);
+	iface.methods.set(`${prefix}/lowcut`, (args) => {
+		prevLcMethod?.(args);
+		lowCutState.enabled = !!args[0];
+		lowCutBypassBtn.active = lowCutState.enabled;
+		eqGraph.draw();
+	});
+
+	lowCutSlopeKnob.element.addEventListener('user-change', (e) => {
+		const slope = Math.round(e.detail.value);
+		lowCutState.slope = slope;
+		sendOsc(`${prefix}/lowcut/slope`, ',i', [slope]);
+		eqGraph.draw();
+	});
+	iface.methods.set(`${prefix}/lowcut/slope`, (args) => {
+		lowCutState.slope = args[0];
+		lowCutSlopeKnob.updateFromOSC(args[0]);
+		eqGraph.draw();
+	});
+
+	lowCutFreqKnob.element.addEventListener('user-change', (e) => {
+		lowCutState.freq = e.detail.value;
+		sendOsc(`${prefix}/lowcut/freq`, ',f', [e.detail.value]);
+		eqGraph.draw();
+	});
+	iface.methods.set(`${prefix}/lowcut/freq`, (args) => {
+		lowCutState.freq = args[0];
+		lowCutFreqKnob.updateFromOSC(args[0]);
+		eqGraph.draw();
+	});
+
+	// Register with the popup bridge so OSC values for this channel get
+	// forwarded to an open popup window. Must come AFTER all iface.methods.set
+	// calls above so the bridge wraps our handlers, not the other way around.
+	const channelKey = `${channelType}/${channelIdx + 1}`;
+	cheqBridge.register(channelKey);
+
+	// Populate inline view from central OSC cache so it shows current device
+	// state immediately, without waiting for the device to re-send everything.
+	for (const param of [
+		'eq',
+		'eq/band1type', 'eq/band1gain', 'eq/band1freq', 'eq/band1q',
+		                'eq/band2gain', 'eq/band2freq', 'eq/band2q',
+		'eq/band3type', 'eq/band3gain', 'eq/band3freq', 'eq/band3q',
+		'lowcut', 'lowcut/freq', 'lowcut/slope',
+	]) {
+		const v = iface.getCached(`${prefix}/${param}`);
+		if (v !== undefined) iface.methods.get(`${prefix}/${param}`)?.([v]);
+	}
+
+	// Double-click on the canvas opens the larger popup view.
+	canvas.addEventListener('dblclick', () => cheqBridge.openPopup(channelKey));
+	canvas.title = 'Double-click to open in a separate window';
+
+	// First draw — defer one frame so the host's CSS layout has settled.
+	requestAnimationFrame(() => eqGraph.resize());
 }
 
 class Channel {
@@ -814,21 +1033,7 @@ class Channel {
 		"reflevel",
 		"autoset",
 		"hi-z",
-		"eq",
-		"eq/band1type",
-		"eq/band1gain",
-		"eq/band1freq",
-		"eq/band1q",
-		"eq/band2gain",
-		"eq/band2freq",
-		"eq/band2q",
-		"eq/band3type",
-		"eq/band3gain",
-		"eq/band3freq",
-		"eq/band3q",
-		"lowcut",
-		"lowcut/freq",
-		"lowcut/slope",
+		// EQ & LowCut: bound explicitly via Channel#initEQ (lazy)
 		"dynamics",
 		"dynamics/gain",
 		"dynamics/attack",
@@ -1239,51 +1444,38 @@ class Channel {
 		for (const node of fragment.querySelectorAll('.channel-panel-buttons input[type="checkbox"]'))
 			node.onchange = onPanelButtonChanged;
 
-		const eqSvg = fragment.getElementById("eq-plot");
-		if (eqSvg) {
-			this.eq = new EQPlot(eqSvg);
-
-			const eqEnabled = fragment.getElementById("eq");
-			eqEnabled.addEventListener("change", (event) => {
-				for (let i = 0; i < 3; ++i) this.eq.bands[i].enabled = event.target.checked;
-				this.eq.update();
-			});
-			const band1Type = fragment.getElementById("eq/band1type");
-			band1Type.addEventListener("change", (event) => {
-				this.eq.bands[0].type = EQBand[event.target.value];
-				this.eq.update();
-			});
-			const band3Type = fragment.getElementById("eq/band3type");
-			band3Type.addEventListener("change", (event) => {
-				this.eq.bands[2].type = EQBand[event.target.value];
-				this.eq.update();
-			});
-			for (let i = 0; i < 3; ++i) {
-				const band = new EQBand();
-				this.eq.bands.push(band);
-				for (const prop of ["gain", "freq", "q"]) {
-					const node = fragment.getElementById(`eq/band${i + 1}${prop}`);
-					node.addEventListener("change", (event) => {
-						band[prop] = event.target.valueAsNumber;
-						this.eq.update();
-					});
-				}
+		// EQ panel is built lazily on first reveal — see Channel#initEQ.
+		const eqHost = fragment.querySelector('.ch-eq-host');
+		if (eqHost && (type === Channel.INPUT || type === Channel.OUTPUT)) {
+			// Mirror EQ/LC enabled state into hidden checkboxes before the inline panel
+			// is built, so the CSS :has() glow on .channel-show-eq-label works immediately
+			// after connect (all themes already have the matching selector).
+			const eqStateEl = fragment.querySelector('.channel-panel-eq .eq');
+			const lcStateEl = fragment.querySelector('.channel-panel-eq .lowcut');
+			if (eqStateEl) {
+				iface.methods.set(`${prefix}/eq`, (args) => { eqStateEl.checked = !!args[0]; });
+				const v = iface.getCached(`${prefix}/eq`);
+				if (v !== undefined) eqStateEl.checked = !!v;
+			}
+			if (lcStateEl) {
+				iface.methods.set(`${prefix}/lowcut`, (args) => { lcStateEl.checked = !!args[0]; });
+				const v = iface.getCached(`${prefix}/lowcut`);
+				if (v !== undefined) lcStateEl.checked = !!v;
 			}
 
-			const lowCut = new LowCut();
-			this.eq.bands.push(lowCut);
-			fragment.getElementById("lowcut").addEventListener("change", (event) => {
-				lowCut.enabled = event.target.checked;
-				this.eq.update();
-			});
-			fragment.getElementById("lowcut/slope").addEventListener("change", (event) => {
-				lowCut.order = event.target.selectedIndex;
-				this.eq.update();
-			});
-			fragment.getElementById("lowcut/freq").addEventListener("change", (event) => {
-				lowCut.freq = event.target.value;
-				this.eq.update();
-			});
+			const showEq = fragment.querySelector('.channel-show-eq');
+			let eqBuilt = false;
+			const buildIfNeeded = () => {
+				if (eqBuilt) return;
+				eqBuilt = true;
+				initChannelEQ(eqHost, type, index, iface);
+			};
+			if (showEq) {
+				if (showEq.checked) buildIfNeeded();
+				showEq.addEventListener('change', () => {
+					if (showEq.checked) buildIfNeeded();
+				});
+			}
 		}
 
 		const muteCheckbox = fragment.querySelector(".mute-checkbox");
@@ -1408,7 +1600,8 @@ function updateConnectionStatus(connected, oscActive, deviceName) {
 }
 
 const iface = new Interface();
-const bridge = new RoomEQBridge(iface);
+const bridge      = new RoomEQBridge(iface);
+const cheqBridge  = new ChannelEQBridge(iface);
 
 function setupInterface() {
 	const connectionType = document.getElementById("connection-type");
@@ -1483,7 +1676,7 @@ function setupInterface() {
 						: null;
 					if (currentDevice) {
 						console.log("Active device:", currentDevice.deviceName);
-						reinitializeUI();
+						if (currentDevice !== loadedDevice) reinitializeUI();
 						updateConnectionStatus(false, false, currentDevice.deviceName);
 					}
 					updatePageTitle();
@@ -1584,20 +1777,24 @@ function setupInterface() {
 	FaderGroup.initToggle();
 	FaderGroup.restore();  // must run before channels are constructed
 
-	/* make channels */
-	for (const [type, id] of [
-		[Channel.INPUT, "inputs"],
-		[Channel.PLAYBACK, "playbacks"],
-		[Channel.OUTPUT, "outputs"]
+	/* make channels — batched into a DocumentFragment so we only trigger one
+	   layout per container instead of one per channel. */
+	for (const [type, id, names] of [
+		[Channel.INPUT,    "inputs",    currentDevice.inputNames],
+		[Channel.PLAYBACK, "playbacks", currentDevice.outputNames],
+		[Channel.OUTPUT,   "outputs",   currentDevice.outputNames]
 	]) {
 		const div = document.getElementById(id);
+		const batch = document.createDocumentFragment();
 		let left;
-		for (let i = 0; i < currentDevice.outputNames.length; ++i) {
+		for (let i = 0; i < names.length; ++i) {
 			const channel = new Channel(type, i, iface, left);
-			div.appendChild(channel.element);
+			batch.appendChild(channel.element);
 			left = i % 2 == 0 ? channel : null;
 		}
+		div.appendChild(batch);
 	}
+	loadedDevice = currentDevice;
 
 	const routingMode = document.getElementById("routing-mode");
 	routingMode.addEventListener("change", Channel.submixChanged);
@@ -1875,15 +2072,18 @@ function reinitializeUI() {
 		[Channel.PLAYBACK, playbacksContainer, currentDevice.outputNames],
 		[Channel.OUTPUT, outputsContainer, currentDevice.outputNames]
 	]) {
+		const batch = document.createDocumentFragment();
 		let left;
 		for (let i = 0; i < names.length; ++i) {
 			const channel = new Channel(type, i, iface, left);
-			container.appendChild(channel.element);
+			batch.appendChild(channel.element);
 			left = i % 2 === 0 ? channel : null;
 		}
+		container.appendChild(batch);
 	}
 	populateDeviceSpecificOptions();
 	applyDeviceFeatures();
+	loadedDevice = currentDevice;
 
 	console.log("UI reinitialized for device: ", currentDevice.deviceName);
 }

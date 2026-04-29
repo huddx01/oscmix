@@ -56,7 +56,7 @@ body {
   display:flex;
   flex-direction:column;
   align-items:center;
-  min-height:100vh;
+  height:100vh;
   padding:16px;
   user-select:none;
 }
@@ -75,13 +75,18 @@ h1 {
   border-radius:6px;
   padding:16px;
   width:100%;
-  max-width:1100px;
   box-shadow:0 0 30px rgba(0,0,0,0.8);
+  /* Fill remaining vertical space; canvas stretches, toolbar/bands stay anchored. */
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
 }
 
 #eqCanvas {
   width:100%;
-  height:240px;
+  flex:1 1 auto;
+  min-height:120px;
   background:var(--clr-bg-canvas);
   border:1px solid var(--clr-border-subtle);
   border-radius:4px;
@@ -193,12 +198,7 @@ button {
 }
 button:hover { background:var(--clr-accent); color:var(--clr-text-dark); border-color:var(--clr-accent); }
 
-/* Bypass: ON = orange (bypass inactive), OFF = dark (bypass active) */
-.bypass-btn           { min-width:52px; }
-.bypass-btn.state-on  { background:var(--clr-accent);        color:var(--clr-text-dark); border-color:var(--clr-accent); }
-.bypass-btn.state-on:hover  { background:var(--clr-accent-bright); border-color:var(--clr-accent-bright); }
-.bypass-btn.state-off { background:var(--clr-bg-btn);        color:var(--clr-text-off);  border-color:var(--clr-border-mid); }
-.bypass-btn.state-off:hover { background:var(--clr-border-mid); color:var(--clr-text-dim); border-color:var(--clr-border-strong); }
+/* Bypass / Side / Link button styles moved to css/button.css (used by js/button.js). */
 
 .preset-select, .preset-name-input {
   background:var(--clr-bg-page);
@@ -221,64 +221,6 @@ button:hover { background:var(--clr-accent); color:var(--clr-text-dark); border-
   align-items: center;
   gap: 4px;
   padding-left: 10px;
-}
-
-.side-btn {
-  min-width: 52px;
-  background: var(--clr-bg-btn);
-  color: var(--clr-text-off);
-  border: 1px solid var(--clr-border-mid);
-  border-radius: 4px;
-  padding: 5px 10px;
-  font-size: 11px;
-  cursor: pointer;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  transition: all .15s;
-}
-.side-btn.side-l.active {
-  background: var(--clr-left);
-  color: var(--clr-text-dark);
-  border-color: var(--clr-left);
-}
-.side-btn.side-r.active {
-  background: var(--clr-right);
-  color: var(--clr-text-dark);
-  border-color: var(--clr-right);
-}
-.side-btn:not(.active):hover {
-  border-color: var(--clr-border-hover);
-  color: var(--clr-text-primary);
-}
-.side-btn.side-r:not(.active):hover {
-  background: var(--clr-right);
-  color: var(--clr-text-dark);
-  border-color: var(--clr-right);
-}
-
-.link-btn {
-  background: var(--clr-bg-btn);
-  border: 1px solid var(--clr-border-mid);
-  border-radius: 4px;
-  padding: 5px 8px;
-  font-size: 13px;
-  cursor: pointer;
-  line-height: 1;
-  transition: all .15s;
-}
-.link-btn.linked {
-  background: var(--clr-link);
-  color: var(--clr-text-dark);
-  border-color: var(--clr-link);
-}
-.link-btn.linked:hover {
-  background: var(--clr-link-bright);
-  border-color: var(--clr-link-bright);
-}
-.link-btn:not(.linked):hover {
-  background: rgba(68,221,136,0.15);
-  border-color: var(--clr-link);
-  color: var(--clr-link);
 }
 
 /* Stereo extra-knob groups */
