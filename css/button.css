@@ -69,8 +69,9 @@
 	border-color: var(--clr-accent, #e87c2a);
 }
 .btn-toggle:not(.is-active):hover {
-	border-color: var(--clr-border-hover, #555);
-	color:        var(--clr-text-primary, #ccc);
+	background:   rgba(232, 124, 42, 0.15);
+	border-color: var(--clr-accent, #e87c2a);
+	color:        var(--clr-accent, #e87c2a);
 }
 .btn-toggle.is-active:hover {
 	background:   var(--clr-accent-bright, #ff9940);
@@ -130,4 +131,16 @@
 	background:   rgba(68, 221, 136, 0.15);
 	border-color: var(--clr-link, #44dd88);
 	color:        var(--clr-link, #44dd88);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Channel strip: compact buttons (M/S/R/P, settings toggles)               */
+/* ------------------------------------------------------------------------ */
+.btn-channel {
+	padding: 2px 4px;
+	font-size: 10px;
+	letter-spacing: 0;
+	text-transform: lowercase;
+	border-radius: 3px;
+	min-width: 0;
 }

@@ -1,7 +1,7 @@
 :root {
 
 	/* Dimensions */
-	--channel-width: 90px;
+	--channel-width: 6.5em;
 	--sidebar-width: 19em;
 	
 	/* Base Colors */
@@ -318,7 +318,6 @@ label:has(#connection-type:not([data-value="WebSocket"])) ~ .connection-websocke
 #setup label {
 	border: none;
 }
-
 
 
 #channels {
@@ -808,24 +807,25 @@ input[type=range]:focus {
 
 
 .meter-wrapper {
-	width: 10px;
+	width: 0.4vw;
+	/*height: 100%;*/
 	border: 2px solid #777777;
-	border-radius: 4px;
+	border-radius: 2px;
 	overflow: hidden;
 	margin: 2px 4px;
-	background: repeating-linear-gradient(to top,
-       #444 0px,
-       #444 1px,  
-       transparent 1px,
-       transparent 8px 
+	background: repeating-linear-gradient(
+       
+       #222 0.1em 0.2em,  
+       
+       transparent 0em 0.6em 
     ),
     linear-gradient(to top,
 	    var(--meter-green) 0%,
 	    var(--meter-green) 62%,
 	    var(--meter-yellow) 64%,
 	    var(--meter-yellow) 77%,
-	    var(--meter-orange) 79%,	    
-	    var(--meter-orange) 87%,	    
+	    var(--meter-orange) 79%,
+	    var(--meter-orange) 87%,
 	    var(--meter-red) 87%,
 	    var(--meter-red) 100%
 	);
@@ -840,9 +840,6 @@ input[type=range]:focus {
 	height: 100%;
 	background-color: var(--meter-bg-color);
 }
-
-
-
 
 /* FX Styling */
 .fx-container {

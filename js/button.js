@@ -84,6 +84,13 @@ export class Button {
 	get element() { return this.#element; }
 	get active()  { return this.#active; }
 
+	set label(text) {
+		this.#onLabel = this.#offLabel = text;
+		if (this.#onHtml == null) {
+			this.#element.textContent = this.#active ? this.#onLabel : this.#offLabel;
+		}
+	}
+
 	set active(v) {
 		this.#active = !!v;
 		this.#render();

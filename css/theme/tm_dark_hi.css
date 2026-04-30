@@ -1,8 +1,11 @@
 :root {
 
 	/* Dimensions */
-	--channel-width: 90px;
+	--channel-width: 7em;
 	--sidebar-width: 19em;
+	--channel-panel-settings-width: var(--channel-width);
+	--channel-panel-eq-width: 18em; /* calc(var(--channel-width) + 7em); */
+	--channel-panel-dyn-width: 14em;
 
 	/* Base Colors */
 	--background-color: #1E2328;
@@ -68,6 +71,11 @@
 	--switch-off-color: #555;
 	--switch-on-color: #5588FF;
 	--switch-thumb-color: #ddd;
+
+	/* Side / phase / M-S accent colors */
+	--clr-right:        #00ccee;
+	--clr-right-bright: #44eeff;
+	--clr-left:         #e87c2a;
 }
 
 * {
@@ -344,6 +352,12 @@ label:has(#connection-type:not([data-value="WebSocket"])) ~ .connection-websocke
 	flex-direction: column;
 }
 
+label[id="pan"] {
+	display: flex;
+	justify-content: center;
+	padding: 2px 0;
+}
+
 .channel-name {
 	text-align: center;
 	font-weight: bold;
@@ -405,14 +419,64 @@ input[type=range]:focus {
 	justify-content: center;
 }
 
-.channel-mute > label {
-	border-width: 0;
-	padding-block: 1px;
+/* M / S / R / P Button layout */
+.channel-mute > .btn {
 	flex-grow: 1;
+	border-width: 0;
+	padding-block: 2px;
+	border-radius: 0;
+	font-size: x-small;
+	letter-spacing: 0;
+	text-transform: uppercase;
+	background: var(--background-color);
+	color: var(--text-color);
+}
+.channel-mute > .btn:first-child {
+	border-top-left-radius: 3px;
+	border-bottom-left-radius: 3px;
+}
+.channel-mute > .btn:last-of-type {
+	border-top-right-radius: 3px;
+	border-bottom-right-radius: 3px;
+}
+.channel-mute > .btn + .btn {
+	border-left: 1px solid var(--border-color);
+}
+.channel-mute > .btn:hover {
+	background: var(--toggle-hover-color);
+	color: var(--text-highlight-color);
 }
 
-.channel-mute > label:first-of-type {
-	border-right-width: 1px;
+/* Mute active */
+.channel-mute .btn-mute.is-active {
+	background-color: var(--mute-color) !important;
+	color: var(--text-highlight-color) !important;
+}
+body.global-mute-enabled .channel.muted .btn-mute {
+	background-color: var(--mute-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--mute-highlight-color-shadow);
+}
+
+/* Solo active */
+.channel-mute .btn-solo.is-active {
+	background-color: var(--solo-color) !important;
+	color: var(--text-highlight-color) !important;
+}
+body.global-solo-enabled .channel-mute:has(.solo-checkbox:checked) .btn-solo {
+	background-color: var(--solo-highlight-color) !important;
+	box-shadow: 0 0 8px 2px var(--solo-highlight-color-shadow);
+}
+
+/* Record active */
+.channel-mute .btn-record.is-active {
+	background-color: var(--store-highlight-color, red) !important;
+	color: var(--text-highlight-color) !important;
+}
+
+/* Play active */
+.channel-mute .btn-play.is-active {
+	background-color: var(--load-highlight-color, #00f800) !important;
+	color: #111 !important;
 }
 
 .channel-meter-value {
@@ -530,10 +594,124 @@ input[type=range]:focus {
 }
 
 .channel-panel-settings:has(.stereo:not(:checked)) .stereo-field {
-		width: 0;
-	padding: 0;
-	border-left-width: 0;
-	overflow: hidden;
+	display: none;
+}
+
+/* Settings panel toggle buttons */
+.channel-panel-settings .btn-channel {
+	text-transform: lowercase;
+	font-size: 10px;
+	padding: 1px 6px;
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+/* Phase: cyan accent (active fill + hover tint) */
+.channel-panel-settings .btn-phase.is-active {
+	background-color: var(--clr-right, #00ccee) !important;
+	color: #111 !important;
+	border-color: var(--clr-right, #00ccee) !important;
+}
+.channel-panel-settings .btn-phase:not(.is-active):hover {
+	background:   rgba(0, 204, 238, 0.15) !important;
+	border-color: var(--clr-right, #00ccee) !important;
+	color:        var(--clr-right, #00ccee) !important;
+}
+.channel-panel-settings .btn-phase.is-active:hover {
+	background-color: var(--clr-right-bright, #44eeff) !important;
+	border-color:     var(--clr-right-bright, #44eeff) !important;
+}
+
+/* Settings panel: single-column, same width as channel strip */
+.channel-panel-settings {
+	width: var(--channel-panel-settings-width);
+}
+
+.channel-panel-eq {
+	width: var(--channel-panel-eq-width);
+}
+
+.channel-panel-dynamics {
+	width: var(--channel-panel-dyn-width);
+}
+
+.channel-panel-settings fieldset {
+	display: block;
+}
+
+.channel-panel-settings fieldset > label {
+	display: block;
+	margin-bottom: 2px;
+}
+
+/* Spans in settings labels are full-width blocks (contain the Button element) */
+.channel-panel-settings fieldset > label > span:not(.settings-label-text) {
+	display: block;
+}
+
+/* "Ref. Level" text above the select */
+.settings-label-text {
+	display: block;
+	font-size: 9px;
+	color: var(--clr-text-dim, #888);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin-bottom: 2px;
+	text-align: center;
+}
+
+/* Selects span full width */
+.channel-panel-settings select {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+/* Knob targets: center knob horizontally */
+.channel-panel-settings .knob-target {
+	display: flex;
+	justify-content: center;
+	padding: 2px 0;
+}
+
+/* Width knob row: hidden on mono, visible when stereo is checked */
+.channel-panel-settings .width-row {
+	display: var(--mono-width-visible, none);
+}
+.channel-panel-settings:has(.stereo:checked) .width-row {
+	display: block;
+}
+
+/* Paired buttons (48V+Instr, Phase L+R) shown side by side */
+.channel-panel-settings .btn-pair {
+	display: flex;
+	gap: 2px;
+	margin-bottom: 2px;
+}
+.channel-panel-settings .btn-pair > label {
+	display: block;
+	flex: 1;
+	min-width: 0;
+	margin-bottom: 0;
+}
+.channel-panel-settings .btn-pair > label > span {
+	display: block;
+}
+
+/* M/S proc: cyan accent */
+.channel-panel-settings .btn-msproc.is-active {
+	background:   var(--clr-right, #00ccee);
+	border-color: var(--clr-right, #00ccee);
+	color: #111;
+}
+.channel-panel-settings .btn-msproc:not(.is-active):hover {
+	background:   rgba(0, 204, 238, 0.15);
+	border-color: var(--clr-right, #00ccee);
+	color:        var(--clr-right, #00ccee);
+}
+.channel-panel-settings .btn-msproc.is-active:hover {
+	background:   var(--clr-right-bright, #44eeff);
+	border-color: var(--clr-right-bright, #44eeff);
 }
 
 .channel-panel {
@@ -541,13 +719,12 @@ input[type=range]:focus {
 	border-top-right-radius: 4px;
 	border-bottom-right-radius: 4px;
 	padding: 4px;
-	width: 200px;
 	overflow-y: auto;
-	min-width: 0;   
+	min-width: 0;
 	transition: width 0.3s ease,
 	            padding 0.3s ease,
 	            border-left-width 0.3s ease !important;
-	box-sizing: border-box;   
+	box-sizing: border-box;
 }
 
 .channel-panel fieldset {

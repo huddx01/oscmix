@@ -11,6 +11,7 @@ export class Knob {
 	#sendDuringDrag; #sendInterval; #lastSent;
 	#isDragging; #startY; #startVal; #valueChanged;
 	#accentOverride; #accentBrightOverride;
+	#noPointer; #centerLabel;
 
 	constructor(options) {
 		this.#min        = parseFloat(options.min);
@@ -26,11 +27,14 @@ export class Knob {
 		this.#sendInterval   = options.sendInterval ?? 100;
 		this.#lastSent   = 0;
 		this.#isDragging = false;
+		this.#noPointer  = options.noPointer   ?? false;
+		this.#centerLabel = options.centerLabel ?? false;
 		this.#value      = this.#clamp(parseFloat(options.value ?? options.min));
 
 		this.container = document.createElement('div');
 		this.container.className = 'knob-container';
 		if (options.id) this.container.id = `knob-${options.id}`;
+		if (this.#centerLabel) this.container.classList.add('knob-center-label');
 
 		if (options.label) {
 			const lbl = document.createElement('div');
@@ -137,14 +141,26 @@ export class Knob {
 		}
 
 		// pointer line
-		c.beginPath();
-		c.moveTo(cx, cy);
-		c.lineTo(cx + Math.cos(angle) * (R - 1), cy + Math.sin(angle) * (R - 1));
-		c.strokeStyle = t.accentBright; c.lineWidth = 2; c.stroke();
+		if (!this.#noPointer) {
+			c.beginPath();
+			c.moveTo(cx, cy);
+			c.lineTo(cx + Math.cos(angle) * (R - 1), cy + Math.sin(angle) * (R - 1));
+			c.strokeStyle = t.accentBright; c.lineWidth = 2; c.stroke();
+		}
 
-		// value label
-		this.#valueEl.textContent = this.#format ? this.#format(this.#value) : this.#defaultFormat();
-		if (t.valueColor) this.#valueEl.style.color = t.valueColor;
+		// value label — inside canvas or external div
+		const labelText = this.#format ? this.#format(this.#value) : this.#defaultFormat();
+		if (this.#centerLabel) {
+			const fs = Math.max(7, Math.round(W * 0.28));
+			c.font = `bold ${fs}px sans-serif`;
+			c.fillStyle = t.valueColor || '#ccc';
+			c.textAlign = 'center';
+			c.textBaseline = 'middle';
+			c.fillText(labelText, cx, cy);
+		} else {
+			this.#valueEl.textContent = labelText;
+			if (t.valueColor) this.#valueEl.style.color = t.valueColor;
+		}
 	}
 
 	#defaultFormat() {

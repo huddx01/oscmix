@@ -1014,25 +1014,41 @@ function initChannelEQ(host, channelType, channelIdx, iface) {
 	requestAnimationFrame(() => eqGraph.resize());
 }
 
+// Bind a Button instance to a boolean OSC address (,i 0/1).
+// hiddenChk (optional) is a hidden <input type="checkbox"> used as a CSS-state proxy;
+// a plain 'change' event is dispatched on it so adjacent :has() selectors keep working.
+function bindToggleBtn(btn, hiddenChk, addr, iface) {
+	btn.element.addEventListener('user-change', (e) => {
+		iface.send(addr, ',i', [e.detail.active ? 1 : 0]);
+		if (hiddenChk) {
+			hiddenChk.checked = e.detail.active;
+			hiddenChk.dispatchEvent(new Event('change'));
+		}
+	});
+	iface.methods.set(addr, (args) => {
+		const v = !!args[0];
+		btn.active = v;
+		if (hiddenChk) {
+			hiddenChk.checked = v;
+			hiddenChk.dispatchEvent(new Event('change'));
+		}
+	});
+	const cached = iface.getCached(addr);
+	if (cached !== undefined) {
+		btn.active = !!cached;
+		if (hiddenChk) hiddenChk.checked = !!cached;
+	}
+}
+
 class Channel {
 	static INPUT = "input";
 	static OUTPUT = "output";
 	static PLAYBACK = "playback";
 
 	static #elements = new Set([
-		"fx",
-		"stereo",
-		"record",
-		"playchan",
 		"crossfeed",
-		"loopback",
-		"msproc",
-		"phase",
 		"gain",
-		"48v",
 		"reflevel",
-		"autoset",
-		"hi-z",
 		// EQ & LowCut: bound explicitly via Channel#initEQ (lazy)
 		"dynamics",
 		"dynamics/gain",
@@ -1101,7 +1117,7 @@ class Channel {
 		// Assigned in the appropriate type branch below; both start as no-ops.
 		let sendOutputVolume = (_db) => {};
 		let sendMixVolume    = (_db) => {};
-		const stereo = fragment.getElementById("stereo");
+		const stereo = fragment.querySelector('.stereo');
 		const name = fragment.getElementById("channel-name");
 		const view = document.forms.view.elements;
 		const gainTarget = fragment.querySelector('label[data-flags="gain"] .knob-target');
@@ -1118,6 +1134,7 @@ class Channel {
 				max: gainMax,
 				value: gainMin,
 				unit: "dB",
+				label: "gain",
 				size: 25,
 				step: 0.5,
 				resetValue: gainMin,
@@ -1146,11 +1163,16 @@ class Channel {
 				min: -100,
 				max: 100,
 				value: 0.0,
-				unit: "",
-				size: 25,
+				size: 38,
 				step: 1,
 				resetValue: 0,
 				bipolar: true,
+				noPointer: true,
+				centerLabel: true,
+				format: (v) => {
+					const n = Math.round(v);
+					return n === 0 ? 'C' : n < 0 ? 'L' + (-n) : 'R' + n;
+				},
 				sendDuringDrag: true,
 				sendInterval: 150,
 			});
@@ -1173,44 +1195,53 @@ class Channel {
 			});
 		}
 
-		const fxInput = fragment.getElementById("fx");
-		const fxSlider = fragment.querySelector(".fx-slider");
-		if (fxInput && fxSlider) {
-			fxSlider.value = fxInput.value;
-
-			const sendFxValue = (value) => {
-				iface.send(`/${type}/${index + 1}/fx`, ",f", [value]);
-			};
-
-			fxInput.addEventListener("change", (event) => {
-				if (fxSlider.value !== event.target.value) {
-					fxSlider.value = event.target.value;
-				}
-				sendFxValue(parseFloat(event.target.value));
-			});
-
-			fxSlider.addEventListener("input", (event) => {
-				const value = parseFloat(event.target.value);
-				if (fxInput.value !== value.toString()) {
-					fxInput.value = value;
-					sendFxValue(value);
-				}
-			});
-
-			[fxInput, fxSlider].forEach((element) => {
-				element.addEventListener("dblclick", (event) => {
-					const target = event.target;
-					const resetValue = target.valueAsNumber === 0 ? parseFloat(target.min) : 0;
-					if (target.value !== resetValue.toString()) {
-						target.value = resetValue;
-						sendFxValue(resetValue);
-					}
-				});
-			});
-		}
-
 		let defName;
 		const prefix = `/${type}/${index + 1}`;
+
+		// FX send knob
+		const fxKnobTarget = fragment.querySelector('.fx-knob-target');
+		if (fxKnobTarget) {
+			const fxKnob = new Knob({
+				id: `fx-${type}-${index}`,
+				min: -65, max: 0, value: -65,
+				unit: 'dB', label: 'send FX',
+				size: 25, step: 0.5, resetValue: -65,
+				sendDuringDrag: true, sendInterval: 150,
+			});
+			fxKnobTarget.innerHTML = '';
+			fxKnobTarget.appendChild(fxKnob.element);
+			fxKnob.element.addEventListener('user-change', (e) => {
+				iface.send(prefix + '/fx', ',f', [e.detail.value]);
+			});
+			iface.methods.set(prefix + '/fx', (args) => { fxKnob.updateFromOSC(args[0]); });
+			const cachedFx = iface.getCached(prefix + '/fx');
+			if (cachedFx !== undefined) fxKnob.updateFromOSC(cachedFx);
+		}
+
+		// Width knob — input & playback only
+		const widthKnobTarget = fragment.querySelector('.width-knob-target');
+		if (widthKnobTarget && type !== Channel.OUTPUT) {
+			const partnerOscNum  = index % 2 === 0 ? index + 2 : index; // 1-based
+			const partnerWidthAddr = `/${type}/${partnerOscNum}/width`;
+			const widthKnob = new Knob({
+				id: `width-${type}-${index}`,
+				min: -1.0, max: 1.0, value: 0,
+				unit: '', label: 'width',
+				size: 25, step: 0.01, resetValue: 0,
+				bipolar: true,
+				sendDuringDrag: true, sendInterval: 150,
+			});
+			widthKnobTarget.innerHTML = '';
+			widthKnobTarget.appendChild(widthKnob.element);
+			widthKnob.element.addEventListener('user-change', (e) => {
+				const v = Math.round(e.detail.value * 100);
+				iface.send(prefix + '/width', ',i', [v]);
+				if (stereo.checked) iface.send(partnerWidthAddr, ',i', [v]);
+			});
+			iface.methods.set(prefix + '/width', (args) => { widthKnob.updateFromOSC(args[0] / 100); });
+			const cachedW = iface.getCached(prefix + '/width');
+			if (cachedW !== undefined) widthKnob.updateFromOSC(cachedW / 100);
+		}
 
 		// Resolve per-channel definition and build flags list
 		let chInfo = null;
@@ -1478,30 +1509,69 @@ class Channel {
 			}
 		}
 
-		const muteCheckbox = fragment.querySelector(".mute-checkbox");
-		if (muteCheckbox) {
-			iface.bind(prefix + "/mute", ",i", muteCheckbox, "checked", "change");
-			muteCheckbox.addEventListener("change", (event) => {
-				const channelElement = event.target.closest(".channel");
-				if (channelElement) {
-					channelElement.classList.toggle("muted", event.target.checked);
-				}
-			});
+		// M / S / R / P buttons
+		const muteDivEl    = fragment.querySelector('.channel-mute');
+		const muteChk      = fragment.querySelector('.mute-checkbox');
+		const soloChk      = fragment.querySelector('.solo-checkbox');
+		const recordChk    = fragment.querySelector('.record-checkbox');
+		const playChk      = fragment.querySelector('.play-checkbox');
+		if (muteDivEl) {
+			const muteBtn   = new Button({ variant: 'toggle', label: 'M', className: 'btn-channel btn-mute' });
+			const soloBtn   = new Button({ variant: 'toggle', label: 'S', className: 'btn-channel btn-solo' });
+			const recordBtn = new Button({ variant: 'toggle', label: 'R', className: 'btn-channel btn-record' });
+			const playBtn   = new Button({ variant: 'toggle', label: 'P', className: 'btn-channel btn-play' });
+			muteDivEl.prepend(muteBtn.element, soloBtn.element, recordBtn.element, playBtn.element);
+
+			if (muteChk) {
+				// Toggle .muted on the .channel element for CSS-driven dimming
+				muteChk.addEventListener('change', (e) => {
+					const ch = e.target.closest('.channel');
+					if (ch) ch.classList.toggle('muted', e.target.checked);
+				});
+				bindToggleBtn(muteBtn, muteChk, prefix + '/mute', iface);
+			}
+			if (soloChk)   bindToggleBtn(soloBtn,   soloChk,   prefix + '/solo',    iface);
+			if (recordChk) bindToggleBtn(recordBtn,  recordChk, prefix + '/record',  iface);
+			if (playChk)   bindToggleBtn(playBtn,    playChk,   prefix + '/playchan',iface);
 		}
 
-		const soloCheckbox = fragment.querySelector(".solo-checkbox");
-		if (soloCheckbox) {
-			iface.bind(prefix + "/solo", ",i", soloCheckbox, "checked", "change");
+		// Settings panel toggle buttons (stereo, hi-z, 48v, autoset, msproc, phase, loopback)
+		const settingsBtnMeta = {
+			'stereo':   { label: 'stereo', cls: 'btn-stereo'  },
+			'hi-z':     { label: 'instr.', cls: 'btn-hiz'     },
+			'48v':      { label: '+48V',   cls: 'btn-48v'     },
+			'autoset':  { label: 'auto',   cls: 'btn-autoset' },
+			'msproc':   { label: 'M/S',    cls: 'btn-msproc'  },
+			'phase':    { label: 'Ø',      cls: 'btn-phase'   },
+			'loopback': { label: 'loop',   cls: 'btn-loopback'},
+		};
+		this.phaseBtn   = null; // exposed so the paired right-channel can update label to "Ø L"
+		this.phaseRHost = fragment.querySelector('.phase-r-host'); // slot for Phase R button
+		for (const chk of fragment.querySelectorAll('[data-osc]')) {
+			const param = chk.dataset.osc;
+			const meta  = settingsBtnMeta[param];
+			if (!meta) continue;
+			const btn = new Button({ variant: 'toggle', label: meta.label, className: `btn-channel ${meta.cls}` });
+			chk.parentElement.insertBefore(btn.element, chk);
+			bindToggleBtn(btn, chk, prefix + '/' + param, iface);
+			if (param === 'phase') this.phaseBtn = btn;
 		}
 
-		const recordCheckbox = fragment.querySelector(".record-checkbox");
-		if (recordCheckbox) {
-			iface.bind(prefix + "/record", ",i", recordCheckbox, "checked", "change");
-		}
-
-		const playCheckbox = fragment.querySelector(".play-checkbox");
-		if (playCheckbox) {
-			iface.bind(prefix + "/playchan", ",i", playCheckbox, "checked", "change");
+		// Stereo-pair wiring: the RIGHT channel constructor wires phase L/R labels
+		// and registers Phase R into the LEFT channel's settings panel.
+		if (left) {
+			if (left.phaseRHost) {
+				const phaseRBtn = new Button({ variant: 'toggle', label: 'Ø R', className: 'btn-channel btn-phase' });
+				left.phaseRHost.appendChild(phaseRBtn.element);
+				bindToggleBtn(phaseRBtn, null, prefix + '/phase', iface);
+			}
+			if (left.phaseBtn) {
+				const updatePhaseLabel = () => {
+					left.phaseBtn.label = stereo.checked ? 'Ø L' : 'Ø';
+				};
+				stereo.addEventListener('change', updatePhaseLabel);
+				updatePhaseLabel(); // apply current stereo state immediately
+			}
 		}
 		if (type === Channel.OUTPUT) {
 			bridge.register(type, index, fragment);
