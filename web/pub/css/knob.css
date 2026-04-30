@@ -20,9 +20,13 @@ canvas.knob {
 }
 
 .knob-value {
-	font-size: 1rem;
+	font-size: 9px;
 	color: var(--clr-knob-value, orange);
 	text-align: center;
 	min-height: 12px;
 	user-select: none;
+}
+
+.knob-center-label .knob-value {
+	display: none;
 }

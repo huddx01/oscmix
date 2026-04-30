@@ -71,7 +71,7 @@ export class RoomEQBridge {
     const channelKey = `${type}/${index + 1}`;
     const prefix     = `/${channelKey}`;
 
-    const stereoInput = fragment.getElementById('stereo');
+    const stereoInput = fragment.querySelector('.stereo');
 
     const entry = { popup: null, button: null, stereoInput };
     this.#channels.set(channelKey, entry);

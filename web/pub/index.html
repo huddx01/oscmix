@@ -28,18 +28,11 @@
 						<div class="knob-target"></div>
 					</label>
 					<div class="channel-mute">
-						<label class="toggle-button mute-button">M
-							<input class="mute-checkbox" type="checkbox"/>
-						</label>
-						<label class="toggle-button solo-button">S
-							<input class="solo-checkbox" type="checkbox"/>
-						</label>
-						<label class="toggle-button record-button">R
-							<input class="record-checkbox" type="checkbox"/>
-						</label>
-						<label class="toggle-button play-button">P
-							<input class="play-checkbox" type="checkbox"/>
-						</label>
+						<!-- Buttons inserted by JS; hidden inputs are CSS-state proxies -->
+						<input class="mute-checkbox"   type="checkbox" hidden />
+						<input class="solo-checkbox"   type="checkbox" hidden />
+						<input class="record-checkbox" type="checkbox" hidden />
+						<input class="play-checkbox"   type="checkbox" hidden />
 					</div>
 					<div id="channel-meter-value" class="channel-meter-value">
 						<div id="volume-meter-value">UFL</div>
@@ -81,60 +74,34 @@
 				</div>
 				<div class="channel-panel channel-panel-settings">
 					<fieldset>
-						<label>Stereo
-							<span>
-								<input type="checkbox" id="stereo" class="stereo" />
-							</span>
+						<label><span><input type="checkbox" class="stereo" data-osc="stereo" hidden /></span></label>
+						<div class="btn-pair">
+							<label data-flags="48v"><span><input type="checkbox" class="phantom" data-osc="48v" hidden /></span></label>
+							<label data-flags="hi-z"><span><input type="checkbox" class="hi-z" data-osc="hi-z" hidden /></span></label>
+						</div>
+						<label data-flags="reflevel">
+							<span class="settings-label-text">Ref. Level</span>
+							<select id="reflevel"><!-- populated from device def --></select>
 						</label>
-						<label data-flags="hi-z">Instr.
-							<span>
-								<input type="checkbox" id="hi-z" class="hi-z" />
-							</span>
-						</label>
-						<label data-flags="48v">48V
-							<span>
-								<input type="checkbox" id="48v" class="phantom" />
-							</span>
-						</label>
-						<label data-flags="reflevel">Ref. Level
-							<select id="reflevel">
-								<!-- options populated dynamically from device definition -->
-							</select>
-						</label>
-						<label data-flags="gain">Gain
-							<div class="knob-target"></div>
-						</label>
-						<label data-flags="autoset">Autoset
-							<span>
-								<input type="checkbox" id="autoset" />
-							</span>
-						</label>
-						<label>FX
-							<div class="fx-control">
-								<input
-								type="range"
-								class="fx-slider"
-								min="-65"
-								max="0"
-								step="0.5"
-								value="-65" />
-								<input type="number" id="fx" min="-65" max="0" step="0.5" value="-65" />
-							</div>
-						</label>
-						<label data-type="output">Crossfeed
-							<select id="crossfeed" class="crossfeed">
-								<option>Off</option>
-								<option>crossfeed 1</option>
-								<option>crossfeed 2</option>
-								<option>crossfeed 3</option>
-								<option>crossfeed 4</option>
-								<option>crossfeed 5</option>
-							</select>
-						</label>
-						<label class="stereo-field">M/S Proc<span><input type="checkbox" id="msproc" /></span></label>
-						<label>Phase<span><input type="checkbox" id="phase" /></span></label>
-						<label data-type="output">Loopback<span><input type="checkbox" id="loopback" value="0" /></span></label>
-						<button id="roomeq-show" data-type="output" class="roomeq">Room EQ</button>
+						<label data-flags="gain"><div class="knob-target"></div></label>
+						<label data-flags="autoset"><span><input type="checkbox" data-osc="autoset" hidden /></span></label>
+						<label><div class="knob-target fx-knob-target"></div></label>
+						<label data-type="output"><select id="crossfeed" class="crossfeed">
+							<option>x-feed off</option>
+							<option>x-feed 1</option>
+							<option>x-feed 2</option>
+							<option>x-feed 3</option>
+							<option>x-feed 4</option>
+							<option>x-feed 5</option>
+						</select></label>
+						<label class="width-row" data-type="input playback"><div class="knob-target width-knob-target"></div></label>
+						<label class="stereo-field"><span><input type="checkbox" data-osc="msproc" hidden /></span></label>
+						<div class="btn-pair">
+							<label><span><input type="checkbox" data-osc="phase" hidden /></span></label>
+							<label class="stereo-field phase-r-row"><span class="phase-r-host"></span></label>
+						</div>
+						<label data-type="output"><span><input type="checkbox" class="loopback" data-osc="loopback" hidden /></span></label>
+						<button id="roomeq-show" data-type="output" class="roomeq btn btn-channel btn-toggle">Room EQ</button>
 					</fieldset>
 				</div>
 				<div class="channel-panel channel-panel-eq" data-type="input output">

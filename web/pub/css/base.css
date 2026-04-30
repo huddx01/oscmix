@@ -10,6 +10,11 @@
  *   --border-color:       (required, defined per theme)
  */
 
+:root {
+	/* Set to 'block' to show the width knob on mono channels */
+	--mono-width-visible: none;
+}
+
 /* - Ensure the HTML hidden attribute is never overridden by display rules */
 [hidden] {
 	display: none !important;
