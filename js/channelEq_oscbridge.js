@@ -20,7 +20,7 @@ const INT_SUFFIXES = ['/eq', '/eq/band1type', '/eq/band3type', '/lowcut', '/lowc
 
 function isIntAddr(addr) {
 	for (const s of INT_SUFFIXES) if (addr.endsWith(s)) return true;
-	return false;
+	return addr.endsWith('freq');
 }
 
 export class ChannelEQBridge {

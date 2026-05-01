@@ -169,12 +169,15 @@ const eqGraph = new EQGraph(canvas, {
 		if (i >= 3) {
 			state.lc.freq = freq;
 			lcFreqKnob?.updateFromOSC(freq);
+			sendOsc(`${oscPrefix}/lowcut/freq`, freq);
 			return;
 		}
 		state.bands[i].freq = freq;
 		state.bands[i].gain = gain;
 		eqBandRow?.setKnobValue(i, 'freq', freq);
 		eqBandRow?.setKnobValue(i, 'gain', gain);
+		sendOsc(`${oscPrefix}/eq/band${i+1}freq`, freq);
+		sendOsc(`${oscPrefix}/eq/band${i+1}gain`, gain);
 	},
 	onBandRelease: (i) => {
 		if (i >= 3) {
