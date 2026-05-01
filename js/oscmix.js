@@ -784,19 +784,22 @@ function initChannelEQ(host, channelType, channelIdx, iface) {
 			if (i >= 3) {
 				lowCutState.freq = freq;
 				lowCutFreqKnob?.updateFromOSC(freq);
+				sendOsc(`${prefix}/lowcut/freq`, ',i', [Math.round(freq)]);
 				return;
 			}
 			eqState.bands[i].freq = freq;
 			eqState.bands[i].gain = gain;
 			eqBandRow?.setKnobValue(i, 'freq', freq);
 			eqBandRow?.setKnobValue(i, 'gain', gain);
+			sendOsc(`${prefix}/eq/band${i+1}freq`, ',i', [Math.round(freq)]);
+			sendOsc(`${prefix}/eq/band${i+1}gain`, ',f', [gain]);
 		},
 		onBandRelease: (i) => {
 			if (i >= 3) {
-				sendOsc(`${prefix}/lowcut/freq`, ',f', [lowCutState.freq]);
+				sendOsc(`${prefix}/lowcut/freq`, ',i', [Math.round(lowCutState.freq)]);
 				return;
 			}
-			sendOsc(`${prefix}/eq/band${i+1}freq`, ',f', [eqState.bands[i].freq]);
+			sendOsc(`${prefix}/eq/band${i+1}freq`, ',i', [Math.round(eqState.bands[i].freq)]);
 			sendOsc(`${prefix}/eq/band${i+1}gain`, ',f', [eqState.bands[i].gain]);
 		},
 		onBandQ: (i, q) => {
@@ -978,7 +981,7 @@ function initChannelEQ(host, channelType, channelIdx, iface) {
 
 	lowCutFreqKnob.element.addEventListener('user-change', (e) => {
 		lowCutState.freq = e.detail.value;
-		sendOsc(`${prefix}/lowcut/freq`, ',f', [e.detail.value]);
+		sendOsc(`${prefix}/lowcut/freq`, ',i', [Math.round(e.detail.value)]);
 		eqGraph.draw();
 	});
 	iface.methods.set(`${prefix}/lowcut/freq`, (args) => {
