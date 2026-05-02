@@ -39,7 +39,7 @@ let debugFlags = {
 	level: false,
 	arc: false,
 	other: false,
-	wasm: false
+	wasm: 0
 };
 
 
@@ -53,14 +53,13 @@ function loadDebugFlags() {
 	}
 
 	for (const key in debugFlags) {
+		if (key === 'wasm') continue;
 		const cb = document.getElementById(`debug-${key}`);
 		if (cb) cb.checked = debugFlags[key];
 	}
 
-	const wasmLevel = parseInt(localStorage.getItem('debugWasmLevel') ?? '0', 10);
-	debugFlags.wasm = wasmLevel > 0;
 	const wasmLevelSelect = document.getElementById('debug-wasm-level');
-	if (wasmLevelSelect) wasmLevelSelect.value = 'd' + wasmLevel;
+	if (wasmLevelSelect) wasmLevelSelect.value = 'd' + debugFlags.wasm;
 }
 
 function saveDebugFlags() {
@@ -69,6 +68,7 @@ function saveDebugFlags() {
 
 function setupDebugListeners() {
 	for (const key in debugFlags) {
+		if (key === 'wasm') continue;
 		const cb = document.getElementById(`debug-${key}`);
 		if (cb) {
 			cb.addEventListener('change', (e) => {
@@ -82,8 +82,8 @@ function setupDebugListeners() {
 	if (wasmLevelSelect) {
 		wasmLevelSelect.addEventListener('change', (e) => {
 			const level = parseInt(e.target.value.replace('d', ''), 10);
-			debugFlags.wasm = level > 0;
-			localStorage.setItem('debugWasmLevel', level);
+			debugFlags.wasm = level;
+			saveDebugFlags();
 			try { iface.send('/debug', ',i', [level]); } catch (_) {}
 		});
 	}
@@ -115,13 +115,8 @@ styleSelector.addEventListener("change", (e) => {
 
 /* Ad-hoc Fader Group */
 const FaderGroup = (() => {
-	// Map<channelKey, { entry: { setValue(db), get currentValue(), outerEl }, baseDb: number }>
-	// baseDb = value at the time the channel joined the group.
-	// Sync formula: targetDb = member.baseDb + (newDb - source.baseDb)
-	// This preserves relative offsets exactly, even after clamping.
 	const members = new Map();
 	let _toggle         = null;
-	// Map<channelKey, baseDb> loaded from localStorage before channel construction.
 	let _pendingRestore = new Map();
 
 	function deviceKey() {
@@ -136,8 +131,6 @@ const FaderGroup = (() => {
 		document.body.classList.toggle('fader-group-active', active);
 	}
 
-	// Persist keys AND baseDb values so relative offsets survive a page reload.
-	// Storage format: [[key, baseDb], ...]
 	function persist() {
 		const data = [...members.entries()].map(([key, { baseDb }]) => [key, baseDb]);
 		localStorage.setItem('faderGroup_' + deviceKey(), JSON.stringify(data));
@@ -173,9 +166,6 @@ const FaderGroup = (() => {
 			else api.add(channelKey, entry);
 		},
 
-		// Clear all group members.
-		// Pass save=true when triggered by the user (toggle off) to also wipe localStorage.
-		// Called without argument from reinitializeUI() to avoid clearing saved state.
 		clear(save = false) {
 			for (const [, { entry }] of members) {
 				entry.outerEl.classList.remove('fader-group-member');
@@ -186,8 +176,7 @@ const FaderGroup = (() => {
 			if (save) persist();
 		},
 
-		// Offset-based sync: all members move relative to their base values.
-		// Only call this when the source channel IS a group member (checked by caller).
+
 		syncFrom(sourceKey, newDb) {
 			if (members.size < 2) return;
 			const source = members.get(sourceKey);
@@ -200,8 +189,13 @@ const FaderGroup = (() => {
 			}
 		},
 
-		// Load saved keys + baseDb values into the pending-restore map.
-		// Must be called BEFORE channel construction so registerChannel() can match.
+		applySaved() {
+			for (const [, { entry, baseDb }] of members) {
+				entry.setValue(baseDb);
+			}
+		},
+
+
 		restore() {
 			const raw = localStorage.getItem('faderGroup_' + deviceKey());
 			if (!raw) { _pendingRestore = new Map(); return; }
@@ -218,8 +212,7 @@ const FaderGroup = (() => {
 			}
 		},
 
-		// Called by each Channel constructor - silently restores membership if needed.
-		// Uses the stored baseDb so relative offsets survive a page reload.
+
 		registerChannel(channelKey, entry) {
 			if (!_pendingRestore.has(channelKey)) return;
 			const storedBase = _pendingRestore.get(channelKey);
@@ -1840,6 +1833,8 @@ function setupInterface() {
 			iface.connection = connection;
 			icon.textContent = elements["connection-type"].value;
 			icon.dataset.state = "connected";
+			if (debugFlags.wasm) iface.send('/debug', ',i', [debugFlags.wasm]);
+			FaderGroup.applySaved();
 			iface.send("/refresh", ",", []);
 			updateConnectionStatus(true, true, currentDevice.deviceName);
 			updatePageTitle();
