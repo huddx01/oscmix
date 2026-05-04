@@ -97,7 +97,9 @@ static struct {
 static struct {
 	int vers;
 	int load;
-} dsp;
+	int avail;
+	int status;
+} dsp = {.vers = -1, .load = -1, .avail = -1, .status = -1};
 
 static void oscsend(const char *addr, const char *type, ...);
 static void oscflush(void);
@@ -448,15 +450,36 @@ setinputstereo(struct context *ctx, struct oscmsg *msg)
 {
 	struct input *in;
 	bool val;
+	int idx_left;
 
 	val = oscgetint(msg);
 	if (oscend(msg) != 0)
 		return;
-	in = &inputs[ctx->param.in & ~1];
+	idx_left = ctx->param.in & ~1;
+	in = &inputs[idx_left];
 	in[0].stereo = in[1].stereo = val;
 	setval(ctx, val);
 	ctx->param.in ^= 1;
 	setval(ctx, val);
+
+	/*
+	 * Playback channels share the inputs[] array (indexed by
+	 * device->inputslen + i) but have NO underlying device register --
+	 * setval is a no-op for them. The device therefore never echoes a
+	 * /playback/N/stereo update, which means the right-channel CSS rule
+	 *   .channel-outer.channel-right:has(.stereo:checked)
+	 * never fires and the right strip stays glued to the left when
+	 * un-pairing. Emit the OSC update for both partners explicitly so
+	 * the web UI can split / merge the strip pair.
+	 */
+	if (idx_left >= device->inputslen) {
+		char addr[64];
+		int pb_left = idx_left - device->inputslen;
+		snprintf(addr, sizeof addr, "/playback/%d/stereo", pb_left + 1);
+		oscsend(addr, ",i", val != 0);
+		snprintf(addr, sizeof addr, "/playback/%d/stereo", pb_left + 2);
+		oscsend(addr, ",i", val != 0);
+	}
 }
 
 static void
@@ -495,6 +518,19 @@ setname(struct context *ctx, struct oscmsg *msg)
 	const char *name;
 	char namebuf[12];
 	int i, reg, val;
+
+	/* No-args = read request: respond at the same address with the
+	 * cached name (populated as the device pushes NAME registers). */
+	if (msg->type && *msg->type == '\0') {
+		const char *cached = NULL;
+		if (ctx->param.in != -1 && ctx->param.in < device->inputslen + device->outputslen)
+			cached = inputs[ctx->param.in].name;
+		else if (ctx->param.out != -1 && ctx->param.out < device->outputslen)
+			cached = outputs[ctx->param.out].name;
+		if (cached && ctx->addr)
+			oscsend(ctx->addr, ",s", cached);
+		return;
+	}
 
 	name = oscgetstr(msg);
 	if (oscend(msg) != 0)
@@ -639,14 +675,61 @@ newdspload(struct context *ctx, int val)
 	}
 }
 
+/*
+ * DSP function avail register layout (per RME docs):
+ *   bits[0..1]  low cut    (slot 1, slot 2)
+ *   bits[2..3]  eq         (slot 1, slot 2)
+ *   bits[4..5]  dynamics   (slot 1, slot 2)
+ *   bits[6..7]  autolevel  (slot 1, slot 2)
+ *   bits[8..9]  record     (slot 1, slot 2)
+ *   bits[10..15] unused
+ * Each function gets a 0..2 count = number of active slots.
+ */
 static void
 newdspavail(struct context *ctx, int val)
 {
+	int lowcut, eq, dyn, al, rec;
+
+	(void)ctx;
+	if (val == dsp.avail)
+		return;
+	dsp.avail = val;
+	lowcut = (val & 1) + ((val >> 1) & 1);
+	eq     = ((val >> 2) & 1) + ((val >> 3) & 1);
+	dyn    = ((val >> 4) & 1) + ((val >> 5) & 1);
+	al     = ((val >> 6) & 1) + ((val >> 7) & 1);
+	rec    = ((val >> 8) & 1) + ((val >> 9) & 1);
+	oscsend("/hardware/dspavail", ",iiiii", lowcut, eq, dyn, al, rec);
 }
 
+/*
+ * DSP function overload status register (per RME docs):
+ *   bit 0  play       (1=ok, 0=overload)
+ *   bit 1  low cut
+ *   bit 2  eq
+ *   bit 3  dynamics
+ *   bit 4  autolevel
+ *   bit 5  record
+ *   bit 6  delay
+ *   bit 7  room eq
+ *   bits[8..15] channel number (1-based)
+ * Sent as a single OSC message with 8 booleans + channel.
+ */
 static void
 newdspstatus(struct context *ctx, int val)
 {
+	int s, chan;
+
+	(void)ctx;
+	if (val == dsp.status)
+		return;
+	dsp.status = val;
+	s = val & 0xff;
+	chan = (val >> 8) & 0xff;
+	oscsend("/hardware/dspstatus", ",iiiiiiiii",
+		!!(s & 0x01), !!(s & 0x02), !!(s & 0x04), !!(s & 0x08),
+		!!(s & 0x10), !!(s & 0x20), !!(s & 0x40), !!(s & 0x80),
+		chan);
 }
 
 static void
@@ -928,6 +1011,69 @@ newmix(struct context *ctx, int val)
 	assert(ctx->param.out >= 0);
 	in = &inputs[ctx->param.in];
 	out = &outputs[ctx->param.out];
+
+	/*
+	 * Volume-only MIX echo path (FF802-class first-generation devices).
+	 *
+	 * The MIX register region (0x1EE0 + out*0x100 + in) is a read-only
+	 * echo of the per-input contribution to that output's mix. Format
+	 * differs from V2 devices:
+	 *
+	 *   bits[0..3]   reserved / unused
+	 *   bits[4..15]  signed 12-bit 1/10 dB
+	 *
+	 * There is no per-input pan slot -- pan is implemented by writing
+	 * different MIX_LEVEL values to the L and R outputs of a stereo
+	 * pair (see setlevel). Each side echoes its own MIX register with
+	 * its own volume value, so we update the cache slot for whichever
+	 * output the echo arrived on, then re-emit the combined view.
+	 *
+	 * No write back to the device here -- that would create a feedback
+	 * loop, since our setmix already wrote MIX_LEVEL when the user
+	 * moved the fader.
+	 */
+	if (device->flags & DEVICE_MIX_VOLONLY) {
+		int raw, v12, ich;
+		float vol;
+
+		raw = val & 0xFFFF;
+		v12 = (raw >> 4) & 0xFFF;
+		if (v12 & 0x800)
+			v12 -= 0x1000;
+		ich = ctx->param.in;
+		vol = v12 <= -650 ? 0.f : powf(10.f, v12 / 200.f);
+		if (vol > 2.f)
+			vol = 2.f;
+		out->mix[ich] = vol;
+
+		/*
+		 * Emit /mix/<out>/input/<in> for every echoed output, including
+		 * the right side of a stereo pair. The web client lets users
+		 * click on either half of a paired output to view its submix --
+		 * if we suppressed right-side emissions, that view would stay
+		 * empty after a fresh /refresh and after un-pairing. For stereo
+		 * pairs calclevel snaps to the left and the two emissions carry
+		 * the same vol/pan, which is harmless (the second just overwrites
+		 * the first in the web cache).
+		 */
+		if (in->stereo && (in - inputs) & 1)
+			--in;
+
+		calclevel(out, in, 1, &level);
+		if (dflag >= 1)
+			fprintf(stderr, "[DEBUG L%d] newmix [VOLONLY]: out=%d(%s) in=%d(%s) raw=0x%04X dB10=%d -> vol=%.1fdB pan=%d\n",
+					dflag, (int)(out - outputs) + 1, out->name,
+					(int)(in - inputs) + 1, in->name, raw, v12,
+					level.vol > 0 ? 20.f * log10f(level.vol) : -INFINITY,
+					level.pan);
+		snprintf(ctx->addr, ctx->addrend - ctx->addr, "/mix/%d/input/%d",
+				 (int)(out - outputs) + 1, (int)(in - inputs) + 1);
+		oscsend(ctx->addr, ",fi",
+				level.vol > 0 ? 20.f * log10f(level.vol) : -INFINITY,
+				level.pan);
+		return;
+	}
+
 	if ((out - outputs) & 1 && out->stereo)
 		return;
 	ispan = val & 0x8000;
@@ -1296,18 +1442,61 @@ setsetuparcleds(struct context *ctx, struct oscmsg *msg)
 	setval(ctx, val);
 }
 
-// djb2 hash of s, formatted as "Device Name (XXXXXXXX)" into buf.
-// gets called if for whatever reason no serial could be dtermined,
-// a unique-id is needed by clients to separte multimple devices of same id.
+/*
+ * Build a TotalMix-compatible device UID into buf.
+ *
+ * Format:  <DeviceNameWithoutSpaces><8-digit-serial>
+ * Example: "Fireface UFX+ (12345678) Port 1" -> "FirefaceUFX+12345678"
+ *
+ * The serial is taken from digits inside the first parenthesized group of
+ * the port string. If fewer than 8 digits are present, the serial is padded
+ * on the right with deterministic digits 1..9 derived from a djb2 hash of
+ * the full port string -- so the same port always yields the same UID
+ * (clients rely on this for per-device configuration). If more than 8
+ * digits are present, the last 8 are used.
+ */
 static void
-uidfromport(const char *port, char *buf, size_t bufsz)
+makedeviceuid(const char *port, char *buf, size_t bufsz)
 {
-	uint32_t h = 5381;
-	const unsigned char *p = (const unsigned char *)port;
+	char namepart[64];
+	char digits[9];
+	char extracted[16];
+	size_t ni, ei, j;
+	const char *open, *close, *p;
 
-	while (*p)
-		h = h * 33 ^ *p++;
-	snprintf(buf, bufsz, "%s (%08X)", device->name, h);
+	ni = 0;
+	for (p = device->name; *p && ni < sizeof namepart - 1; ++p) {
+		if (*p != ' ')
+			namepart[ni++] = *p;
+	}
+	namepart[ni] = '\0';
+
+	ei = 0;
+	open = strchr(port, '(');
+	close = open ? strchr(open, ')') : NULL;
+	if (open && close) {
+		for (p = open + 1; p < close && ei < sizeof extracted - 1; ++p) {
+			if (*p >= '0' && *p <= '9')
+				extracted[ei++] = *p;
+		}
+	}
+
+	if (ei >= 8) {
+		memcpy(digits, extracted + ei - 8, 8);
+	} else {
+		uint32_t h;
+		memcpy(digits, extracted, ei);
+		h = 5381;
+		for (p = port; *p; ++p)
+			h = h * 33u ^ (unsigned char)*p;
+		for (j = ei; j < 8; ++j) {
+			digits[j] = '1' + (h % 9);
+			h = h * 2654435761u + 1u;
+		}
+	}
+	digits[8] = '\0';
+
+	snprintf(buf, bufsz, "%s%s", namepart, digits);
 }
 
 static void
@@ -1325,74 +1514,144 @@ setdebug(struct context *ctx, struct oscmsg *msg)
 	fprintf(stderr, "[DEBUG] is now: [DEBUG L%d]\n", dflag);
 }
 
+/*
+ * Build a comma-separated list of reflevel names into a temporary buffer and
+ * send it as a single OSC string at addr. No-op if the channel has no
+ * reflevel names. Used by the /device/channels response.
+ */
 static void
-setrefresh(struct context *ctx, struct oscmsg *msg)
+sendreflevels(const char *addr, const struct channelinfo *ch)
 {
-	struct input *pb;
-	char addr[256];
-	int i;
+	char buf[256];
+	size_t off = 0, j, slen;
 
-	dsp.vers = -1;
-	dsp.load = -1;
-	/* Send device identity first so clients can configure themselves */
-	oscsend("/device/id",   ",s", device->id);
-	oscsend("/device/name", ",s", device->name);
-	oscsend("/device/uid",  ",s", deviceuid);
-	oscsend("/device/flags", ",i", device->flags);
-	oscsend("/device/inputs", ",i", device->inputslen);
+	if (ch->reflevel.nameslen == 0)
+		return;
+	for (j = 0; j < ch->reflevel.nameslen; ++j) {
+		slen = strlen(ch->reflevel.names[j]);
+		if (j > 0 && off < sizeof buf - 1)
+			buf[off++] = ',';
+		if (off + slen >= sizeof buf)
+			break;
+		memcpy(buf + off, ch->reflevel.names[j], slen);
+		off += slen;
+	}
+	buf[off] = '\0';
+	oscsend(addr, ",s", buf);
+}
+
+/*
+ * /device/info -- emit static device identity. Client should call this
+ * once after connect to discover what device it is talking to.
+ */
+static void
+setdeviceinfo(struct context *ctx, struct oscmsg *msg)
+{
+	(void)ctx; (void)msg;
+	oscsend("/device/id",      ",s", device->id);
+	oscsend("/device/name",    ",s", device->name);
+	oscsend("/device/uid",     ",s", deviceuid);
+	oscsend("/device/flags",   ",i", device->flags);
+	oscsend("/device/inputs",  ",i", device->inputslen);
 	oscsend("/device/outputs", ",i", device->outputslen);
+	oscflush();
+}
 
-	/* Send per-channel info so clients can configure their UI */
-	// TODO: Rethink - it might make sense to send the default channel names
+/*
+ * /device/channels -- emit per-channel capability info. Static; only needs
+ * to be requested once. Channels with no flags / no extra capabilities
+ * stay silent (saves bandwidth on devices with many trivial channels).
+ * Input and output blocks are flushed separately so the client can
+ * process them as they arrive.
+ */
+static void
+setdevicechannels(struct context *ctx, struct oscmsg *msg)
+{
+	char addr[64];
+	int i;
+	const struct channelinfo *ch;
+
+	(void)ctx; (void)msg;
 	for (i = 0; i < device->inputslen; ++i) {
-		const struct channelinfo *ch = &device->inputs[i];
-		snprintf(addr, sizeof addr, "/input/%d/flags", i + 1);
-		oscsend(addr, ",i", ch->flags);
+		ch = &device->inputs[i];
+		if (ch->flags) {
+			snprintf(addr, sizeof addr, "/input/%d/flags", i + 1);
+			oscsend(addr, ",i", ch->flags);
+		}
 		if (ch->flags & INPUT_HAS_GAIN) {
 			snprintf(addr, sizeof addr, "/input/%d/gainrange", i + 1);
 			oscsend(addr, ",ii", (int)ch->gain.min, (int)ch->gain.max);
 		}
-		if (ch->flags & INPUT_HAS_REFLEVEL && ch->reflevel.nameslen > 0) {
-			char buf[256];
-			size_t off = 0;
-			for (size_t j = 0; j < ch->reflevel.nameslen; ++j) {
-				if (j > 0 && off < sizeof buf - 1)
-					buf[off++] = ',';
-				size_t slen = strlen(ch->reflevel.names[j]);
-				if (off + slen < sizeof buf) {
-					memcpy(buf + off, ch->reflevel.names[j], slen);
-					off += slen;
-				}
-			}
-			buf[off] = '\0';
+		if (ch->flags & INPUT_HAS_REFLEVEL) {
 			snprintf(addr, sizeof addr, "/input/%d/reflevels", i + 1);
-			oscsend(addr, ",s", buf);
+			sendreflevels(addr, ch);
 		}
 	}
+	oscflush();
 	for (i = 0; i < device->outputslen; ++i) {
-		const struct channelinfo *ch = &device->outputs[i];
-		snprintf(addr, sizeof addr, "/output/%d/flags", i + 1);
-		oscsend(addr, ",i", ch->flags);
-		if (ch->flags & OUTPUT_HAS_REFLEVEL && ch->reflevel.nameslen > 0) {
-			char buf[256];
-			size_t off = 0;
-			for (size_t j = 0; j < ch->reflevel.nameslen; ++j) {
-				if (j > 0 && off < sizeof buf - 1)
-					buf[off++] = ',';
-				size_t slen = strlen(ch->reflevel.names[j]);
-				if (off + slen < sizeof buf) {
-					memcpy(buf + off, ch->reflevel.names[j], slen);
-					off += slen;
-				}
-			}
-			buf[off] = '\0';
+		ch = &device->outputs[i];
+		if (ch->flags) {
+			snprintf(addr, sizeof addr, "/output/%d/flags", i + 1);
+			oscsend(addr, ",i", ch->flags);
+		}
+		if (ch->flags & OUTPUT_HAS_REFLEVEL) {
 			snprintf(addr, sizeof addr, "/output/%d/reflevels", i + 1);
-			oscsend(addr, ",s", buf);
+			sendreflevels(addr, ch);
 		}
 	}
+	oscflush();
+}
+
+/*
+ * /device/names -- bulk-emit cached channel names for inputs and outputs.
+ * Names that have not been received yet (empty cache) are skipped.
+ * Single-channel reads are also possible via /input/N/name and
+ * /output/N/name with no arguments (handled in setname).
+ */
+static void
+setdevicenames(struct context *ctx, struct oscmsg *msg)
+{
+	char addr[64];
+	int i;
+
+	(void)ctx; (void)msg;
+	for (i = 0; i < device->inputslen; ++i) {
+		if (inputs[i].name[0]) {
+			snprintf(addr, sizeof addr, "/input/%d/name", i + 1);
+			oscsend(addr, ",s", inputs[i].name);
+		}
+	}
+	oscflush();
+	for (i = 0; i < device->outputslen; ++i) {
+		if (outputs[i].name[0]) {
+			snprintf(addr, sizeof addr, "/output/%d/name", i + 1);
+			oscsend(addr, ",s", outputs[i].name);
+		}
+	}
+	oscflush();
+}
+
+/*
+ * /refresh -- request a full dump of the device's dynamic state. Static
+ * device/channel info is no longer sent here; clients should call
+ * /device/info, /device/channels and /device/names explicitly (typically
+ * once after connect). This keeps refresh cheap so clients can call it
+ * whenever they need to resync values.
+ */
+static void
+setrefresh(struct context *ctx, struct oscmsg *msg)
+{
+	struct input *pb;
+	char addr[64];
+	int i;
+
+	(void)msg;
+	dsp.vers = -1;
+	dsp.load = -1;
+	dsp.avail = -1;
+	dsp.status = -1;
 
 	setval(ctx, device->refresh);
-	/* FIXME: needs lock */
 	for (i = 0; i < device->outputslen; ++i) {
 		pb = &inputs[device->inputslen + i];
 		snprintf(addr, sizeof addr, "/playback/%d/stereo", i + 1);
@@ -1715,6 +1974,12 @@ static const struct node roottree[] = {
 		{NULL, DUREC_LENGTH, .new=newdureclength},
 		{0},
 	}},
+	{"device", .tree=(const struct node[]){
+		{"info", .set=setdeviceinfo},
+		{"channels", .set=setdevicechannels},
+		{"names", .set=setdevicenames},
+		{0},
+	}},
 	{"debug", .set=setdebug},
 	{"refresh", REFRESH, .set=setrefresh},
 	{0},
@@ -1731,6 +1996,8 @@ handleosc(const unsigned char *buf, size_t len)
 	struct oscmsg msg;
 	const char *pattern;
 	char *end;
+	char addrbuf[256];
+	size_t plen;
 
 	if (len % 4 != 0)
 		return -1;
@@ -1754,6 +2021,17 @@ handleosc(const unsigned char *buf, size_t len)
 		return -1;
 	}
 	++msg.type;
+
+	/* Make the original request address available to set callbacks so they
+	 * can respond at the same address (used for no-args read requests). */
+	plen = strlen(pattern);
+	if (plen >= sizeof addrbuf)
+		plen = sizeof addrbuf - 1;
+	memcpy(addrbuf, pattern, plen);
+	addrbuf[plen] = '\0';
+	ctx.addr = addrbuf;
+	ctx.addrpos = addrbuf + plen;
+	ctx.addrend = addrbuf + sizeof addrbuf;
 
 	ctx.pattern = pattern;
 	ctx.param.in = ctx.param.out = -1;
@@ -2048,44 +2326,52 @@ init(const char *port)
 	static const struct device *devices[] = {
 		&ff802, &ffucx, &ffucxii, &ffufx, &ffufxii, &ffufxiii, &ffufxp
 	};
-	int i;
-	size_t namelen;
+	const struct device *sorted[LEN(devices)];
+	size_t lens[LEN(devices)];
+	int i, j;
 
-	for (i = 0; i < LEN(devices); ++i) {
-		device = devices[i];
-		if (strcmp(port, device->id) == 0)
-			break;
-		namelen = strlen(device->name);
-		if (strncmp(port, device->name, namelen) == 0) {
-			if (!port[namelen] || (port[namelen] == ' ' && port[namelen + 1] == '('))
-				break;
+	/*
+	 * Match by sorting candidates by name length (descending) then taking
+	 * the first whose name is a prefix of port followed by a strict
+	 * boundary char ('\0', ' ', or '('). This makes matching independent
+	 * of array order and prevents "Fireface UFX" from ever matching
+	 * "Fireface UFX+" / "Fireface UFX II" / "Fireface UFX III".
+	 */
+	for (i = 0; i < (int)LEN(devices); ++i) {
+		sorted[i] = devices[i];
+		lens[i] = strlen(devices[i]->name);
+	}
+	for (i = 1; i < (int)LEN(devices); ++i) {
+		for (j = i; j > 0 && lens[j] > lens[j - 1]; --j) {
+			const struct device *td = sorted[j];
+			size_t tl = lens[j];
+			sorted[j] = sorted[j - 1]; lens[j] = lens[j - 1];
+			sorted[j - 1] = td; lens[j - 1] = tl;
 		}
 	}
-	if (i == LEN(devices)) {
+
+	device = NULL;
+	for (i = 0; i < (int)LEN(devices); ++i) {
+		const char *name = sorted[i]->name;
+		size_t nlen = lens[i];
+		if (strcmp(port, sorted[i]->id) == 0) {
+			device = sorted[i];
+			break;
+		}
+		if (strncmp(port, name, nlen) == 0) {
+			char c = port[nlen];
+			if (c == '\0' || c == ' ' || c == '(') {
+				device = sorted[i];
+				break;
+			}
+		}
+	}
+	if (!device) {
 		fprintf(stderr, "Unsupported Device: '%s'\n", port);
 		return -1;
 	}
 
-	/* Derive UID from the first parenthesized group in the port name.
-	 * Uses only the first '(' / ')' pair to handle formats like:
-	 *   "Fireface UCX II (12345678):Fireface UCX II (12345678) Port 2"
-	 *   "Fireface UCX II (12345678) 16:1"
-	 * Falls back to a deterministic djb2 hash (uidfromport) when no serial is present. */
-	{
-	const char *open  = strchr(port, '(');
-	const char *close = open ? strchr(open, ')') : NULL;
-	if (open && close) {
-		size_t len = (size_t)(close - port) + 1;
-		if (len < sizeof deviceuid) {
-			memcpy(deviceuid, port, len);
-			deviceuid[len] = '\0';
-		} else {
-			uidfromport(port, deviceuid, sizeof deviceuid);
-		}
-	} else {
-		uidfromport(port, deviceuid, sizeof deviceuid);
-	}
-	}
+	makedeviceuid(port, deviceuid, sizeof deviceuid);
 	fprintf(stderr, "Device Name: %s (ID: %s)\n", device->name, device->id);
 	fprintf(stderr, "Device UID:  %s\n", deviceuid);
 	fprintf(stderr, "MIDI Port:   %s\n", port);

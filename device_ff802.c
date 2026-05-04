@@ -5,11 +5,6 @@
 
 #define LEN(a) (sizeof(a) / sizeof(*(a)))
 
-/* MIX_LEVEL register layout (output-major, 0x40 stride per output):
- *   input channels  : 0x4000 + out*0x40 + in
- *   playback channels: 0x4000 + out*0x40 + 0x20 + pb_idx
- */
-
 static const char *const reflevel_input[] = {"+4dBu", "Lo Gain"};
 static const char *const reflevel_output[] = {"-10dBV", "+4dBu", "Hi Gain"};
 
@@ -71,34 +66,47 @@ static const struct channelinfo outputs[] = {
 _Static_assert(LEN(outputs) == 30, "bad outputs");
 
 static enum control regtoctl(int reg, struct param *p) {
-	int idx, flags;
+	int idx, flags = 0;
 
 	if (reg < 0)
 		return -1;
-	if (reg < 0x3C00) {
+
+	/* Input channels */
+	if (reg < 0x1E00) {
 		idx = reg >> 8;
-		reg &= 0xFF; 
-		if (idx < LEN(inputs)) {
-			p->in = idx;
-			flags = inputs[idx].flags;
-		} else {
-			idx -= LEN(inputs);
-			if (idx >= LEN(outputs))
+		reg &= 0xFF;
+		if (idx >= LEN(inputs))
+			return -1;
+		p->in = idx;
+		p->out = -1;
+		flags = inputs[idx].flags;
+	}
+	/* Output channels ( */
+	else if (reg < 0x3C00) {
+		idx = (reg - 0x1E00) >> 8;
+		reg &= 0xFF;
+		if (idx >= LEN(outputs))
+			return -1;
+		p->out = idx;
+		p->in = -1;
+		flags = outputs[idx].flags;
+		if (reg >= 0xE0) {
+			p->in = reg - 0xE0;
+			if ((unsigned)p->in >= LEN(inputs))
 				return -1;
-			p->out = idx;
-			flags = outputs[idx].flags;
-			// TODO: We need the return MIX somehow. This seems to break correct input mapping - so commented for now
-//			if (reg >= 0xE0) {
-//				p->in = reg - 0xE0;
-//				if ((unsigned)p->in >= LEN(inputs))
-//					return -1;
-//				return MIX;
-//			}
-			if (reg < 0x20) {
-				reg |= 0x1E00;
-			}
+			return MIX;
+		}
+		if (reg < 0x20) {
+			reg |= 0x1E00;
 		}
 	}
+	/* Global registers */
+	else {
+		p->in = -1;
+		p->out = -1;
+	}
+
+
 	switch (reg) {
 		case 0x0000: return INPUT_MUTE;
 		case 0x0001: return INPUT_FXSEND;
@@ -204,13 +212,13 @@ static enum control regtoctl(int reg, struct param *p) {
 static int
 ctltoreg(enum control ctl, const struct param *p)
 {
-	int reg, idx, flags;
+	int reg, idx = -1, flags = 0;
 	if ((unsigned)p->in < LEN(inputs)) {
 		flags = inputs[p->in].flags;
 		idx = p->in;
 	} else if ((unsigned)p->out < LEN(outputs)) {
 		flags = outputs[p->out].flags;
-		idx = 30 + p->out;
+		idx = LEN(inputs) + p->out;
 	}
 	switch (ctl) {
 		case INPUT_MUTE:              reg = 0x00; goto channel;
@@ -267,31 +275,15 @@ ctltoreg(enum control ctl, const struct param *p)
 		case AUTOLEVEL_MAXGAIN:       reg = 0x81; goto channel;
 		case AUTOLEVEL_HEADROOM:      reg = 0x82; goto channel;
 		case AUTOLEVEL_RISETIME:      reg = 0x83; goto channel;
-			channel:                      if (idx == -1) break;
-			return idx << 8 | reg;
 		case MIX:
-			if ((unsigned)p->out >= LEN(outputs)) {
-				break;
-			}
-			if ((unsigned)p->in >= LEN(inputs)){
-				break;
-			}
-			/* Write address: sequential per-output layout, stride 0x100.
-			 * p->in is in [0..29] and the base_reg low byte is 0xE0,
-			 * so OR and ADD are equivalent (no bit overlap). */
-			int base_reg = 0x1EE0 + (p->out * 0x100);
-			return base_reg | p->in;
-		case MIX_LEVEL: {
+			/* TODO: Fill content */
+			break;
+		case MIX_LEVEL:
 			if ((unsigned)p->out >= LEN(outputs)) break;
 			if ((unsigned)p->in >= LEN(inputs) + LEN(outputs)) break;
-			unsigned base = 0x4000 + (unsigned)p->out * 0x40;
-			if ((unsigned)p->in < LEN(inputs)) {
-				return base + (unsigned)p->in;
-			} else {
-				unsigned pb_idx = (unsigned)p->in - LEN(inputs);
-				return base + 0x20 + pb_idx;
-			}
-		}
+			idx = p->in;
+			if (idx >= LEN(inputs)) idx += 0x20 - LEN(inputs);
+			return 0x4000 | p->out << 6 | idx;
 		case REVERB:                  return 0x3C00;
 		case REVERB_TYPE:             return 0x3C01;
 		case REVERB_PREDELAY:         return 0x3C02;
@@ -343,13 +335,20 @@ ctltoreg(enum control ctl, const struct param *p)
 		default:                      break;
 	}
 	return -1;
+
+channel:
+	if (idx == -1) return -1;
+	if (idx < LEN(inputs))
+		return (idx << 8) + reg;
+	else
+		return 0x1E00 + ((idx - LEN(inputs)) << 8) + reg;
 }
 
 const struct device ff802 = {
 	.id = "ff802",
 	.name = "Fireface 802",
 	.version = 9,
-	.flags = 0,
+	.flags = DEVICE_MIX_VOLONLY,
 	.inputs = inputs,
 	.inputslen = LEN(inputs),
 	.outputs = outputs,

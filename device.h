@@ -30,6 +30,7 @@ enum deviceflags {
 	DEVICE_HAS_DUREC   = 1 << 0,
 	DEVICE_HAS_ROOMEQ  = 1 << 1,
 	DEVICE_MIXER_V2    = 1 << 2, /*dB fixed-point, bit15=channel, bit14=param */
+	DEVICE_MIX_VOLONLY = 1 << 3,
 };
 
 enum control {
