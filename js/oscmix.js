@@ -98,6 +98,11 @@ let connectionStatus = {
 // Extracted MIDI device label (e.g. "Fireface 802 (12345678)"), null for WebSocket
 let midiPortLabel = null;
 
+// Device UID reported by the server via /device/uid (TotalMix-style, e.g.
+// "FirefaceUFX+12345678"). Used as a stable key prefix for per-device
+// localStorage entries. Null until the first /device/info response arrives.
+let currentDeviceUid = null;
+
 updatePageTitle();
 
 /* Style Handling */
@@ -1093,6 +1098,11 @@ class Channel {
 		"volumecal"
 	]);
 
+	/* Registry of all currently-mounted Channel instances. Cleared by
+	 * reinitializeUI before rebuilding channel strips so stale references
+	 * don't leak across device switches. */
+	static instances = [];
+
 	static submixChanged() {
 		const event = new SubmixEvent("change");
 		const selects = document.querySelectorAll("select.channel-volume-output");
@@ -1101,9 +1111,49 @@ class Channel {
 			select.selectedIndex = index;
 			select.dispatchEvent(event);
 		}
+		Channel.refreshPanVisibility();
+	}
+
+	/*
+	 * Recompute pan-knob visibility across all channel strips.
+	 *
+	 * Rules (matching TotalMix FX behaviour):
+	 *   - Output pan knob: visible iff the output channel itself is stereo
+	 *     paired. Wired per-channel in the constructor since it depends
+	 *     only on that output's own stereo state.
+	 *   - Input / Playback pan knob in the active submix view: visible
+	 *     unless BOTH the submix-output AND the input/playback are mono.
+	 *     A mono submix-out has no L/R to pan between, so for mono
+	 *     sources there is no balance knob at all; stereo sources still
+	 *     get a balance knob (controls the L/R balance pre-sum).
+	 */
+	static setPanKnobVisible(ch, visible) {
+		if (!ch.panKnobElement || !ch.panPlaceholder) return;
+		/* Knob keeps its layout space via visibility:hidden so the
+		 * absolutely-positioned MONO placeholder lands on the exact
+		 * same area without the strip reflowing. */
+		ch.panKnobElement.style.visibility = visible ? "" : "hidden";
+		ch.panPlaceholder.style.display = visible ? "none" : "flex";
+	}
+
+	static refreshPanVisibility() {
+		const submixIdx = parseInt(document.forms.view.elements.submix.value, 10) || 0;
+		const submixCh = Channel.instances.find(
+			(c) => c.type === Channel.OUTPUT && c.index === submixIdx
+		);
+		const submixIsStereo = submixCh ? !!submixCh.stereoCheckbox?.checked : true;
+		for (const ch of Channel.instances) {
+			if (ch.type === Channel.OUTPUT) continue;
+			if (!ch.panLabel) continue;
+			const chIsStereo = !!ch.stereoCheckbox?.checked;
+			Channel.setPanKnobVisible(ch, submixIsStereo || chIsStereo);
+		}
 	}
 
 	constructor(type, index, iface, left) {
+		Channel.instances.push(this);
+		this.type = type;
+		this.index = index;
 		const template = document.getElementById("channel-template");
 		const fragment = template.content.cloneNode(true);
 		const volumeRange  = fragment.getElementById("volume-range");
@@ -1114,6 +1164,7 @@ class Channel {
 		let sendOutputVolume = (_db) => {};
 		let sendMixVolume    = (_db) => {};
 		const stereo = fragment.querySelector('.stereo');
+		this.stereoCheckbox = stereo;
 		const name = fragment.getElementById("channel-name");
 		const view = document.forms.view.elements;
 		const gainTarget = fragment.querySelector('label[data-flags="gain"] .knob-target');
@@ -1151,7 +1202,16 @@ class Channel {
 			});
 		}
 
-		const panTarget = fragment.querySelector('label[id="pan"] .knob-target');
+		const panLabel = fragment.querySelector('label[id="pan"]');
+		this.panLabel = panLabel;
+		const panTarget = panLabel ? panLabel.querySelector('.knob-target') : null;
+		/*
+		 * Inline "MONO" placeholder shown in place of the pan knob when
+		 * pan is not applicable (mono submix-out + mono channel for
+		 * inputs/playbacks, or mono output for the output-own pan).
+		 * Kept inside the same label so the strip layout doesn't reflow
+		 * when the knob is hidden.
+		 */
 		let panKnob;
 		if (panTarget) {
 			panKnob = new Knob({
@@ -1174,6 +1234,34 @@ class Channel {
 			});
 			panTarget.innerHTML = "";
 			panTarget.appendChild(panKnob.element);
+
+			/*
+			 * MONO placeholder is overlaid on top of the knob via
+			 * absolute positioning. Toggling uses visibility on the
+			 * knob (preserves layout space) so the placeholder always
+			 * sits over the same area regardless of theme. The knob
+			 * stays in the DOM at full size, so the strip doesn't
+			 * reflow when pan visibility changes.
+			 */
+			panTarget.style.position = 'relative';
+			const placeholder = document.createElement('span');
+			placeholder.className = 'pan-mono-placeholder';
+			placeholder.textContent = 'MONO';
+			placeholder.style.position = 'absolute';
+			placeholder.style.inset = '0';
+			placeholder.style.alignItems = 'center';
+			placeholder.style.justifyContent = 'center';
+			placeholder.style.fontSize = '10px';
+			placeholder.style.fontWeight = '600';
+			placeholder.style.letterSpacing = '0.1em';
+			placeholder.style.opacity = '0.5';
+			placeholder.style.userSelect = 'none';
+			placeholder.style.pointerEvents = 'none';
+			placeholder.style.display = 'none';  /* toggled by setPanKnobVisible */
+			panTarget.appendChild(placeholder);
+			this.panTarget = panTarget;
+			this.panKnobElement = panKnob.element;
+			this.panPlaceholder = placeholder;
 			panKnob.element.addEventListener("user-change", (event) => {
 				const value = event.detail.value;
 				if (type === Channel.OUTPUT) {
@@ -1620,6 +1708,29 @@ class Channel {
 			crossfeedSelect.addEventListener('change', updateCrossfeedActive);
 			updateCrossfeedActive();
 		}
+		/*
+		 * Pan-knob visibility (TotalMix FX semantics):
+		 *   - OUTPUT: own balance pan is shown only when the output is
+		 *     stereo paired. The output's stereo change must also re-
+		 *     evaluate every input/playback pan in case this is the
+		 *     currently selected submix.
+		 *   - INPUT / PLAYBACK: pan is shown unless BOTH the active
+		 *     submix-output AND this channel are mono. Re-evaluation
+		 *     happens centrally via Channel.refreshPanVisibility().
+		 */
+		if (stereo) {
+			if (type === Channel.OUTPUT) {
+				const updateOwnPan = () => {
+					Channel.setPanKnobVisible(this, !!stereo.checked);
+				};
+				stereo.addEventListener("change", updateOwnPan);
+				stereo.addEventListener("change", Channel.refreshPanVisibility);
+				updateOwnPan();
+			} else {
+				stereo.addEventListener("change", Channel.refreshPanVisibility);
+			}
+		}
+
 		FaderGroup.registerChannel(channelKey, {
 			setValue(db) {
 				volumeRange.value = db;
@@ -1670,6 +1781,27 @@ const bridge      = new RoomEQBridge(iface);
 const cheqBridge  = new ChannelEQBridge(iface);
 
 function setupInterface() {
+	/* Server-driven device identification.
+	 * /device/name lets the server tell the web client which RME device it
+	 * is talking to -- crucial for WebSocket connections where the client
+	 * cannot infer the device from a MIDI port name. If the reported name
+	 * doesn't match the currently loaded profile, switch and rebuild UI. */
+	iface.methods.set("/device/name", (args) => {
+		const reported = args[0];
+		if (!reported) return;
+		const match = devices.find((d) => d.deviceName === reported);
+		if (match && match !== currentDevice) {
+			currentDevice = match;
+			console.log("Server reported device:", reported, "-> switching profile");
+			reinitializeUI();
+			updateConnectionStatus(true, true, currentDevice.deviceName);
+			updatePageTitle();
+		}
+	});
+	iface.methods.set("/device/uid", (args) => {
+		currentDeviceUid = args[0] || null;
+	});
+
 	const connectionType = document.getElementById("connection-type");
 
 	const midiPorts = {
@@ -1835,6 +1967,11 @@ function setupInterface() {
 			icon.dataset.state = "connected";
 			if (debugFlags.wasm) iface.send('/debug', ',i', [debugFlags.wasm]);
 			FaderGroup.applySaved();
+			/* Static device discovery -- request once per connect.
+			 * /refresh now only resyncs dynamic state. */
+			iface.send("/device/info", ",", []);
+			iface.send("/device/channels", ",", []);
+			iface.send("/device/names", ",", []);
 			iface.send("/refresh", ",", []);
 			updateConnectionStatus(true, true, currentDevice.deviceName);
 			updatePageTitle();
@@ -2018,8 +2155,31 @@ function setupInterface() {
 	}
 
 	iface.bind("/hardware/dspverload", ",i", document.getElementById("hardware-dspverload"), "textContent");
-	iface.bind("/hardware/dspavail", ",i", document.getElementById("hardware-dspavail"), "textContent");
-	iface.bind("/hardware/dspstatus", ",i", document.getElementById("hardware-dspstatus"), "textContent");
+	{
+		// /hardware/dspavail ,iiiii  lowcut eq dynamics autolevel record  (each 0..2)
+		const dspAvail = document.getElementById("hardware-dspavail");
+		iface.methods.set("/hardware/dspavail", (args) => {
+			const [lc, eq, dyn, al, rec] = args;
+			dspAvail.textContent = `LC:${lc} EQ:${eq} Dyn:${dyn} AL:${al} Rec:${rec}`;
+		});
+		// /hardware/dspstatus ,iiiiiiiii  play lowcut eq dyn al rec delay roomeq channel
+		const dspStatus = document.getElementById("hardware-dspstatus");
+		iface.methods.set("/hardware/dspstatus", (args) => {
+			const [play, lc, eq, dyn, al, rec, delay, roomeq, chan] = args;
+			const overloads = [];
+			if (!play)   overloads.push("play");
+			if (!lc)     overloads.push("LC");
+			if (!eq)     overloads.push("EQ");
+			if (!dyn)    overloads.push("Dyn");
+			if (!al)     overloads.push("AL");
+			if (!rec)    overloads.push("Rec");
+			if (!delay)  overloads.push("Delay");
+			if (!roomeq) overloads.push("RoomEQ");
+			dspStatus.textContent = overloads.length
+				? `OVERLOAD ch${chan}: ${overloads.join(", ")}`
+				: `OK (ch${chan})`;
+		});
+	}
 
 	iface.bind("/durec/file", "i", document.getElementById("durec-file"), "value", "change");
 	// Buttons don't support "checked" — use aria-pressed for OSC state feedback
@@ -2117,6 +2277,7 @@ function setupInterface() {
 function reinitializeUI() {
 	FaderGroup.clear();
 	FaderGroup.restore();  // must run before channels are constructed
+	Channel.instances.length = 0;  // drop stale refs from previous device
 	const inputsContainer = document.getElementById("inputs");
 	const outputsContainer = document.getElementById("outputs");
 	const playbacksContainer = document.getElementById("playbacks");
@@ -2151,6 +2312,7 @@ function reinitializeUI() {
 	}
 	populateDeviceSpecificOptions();
 	applyDeviceFeatures();
+	Channel.submixChanged();  // wires up initial pan visibility for the rebuilt channels
 	loadedDevice = currentDevice;
 
 	console.log("UI reinitialized for device: ", currentDevice.deviceName);
