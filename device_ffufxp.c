@@ -478,7 +478,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		if (p->out == -1) break;
 		return reg + (p->out << 5);
 		case SETUP_ARCLEDS:           return 0x3E02;
-		case REFRESH:                 return 0x3E03;
+		case REFRESH:                 return 0x3E04; //0x3E03;
 		case SETUP_STORE:             return 0x3E06;
 		case DUREC_CONTROL:           return 0x3E9A;
 		case DUREC_DELETE:            return 0x3E9B;
@@ -493,13 +493,13 @@ static int ctltoreg(enum control ctl, const struct param *p)
 const struct device ffufxp = {
 	.id = "ffufxp",
 	.name = "Fireface UFX+",
-	.version = 23,
+	.version = 62,
 	.flags = DEVICE_HAS_DUREC | DEVICE_HAS_ROOMEQ | DEVICE_MIXER_V2,
 	.inputs = inputs,
 	.inputslen = LEN(inputs),
 	.outputs = outputs,
 	.outputslen = LEN(outputs),
-	.refresh = 0x234A, // 0x67CD,
+	.refresh = 0x67CD, //0x234A, 
 	.regtoctl = regtoctl,
 	.ctltoreg = ctltoreg,
 };
