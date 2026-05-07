@@ -95,9 +95,7 @@ regtoctl(int reg, struct param *p)
 			}
 		}
 	}
-	else if (reg - 0x3426U < 0x20 * LEN(outputs)
-	         && !(reg >= 0x3580 && reg <= 0x3590)
-	         && reg != 0x3E02) {
+	else if (reg - 0x3426U < 0x20 * LEN(outputs)) {
 		unsigned base = reg - 0x3426;
 		p->out = base >> 5;
 		unsigned subreg = base & 0x1F;
