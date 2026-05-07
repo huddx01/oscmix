@@ -90,12 +90,14 @@ regtoctl(int reg, struct param *p)
 				return -1;
 			p->out = idx;
 			flags = outputs[idx].flags;
-			if (reg < 0x0D) {
+			if (reg < 0x0C) {
 				reg |= 0x11A0;
 			}
 		}
 	}
-	else if (reg - 0x3426U < 0x20 * LEN(outputs)) {
+	else if (reg - 0x3426U < 0x20 * LEN(outputs)
+	         && !(reg >= 0x3580 && reg <= 0x3590)
+	         && reg != 0x3E02) {
 		unsigned base = reg - 0x3426;
 		p->out = base >> 5;
 		unsigned subreg = base & 0x1F;
@@ -153,15 +155,14 @@ regtoctl(int reg, struct param *p)
 		case 0x0001: return INPUT_FXSEND;
 		case 0x0002: return INPUT_STEREO;
 		case 0x0003: return INPUT_RECORD;
-		case 0x0004: return UNKNOWN;
-		case 0x0005: return INPUT_PLAYCHAN;
-		case 0x0006: return INPUT_WIDTH; //TODO: verify
-		case 0x0007: return INPUT_MSPROC;
-		case 0x0008: return INPUT_PHASE;
-		case 0x0009: return INPUT_GAIN;
-		case 0x000A: return flags & INPUT_HAS_48V ? INPUT_48V : INPUT_REFLEVEL;
-		case 0x000B: return INPUT_HIZ;
-		case 0x000C: return INPUT_AUTOSET;
+		case 0x0004: return INPUT_PLAYCHAN;
+		case 0x0005: return INPUT_WIDTH;
+		case 0x0006: return INPUT_MSPROC;
+		case 0x0007: return INPUT_PHASE;
+		case 0x0008: return INPUT_GAIN;
+		case 0x0009: return flags & INPUT_HAS_48V ? INPUT_48V : INPUT_REFLEVEL;
+		case 0x000A: return INPUT_HIZ;
+		case 0x000B: return INPUT_AUTOSET;
 
 		case 0x11A0: return OUTPUT_VOLUME;
 		case 0x11A1: return OUTPUT_PAN;
@@ -169,40 +170,40 @@ regtoctl(int reg, struct param *p)
 		case 0x11A3: return OUTPUT_FXRETURN;
 		case 0x11A4: return OUTPUT_STEREO;
 		case 0x11A5: return OUTPUT_RECORD;
-		case 0x11A7: return OUTPUT_PLAYCHAN;
-		case 0x11A8: return OUTPUT_PHASE;
-		case 0x11A9: return OUTPUT_REFLEVEL;
-		case 0x11AA: return OUTPUT_CROSSFEED;
+		case 0x11A6: return OUTPUT_PLAYCHAN;
+		case 0x11A7: return OUTPUT_PHASE;
+		case 0x11A8: return OUTPUT_REFLEVEL;
+		case 0x11A9: return OUTPUT_CROSSFEED;
+		case 0x11AA: return UNKNOWN;
 		case 0x11AB: return OUTPUT_VOLUMECAL;
-		case 0x11AC: return UNKNOWN;
 
-		case 0x000D: return LOWCUT;
-		case 0x000E: return LOWCUT_FREQ;
-		case 0x000F: return LOWCUT_SLOPE;
-		case 0x0010: return EQ;
-		case 0x0011: return EQ_BAND1TYPE;
-		case 0x0012: return EQ_BAND1GAIN;
-		case 0x0013: return EQ_BAND1FREQ;
-		case 0x0014: return EQ_BAND1Q;
-		case 0x0015: return EQ_BAND2GAIN;
-		case 0x0016: return EQ_BAND2FREQ;
-		case 0x0017: return EQ_BAND2Q;
-		case 0x0018: return EQ_BAND3TYPE;
-		case 0x0019: return EQ_BAND3GAIN;
-		case 0x001A: return EQ_BAND3FREQ;
-		case 0x001B: return EQ_BAND3Q;
-		case 0x001C: return DYNAMICS;
-		case 0x001D: return DYNAMICS_GAIN;
-		case 0x001E: return DYNAMICS_ATTACK;
-		case 0x001F: return DYNAMICS_RELEASE;
-		case 0x0020: return DYNAMICS_COMPTHRES;
-		case 0x0021: return DYNAMICS_COMPRATIO;
-		case 0x0022: return DYNAMICS_EXPTHRES;
-		case 0x0023: return DYNAMICS_EXPRATIO;
-		case 0x0024: return AUTOLEVEL;
-		case 0x0025: return AUTOLEVEL_MAXGAIN;
-		case 0x0026: return AUTOLEVEL_HEADROOM;
-		case 0x0027: return AUTOLEVEL_RISETIME;
+		case 0x000C: return LOWCUT;
+		case 0x000D: return LOWCUT_FREQ;
+		case 0x000E: return LOWCUT_SLOPE;
+		case 0x000F: return EQ;
+		case 0x0010: return EQ_BAND1TYPE;
+		case 0x0011: return EQ_BAND1GAIN;
+		case 0x0012: return EQ_BAND1FREQ;
+		case 0x0013: return EQ_BAND1Q;
+		case 0x0014: return EQ_BAND2GAIN;
+		case 0x0015: return EQ_BAND2FREQ;
+		case 0x0016: return EQ_BAND2Q;
+		case 0x0017: return EQ_BAND3TYPE;
+		case 0x0018: return EQ_BAND3GAIN;
+		case 0x0019: return EQ_BAND3FREQ;
+		case 0x001A: return EQ_BAND3Q;
+		case 0x001B: return DYNAMICS;
+		case 0x001C: return DYNAMICS_GAIN;
+		case 0x001D: return DYNAMICS_ATTACK;
+		case 0x001E: return DYNAMICS_RELEASE;
+		case 0x001F: return DYNAMICS_COMPTHRES;
+		case 0x0020: return DYNAMICS_COMPRATIO;
+		case 0x0021: return DYNAMICS_EXPTHRES;
+		case 0x0022: return DYNAMICS_EXPRATIO;
+		case 0x0023: return AUTOLEVEL;
+		case 0x0024: return AUTOLEVEL_MAXGAIN;
+		case 0x0025: return AUTOLEVEL_HEADROOM;
+		case 0x0026: return AUTOLEVEL_RISETIME;
 
 		case 0x3000: return REVERB;
 		case 0x3001: return REVERB_TYPE;
@@ -304,59 +305,59 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		case INPUT_FXSEND:      reg = 0x01; goto channel;
 		case INPUT_STEREO:      reg = 0x02; goto channel;
 		case INPUT_RECORD:      reg = 0x03; goto channel;
-		case INPUT_PLAYCHAN:    reg = 0x05; goto channel;
-		case INPUT_WIDTH:       reg = 0x06; goto channel;	//TODO: verify
-		case INPUT_MSPROC:      reg = 0x07; goto channel;
-		case INPUT_PHASE:       reg = 0x08; goto channel;
+		case INPUT_PLAYCHAN:    reg = 0x04; goto channel;
+		case INPUT_WIDTH:       reg = 0x05; goto channel;
+		case INPUT_MSPROC:      reg = 0x06; goto channel;
+		case INPUT_PHASE:       reg = 0x07; goto channel;
 		case INPUT_GAIN:        if (!(flags & INPUT_HAS_GAIN)) break;
-		reg = 0x09; goto channel;
+		reg = 0x08; goto channel;
 		case INPUT_REFLEVEL:    if (!(flags & INPUT_HAS_REFLEVEL)) break;
-		reg = 0x0A; goto channel;
+		reg = 0x09; goto channel;
 		case INPUT_48V:         if (!(flags & INPUT_HAS_48V)) break;
-		reg = 0x0A; goto channel;
+		reg = 0x09; goto channel;
 		case INPUT_HIZ:         if (!(flags & INPUT_HAS_HIZ)) break;
-		reg = 0x0B; goto channel;
+		reg = 0x0A; goto channel;
 		case INPUT_AUTOSET:        if (!(flags & INPUT_HAS_AUTOSET)) break;
-		reg = 0x0C; goto channel;
+		reg = 0x0B; goto channel;
 		case OUTPUT_VOLUME:      reg = 0x00; goto channel;
 		case OUTPUT_PAN:         reg = 0x01; goto channel;
 		case OUTPUT_MUTE:        reg = 0x02; goto channel;
 		case OUTPUT_FXRETURN:    reg = 0x03; goto channel;
 		case OUTPUT_STEREO:      reg = 0x04; goto channel;
 		case OUTPUT_RECORD:      reg = 0x05; goto channel;
-		case OUTPUT_PLAYCHAN:    reg = 0x07; goto channel;
-		case OUTPUT_PHASE:       reg = 0x08; goto channel;
+		case OUTPUT_PLAYCHAN:    reg = 0x06; goto channel;
+		case OUTPUT_PHASE:       reg = 0x07; goto channel;
 		case OUTPUT_REFLEVEL:    if (!(flags & OUTPUT_HAS_REFLEVEL)) break;
-		reg = 0x09; goto channel;
-		case OUTPUT_CROSSFEED:   reg = 0x0A; goto channel;
+		reg = 0x08; goto channel;
+		case OUTPUT_CROSSFEED:   reg = 0x09; goto channel;
 		case OUTPUT_VOLUMECAL:   reg = 0x0B; goto channel;
-		case LOWCUT:             reg = 0x0D; goto channel;
-		case LOWCUT_FREQ:        reg = 0x0E; goto channel;
-		case LOWCUT_SLOPE:       reg = 0x0F; goto channel;
-		case EQ:                 reg = 0x10; goto channel;
-		case EQ_BAND1TYPE:       reg = 0x11; goto channel;
-		case EQ_BAND1GAIN:       reg = 0x12; goto channel;
-		case EQ_BAND1FREQ:       reg = 0x13; goto channel;
-		case EQ_BAND1Q:          reg = 0x14; goto channel;
-		case EQ_BAND2GAIN:       reg = 0x15; goto channel;
-		case EQ_BAND2FREQ:       reg = 0x16; goto channel;
-		case EQ_BAND2Q:          reg = 0x17; goto channel;
-		case EQ_BAND3TYPE:       reg = 0x18; goto channel;
-		case EQ_BAND3GAIN:       reg = 0x19; goto channel;
-		case EQ_BAND3FREQ:       reg = 0x1A; goto channel;
-		case EQ_BAND3Q:          reg = 0x1B; goto channel;
-		case DYNAMICS:           reg = 0x1C; goto channel;
-		case DYNAMICS_GAIN:      reg = 0x1D; goto channel;
-		case DYNAMICS_ATTACK:    reg = 0x1E; goto channel;
-		case DYNAMICS_RELEASE:   reg = 0x1F; goto channel;
-		case DYNAMICS_COMPTHRES: reg = 0x20; goto channel;
-		case DYNAMICS_COMPRATIO: reg = 0x21; goto channel;
-		case DYNAMICS_EXPTHRES:  reg = 0x22; goto channel;
-		case DYNAMICS_EXPRATIO:  reg = 0x23; goto channel;
-		case AUTOLEVEL:          reg = 0x24; goto channel;
-		case AUTOLEVEL_MAXGAIN:  reg = 0x25; goto channel;
-		case AUTOLEVEL_HEADROOM: reg = 0x26; goto channel;
-		case AUTOLEVEL_RISETIME: reg = 0x27; goto channel;
+		case LOWCUT:             reg = 0x0C; goto channel;
+		case LOWCUT_FREQ:        reg = 0x0D; goto channel;
+		case LOWCUT_SLOPE:       reg = 0x0E; goto channel;
+		case EQ:                 reg = 0x0F; goto channel;
+		case EQ_BAND1TYPE:       reg = 0x10; goto channel;
+		case EQ_BAND1GAIN:       reg = 0x11; goto channel;
+		case EQ_BAND1FREQ:       reg = 0x12; goto channel;
+		case EQ_BAND1Q:          reg = 0x13; goto channel;
+		case EQ_BAND2GAIN:       reg = 0x14; goto channel;
+		case EQ_BAND2FREQ:       reg = 0x15; goto channel;
+		case EQ_BAND2Q:          reg = 0x16; goto channel;
+		case EQ_BAND3TYPE:       reg = 0x17; goto channel;
+		case EQ_BAND3GAIN:       reg = 0x18; goto channel;
+		case EQ_BAND3FREQ:       reg = 0x19; goto channel;
+		case EQ_BAND3Q:          reg = 0x1A; goto channel;
+		case DYNAMICS:           reg = 0x1B; goto channel;
+		case DYNAMICS_GAIN:      reg = 0x1C; goto channel;
+		case DYNAMICS_ATTACK:    reg = 0x1D; goto channel;
+		case DYNAMICS_RELEASE:   reg = 0x1E; goto channel;
+		case DYNAMICS_COMPTHRES: reg = 0x1F; goto channel;
+		case DYNAMICS_COMPRATIO: reg = 0x20; goto channel;
+		case DYNAMICS_EXPTHRES:  reg = 0x21; goto channel;
+		case DYNAMICS_EXPRATIO:  reg = 0x22; goto channel;
+		case AUTOLEVEL:          reg = 0x23; goto channel;
+		case AUTOLEVEL_MAXGAIN:  reg = 0x24; goto channel;
+		case AUTOLEVEL_HEADROOM: reg = 0x25; goto channel;
+		case AUTOLEVEL_RISETIME: reg = 0x26; goto channel;
 		channel:                      if (idx == -1) break;
 		return idx * 0x30 + reg;
 		case NAME:
@@ -478,7 +479,7 @@ static int ctltoreg(enum control ctl, const struct param *p)
 		if (p->out == -1) break;
 		return reg + (p->out << 5);
 		case SETUP_ARCLEDS:           return 0x3E02;
-		case REFRESH:                 return 0x3E04; //0x3E03;
+		case REFRESH:                 return 0x3E04;
 		case SETUP_STORE:             return 0x3E06;
 		case DUREC_CONTROL:           return 0x3E9A;
 		case DUREC_DELETE:            return 0x3E9B;
@@ -499,7 +500,7 @@ const struct device ffufxp = {
 	.inputslen = LEN(inputs),
 	.outputs = outputs,
 	.outputslen = LEN(outputs),
-	.refresh = 0x67CD, //0x234A, 
+	.refresh = 0x67CD,
 	.regtoctl = regtoctl,
 	.ctltoreg = ctltoreg,
 };
