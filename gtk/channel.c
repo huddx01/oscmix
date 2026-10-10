@@ -237,6 +237,7 @@ enum
 	PROP_RIGHT,
 	PROP_RECORDVIEW,
 	PROP_OUTPUTS_MODEL,
+	PROP_GAIN_MAX,
 };
 
 static void
@@ -302,6 +303,11 @@ channel_set_property(GObject *obj, guint id, const GValue *val, GParamSpec *spec
 					first = false;
 				}
 			} while (gtk_tree_model_iter_next(model, &iter));
+		}
+		break;
+	case PROP_GAIN_MAX:
+		if (self->ui.gain) {
+			gtk_adjustment_set_upper(self->ui.gain, g_value_get_int(val));
 		}
 		break;
 	default:
@@ -571,7 +577,8 @@ channel_class_init(ChannelClass *class)
 									g_param_spec_boolean("record-view", NULL, NULL, false, G_PARAM_CONSTRUCT | G_PARAM_READWRITE));
 	g_object_class_install_property(G_OBJECT_CLASS(class), PROP_OUTPUTS_MODEL,
 									g_param_spec_object("outputs-model", NULL, NULL, GTK_TYPE_TREE_MODEL, G_PARAM_READWRITE));
-
+	g_object_class_install_property(G_OBJECT_CLASS(class), PROP_GAIN_MAX,
+                                g_param_spec_int("gain-max", NULL, NULL, 0, 150, 24, G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE));
 	output_changed_signal = g_signal_new("output-changed", G_TYPE_FROM_CLASS(class), G_SIGNAL_RUN_FIRST, 0, NULL, NULL, NULL, G_TYPE_NONE, 1, G_TYPE_POINTER);
 }
 
