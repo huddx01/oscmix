@@ -1,28 +1,8 @@
 name: Build and Release
 
+# By hand only: no build or release on a push or tag. gh-pages holds the
+# static OscMix Web, and releases are made by hand.
 on:
-  push:
-    tags:
-      - 'v*'
-    branches:
-      - dev
-    paths:
-      # Root source files
-      - '*.c'
-      - '*.h'
-      - 'Makefile'
-      # GTK directory
-      - 'gtk/**'
-      # Web source files
-      - 'web/*.c'
-      - 'web/*.h'
-      - 'web/*.imports'
-      - 'web/Makefile'
-      # Tools (only source files, not scripts/lua/etc.)
-      - 'tools/*.c'
-      - 'tools/*.h'
-      - 'tools/Makefile'
-
   workflow_dispatch:
 
 permissions:
@@ -373,7 +353,8 @@ jobs:
   commit-wasm-and-deploy:
     runs-on: ubuntu-latest
     needs: [build]
-    # Only run on dev branch pushes, not on tag builds
+    # Never runs now (there is no push trigger): a build started by hand must
+    # not overwrite gh-pages, which holds the static OscMix Web.
     if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
 
     steps:

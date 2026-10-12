@@ -1,12 +1,9 @@
 name: Deploy Pages
 
+# By hand only: gh-pages holds the static OscMix Web (oscmix-server), which a
+# push to dev must not overwrite.
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - 'web/pub/**'
-  workflow_dispatch: 
+  workflow_dispatch:
   
 
 permissions:
