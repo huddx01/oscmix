@@ -624,6 +624,7 @@ setup_channels(OSCMixWindow *self, const struct device *dev, ChannelType type, G
 							"flags", chflags,
 							"id", i + 1,
 							"name", name,
+							"gain-max", channels[i].gain.max / 10,
 							"outputs-model", type == CHANNEL_TYPE_OUTPUT ? NULL : self->outputs_model,
 							(char *)0);
 
