@@ -37,7 +37,8 @@ New version (pre-release).
 
 Try here: https://huddx01.github.io/oscmix/
 
-Download here: https://github.com/huddx01/oscmix/releases#release-v2.0.10
+Download here: 
+https://github.com/huddx01/oscmix/releases
 
 Read here: https://github.com/huddx01/oscmix/wiki/OscMix-server-concept
 
