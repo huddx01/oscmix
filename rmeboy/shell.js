@@ -13,8 +13,6 @@ import{Lcd,OVERLAY,W}from"./lcd.js";import{Apu}from"./apu.js";import{Blocks,NAME
 #rmeboy canvas { filter: drop-shadow(0 0 1.06cqw rgba(15, 56, 15, .3)); }
 #rmeboy button { background: transparent; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 #rmeboy .pressed { background: rgba(0, 0, 0, .28); }
-/* The cross, cut from the picture, tilts towards the pressed direction
-   over a dark well that covers the picture's own cross. */
 #rmeboy .dpad, #rmeboy .well { clip-path: polygon(33% 0, 67% 0, 67% 33%, 100% 33%, 100% 67%, 67% 67%, 67% 100%, 33% 100%, 33% 67%, 0 67%, 0 33%, 33% 33%); }
 #rmeboy .well { background: #121111; }
 #rmeboy .dpad { background: url(${PICTURE}) no-repeat; transition: transform .05s;
