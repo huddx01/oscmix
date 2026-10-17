@@ -295,6 +295,8 @@ This frontend is at the stage where your feedback shapes the direction. Two thin
 
 ## Web UI
 
+v2.0.13 (pre-release)
+
 The [web](web) directory contains a web frontend that can communicate
 with oscmix through OSC over a WebSocket, or by directly to an
 instance of oscmix compiled as WebAssembly running directly in the browser.
