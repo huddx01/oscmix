@@ -33,7 +33,7 @@ implemented in oscmix.
 
 ## Web UI
 
-New version (pre-release).
+Latest version: [v2.0.14 (pre-release)](https://github.com/huddx01/oscmix/releases/tag/v2.0.14)
 
 Try here: https://huddx01.github.io/oscmix/
 
