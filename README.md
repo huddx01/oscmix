@@ -22,16 +22,29 @@ implemented in oscmix.
 
 ### Supported devices
 
-- RME Fireface UCX II
-
-### Devices in WIP State
-
 - RME Fireface 802
 - RME Fireface UCX
+- RME Fireface UCX II
 - RME Fireface UFX
 - RME Fireface UFX II
 - RME Fireface UFX III
 - RME Fireface UFX+
+
+
+## Web UI
+
+Latest version: [v2.0.14 (pre-release)](https://github.com/huddx01/oscmix/releases/tag/v2.0.14)
+
+Try here: https://huddx01.github.io/oscmix/
+
+Download here: 
+https://github.com/huddx01/oscmix/releases
+
+Read here: https://github.com/huddx01/oscmix/wiki/OscMix-server-concept
+
+<img width="1261" height="874" alt="dev_v2" src="https://github.com/huddx01/oscmix/wiki/img/v2/v2_preview-darwin.png" />
+
+
 
 ## Download
 
@@ -293,43 +306,9 @@ This frontend is at the stage where your feedback shapes the direction. Two thin
 1. **What matters to you in the UI?** Missing controls, layout preferences, workflow details - just open an issue.
 2. **GTK vs. Qt priority?** Development time is finite. If you actively use or plan to use the Qt frontend, let me know via issue - it directly influences where time goes.
 
-## Web UI
-
-v2.0.13 (pre-release)
-
-The [web](web) directory contains a web frontend that can communicate
-with oscmix through OSC over a WebSocket, or by directly to an
-instance of oscmix compiled as WebAssembly running directly in the browser.
-
-<img width="1930" height="1095" alt="oscmix-web" src="doc/webui.png" />
 
 
-The web UI for this fork/dev branch is automatically deployed at
-[https://huddx01.github.io/oscmix](https://huddx01.github.io/oscmix).
 
-It is tested primarily against the chromium stable channel, but
-patches to support other/older browsers are welcome (if it doesn't
-complicate things too much).
-
-Also included is a UDP-to-WebSocket bridge, `wsdgram`. It expects
-file descriptors 0 and 1 to be an open connection to a WebSocket
-client. It forwards incoming messages to a UDP address and writes
-outgoing messages for any UDP packet received. Use it in combination
-with software like [s6-tcpserver] or [s6-tlsserver].
-
-```sh
-s6-tcpserver 127.0.0.1 8222 wsdgram
-```
-
-To build `oscmix.wasm`, you need `clang` supporting wasm32, `wasm-ld`,
-and `wasi-libc`.
-
-[s6-tcpserver]: https://skarnet.org/software/s6-networking/s6-tcpserver.html
-[s6-tlsserver]: https://skarnet.org/software/s6-networking/s6-tlsserver.html
-
-## OSC API
-
-For current state of full OSC API reference, see the [oscmix OSC API](https://github.com/huddx01/oscmix/wiki/oscmix-OSC-API) wiki page.
 
 ## Thanks
 
