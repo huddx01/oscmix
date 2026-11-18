@@ -44,6 +44,12 @@ Read here: https://github.com/huddx01/oscmix/wiki/OscMix-server-concept
 
 <img width="1261" height="874" alt="dev_v2" src="https://github.com/huddx01/oscmix/wiki/img/v2/v2_preview-darwin.png" />
 
+### Coming in next release 
+
+Full ARC support…
+
+<img width="1880" height="1136" alt="image" src="https://github.com/user-attachments/assets/6097dbc1-93e9-4509-93ee-1471f174de54" />
+
 
 
 ## Download
