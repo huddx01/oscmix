@@ -13,10 +13,9 @@
 # ANY RESTRICTIONS EXPRESSED VIA CONTENT SIGNALS ARE EXPRESS RESERVATIONS OF RIGHTS UNDER ARTICLE 4 OF THE EUROPEAN UNION DIRECTIVE 2019/790 ON COPYRIGHT AND RELATED RIGHTS IN THE DIGITAL SINGLE MARKET.
 
 User-agent: *
-Content-Signal: search=yes, ai-train=no, use=reference
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 
-# Shared Token
 User-agent: __usage_ai-training
 Disallow: /
 
@@ -96,90 +95,4 @@ User-agent: img2dataset
 Disallow: /
 
 User-agent: ImagesiftBot
-Disallow: /
-
-User-agent: NovaAct
-Disallow: /
-
-User-agent: Manus-User
-Disallow: /
-
-Disallow: /
-
-User-agent: anthropic-ai
-Disallow: /
-
-User-agent: Google-Extended
-Disallow: /
-
-User-agent: Applebot-Extended
-Disallow: /
-
-User-agent: meta-externalagent
-Disallow: /
-
-User-agent: FacebookBot
-Disallow: /
-
-User-agent: Amazonbot
-Disallow: /
-
-User-agent: Bytespider
-Disallow: /
-
-User-agent: TikTokSpider
-Disallow: /
-
-User-agent: CCBot
-Disallow: /
-
-User-agent: cohere-training-data-crawler
-Disallow: /
-
-User-agent: MistralAI-Training
-Disallow: /
-
-User-agent: DeepSeekBot
-Disallow: /
-
-User-agent: KimiBot
-Disallow: /
-
-User-agent: QwenBot
-Disallow: /
-
-User-agent: PanguBot
-Disallow: /
-
-User-agent: ERNIEBot
-Disallow: /
-
-User-agent: YandexAdditional
-Disallow: /
-
-User-agent: AI2Bot
-Disallow: /
-
-User-agent: Diffbot
-Disallow: /
-
-User-agent: Timpibot
-Disallow: /
-
-User-agent: omgili
-Disallow: /
-
-User-agent: Webzio-Extended
-Disallow: /
-
-User-agent: img2dataset
-Disallow: /
-
-User-agent: ImagesiftBot
-Disallow: /
-
-User-agent: NovaAct
-Disallow: /
-
-User-agent: Manus-User
 Disallow: /
